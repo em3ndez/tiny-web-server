@@ -24,6 +24,68 @@ public class WebServer {
         void handle(Request request, Response response, Map<String, String> pathParams);
     }
 
+    public void simulateRequest(Method method, String path, String body) {
+        Map<Pattern, Handler> methodRoutes = routes.get(method);
+        if (methodRoutes == null) {
+            System.out.println("Method not allowed");
+            return;
+        }
+
+        boolean routeMatched = false;
+
+        for (Map.Entry<Pattern, Handler> route : methodRoutes.entrySet()) {
+            Matcher matcher = route.getKey().matcher(path);
+            if (matcher.matches()) {
+                routeMatched = true;
+                Map<String, String> params = new HashMap<>();
+                for (int i = 1; i <= matcher.groupCount(); i++) {
+                    params.put(String.valueOf(i), matcher.group(i));
+                }
+
+                // Create pseudo request and response
+                Request request = new Request(null) {
+                    @Override
+                    public String getBody() { return body; }
+                    @Override
+                    public String getPath() { return path; }
+                };
+
+                Response response = new Response(null) {
+                    @Override
+                    public void write(String content) {
+                        System.out.println("Response: " + content);
+                    }
+                };
+
+                // Apply filters
+                List<FilterEntry> methodFilters = filters.get(method);
+                if (methodFilters != null) {
+                    for (FilterEntry filterEntry : methodFilters) {
+                        Matcher filterMatcher = filterEntry.pattern.matcher(path);
+                        if (filterMatcher.matches()) {
+                            Map<String, String> filterParams = new HashMap<>();
+                            for (int i = 1; i <= filterMatcher.groupCount(); i++) {
+                                filterParams.put(String.valueOf(i), filterMatcher.group(i));
+                            }
+                            boolean proceed = filterEntry.filter.filter(request, response, filterParams);
+                            if (!proceed) {
+                                return; // Stop processing if filter returns false
+                            }
+                        }
+                    }
+                }
+
+                // Handle the request
+                route.getValue().handle(request, response, params);
+                return;
+            }
+        }
+
+        if (!routeMatched) {
+            System.out.println("Not found");
+        }
+    }
+
     @FunctionalInterface
     public interface Filter {
         boolean filter(Request request, Response response, Map<String, String> pathParams);
