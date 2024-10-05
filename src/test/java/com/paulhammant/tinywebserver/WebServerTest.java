@@ -49,12 +49,12 @@ public class WebServerTest {
                 });
             });
 
-            describe("SimulateRequest method", () -> {
+            describe("DirectRequest method", () -> {
                 before(() -> {
                     svr = exampleComposition(new String[0], app);
                 });
                 it("should return correct response for a simulated GET request", () -> {
-                    WebServer.SimulatedResponse response = svr.simulateRequest(
+                    WebServer.SimulatedResponse response = svr.directRequest(
                         WebServer.Method.GET,
                         "/users/Jimmy",
                         null,
@@ -65,7 +65,7 @@ public class WebServerTest {
                     assertThat(response.contentType(), equalTo("text/plain"));
                 });
                 it("should return 404 for a non-existent path", () -> {
-                    WebServer.SimulatedResponse response = svr.simulateRequest(
+                    WebServer.SimulatedResponse response = svr.directRequest(
                         WebServer.Method.GET,
                         "/nonexistent",
                         null,

@@ -26,7 +26,7 @@ public class WebServer {
 
     public record SimulatedResponse(String body, int statusCode, String contentType, Map<String, List<String>> headers) {}
 
-    public SimulatedResponse simulateRequest(Method method, String path, String body, Map<String, List<String>> headers) {
+    public SimulatedResponse directRequest(Method method, String path, String body, Map<String, List<String>> headers) {
         Map<Pattern, Handler> methodRoutes = routes.get(method);
         if (methodRoutes == null) {
             System.out.println("Method not allowed");
