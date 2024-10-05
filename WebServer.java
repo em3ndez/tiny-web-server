@@ -142,7 +142,12 @@ public class WebServer {
     public static class Path extends WebServer {
         private final WebServer server;
 
-        public Path(WebServer server, Consumer<WebServer> routeDefinitions) {
+        public Path(WebServer server, String prefix, Consumer<Path> routeDefinitions) {
+            super(server.server.getAddress().getPort());
+            RouteGroup group = server.path(prefix);
+            routeDefinitions.accept(this);
+            group.end();
+        }
             this.server = server;
             routeDefinitions.accept(server);
         }
@@ -158,11 +163,10 @@ public class WebServer {
     public static void main(String[] args) throws IOException {
         WebServer server = new WebServer(8080);
 
-        new Path(server, s -> {
+        new Path(server, "/", s -> {
             s.addHandler(Method.GET, "/", (req, res, params) -> res.write("Hello, World!"));
 
-            new Path(server, users -> {
-                users.path("/users", u -> {
+            new Path(server, "/users", u -> {
                     addHandler(Method.GET, "", (req, res, params) -> res.write("List users"));
                     addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")));
 
@@ -172,7 +176,7 @@ public class WebServer {
                     });
                 });
 
-                users.path("/api", api -> {
+            new Path(server, "/api", api -> {
                     api.path("/v1", v1 -> {
                         v1.addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v1 Status: OK"));
                     });
