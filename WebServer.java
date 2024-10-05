@@ -139,7 +139,7 @@ public class WebServer {
         server.start();
     }
 
-    public static class Path {
+    public static class Path extends WebServer {
         private final WebServer server;
 
         public Path(WebServer server, Consumer<WebServer> routeDefinitions) {
@@ -161,7 +161,7 @@ public class WebServer {
         new Path(server, s -> {
             s.addHandler(Method.GET, "/", (req, res, params) -> res.write("Hello, World!"));
 
-            new Path(s, users -> {
+            new Path(server, users -> {
                 users.path("/users", u -> {
                     u.addHandler(Method.GET, "", (req, res, params) -> res.write("List users"));
                     u.addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")));
