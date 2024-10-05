@@ -2,6 +2,7 @@ package com.paulhammant.tinywebserver;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
+import org.mockito.Mockito;
 import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.model.TestBlock;
@@ -22,15 +23,7 @@ import java.util.Map;
 
 @Test
 public class WebServerTest {
-    StringBuilder journal = new StringBuilder();
-    WebServer.ExampleApp app = new WebServer.ExampleApp() {
-        @Override
-        public void foobar(WebServer.Request req, WebServer.Response res, Map<String, String> params) {
-            journal.append("ExampleApp.foobar called with ").append(params.get("1"))
-                    .append(" and ").append(params.get("2"));
-            res.write("journaled");
-        }
-    };
+    WebServer.ExampleApp app = Mockito.mock(WebServer.ExampleApp.class);
     WebServer svr;
 
     {
@@ -53,7 +46,7 @@ public class WebServerTest {
                 });
                 after(() -> {
                     svr.stop();
-                    assertThat(journal.toString(), equalTo(""));
+                    Mockito.verifyNoInteractions(app);
                 });
             });
             describe("Greeting GET endpoint ", () -> {
@@ -69,7 +62,7 @@ public class WebServerTest {
                 });
                 after(() -> {
                     svr.stop();
-                    assertThat(journal.toString(), equalTo("ExampleApp.foobar called with A and B"));
+                    Mockito.verify(app).foobar(Mockito.any(), Mockito.any(), Mockito.any());
                 });
             });
         });
