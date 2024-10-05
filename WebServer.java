@@ -139,6 +139,12 @@ public class WebServer {
         return this;
     }
 
+    public WebServer filter(WebServer.Method method, String path, WebServer.Filter filter) {
+        routes.computeIfAbsent(method, k -> new HashMap<>())
+              .put(Pattern.compile("^" + path + "$"), filter);
+        return this;
+    }
+
     public void start() {
         server.start();
     }
@@ -151,6 +157,9 @@ public class WebServer {
         return new WebServer(8080) {{
 
             path("/foo", () -> {
+                filter(Method.GET, "/*", (req, res, params) -> {
+                    // using random every 4th request, stop here and don't allow control to pass to the /bar handler
+                });
                 handle(Method.GET, "/bar", (req, res, params) -> {
                     res.write("Hello, World!");
                 });
