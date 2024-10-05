@@ -55,7 +55,7 @@ public class WebServerTest {
                     Mockito.doAnswer(invocation -> {
                         invocation.<WebServer.Response>getArgument(1).write("invoked");
                         return null;
-                    }).when(app).foobar(Mockito.any(), Mockito.any(), Mockito.any());
+                    }).when(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.<Map<String, String>>any());
                 });
                 it("invokes ExampleApp method", () -> {
                     try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
