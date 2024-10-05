@@ -274,7 +274,7 @@ public class WebServer {
                 });
             });
 
-            serveStaticFiles("public", "/home/paul/scm/tine-webserver/fooo");
+            serveStaticFiles("/public", "/home/paul/scm/tine-webserver/fooo");
 
             handle(Method.GET, "/users/(\\w+)", (req, res, params) -> {
                 res.write("User profile: " + params.get("1"));
