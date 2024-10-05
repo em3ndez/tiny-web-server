@@ -11,7 +11,8 @@ public class WebServer {
     public enum Method { GET, POST, PUT, DELETE }
 
     private final HttpServer server;
-    private final Map<Method, Map<Pattern, Handler>> routes = new HashMap<>();
+    private Map<Method, Map<Pattern, Handler>> routes = new HashMap<>();
+    private Map<Method, List<FilterEntry>> filters = new HashMap<>();
 
     @FunctionalInterface
     public interface Handler {
@@ -21,6 +22,16 @@ public class WebServer {
     @FunctionalInterface
     public interface Filter {
         boolean filter(Request request, Response response, Map<String, String> pathParams) throws IOException;
+    }
+
+    public static class FilterEntry {
+        public final Pattern pattern;
+        public final Filter filter;
+
+        public FilterEntry(Pattern pattern, Filter filter) {
+            this.pattern = pattern;
+            this.filter = filter;
+        }
     }
 
     public static class Request {
@@ -64,6 +75,7 @@ public class WebServer {
 
         for (Method method : Method.values()) {
             routes.put(method, new HashMap<>());
+            filters.put(method, new ArrayList<>());
         }
 
         server.createContext("/", exchange -> {
@@ -76,34 +88,40 @@ public class WebServer {
                 return;
             }
 
+            boolean routeMatched = false;
+
             for (Map.Entry<Pattern, Handler> route : methodRoutes.entrySet()) {
                 Matcher matcher = route.getKey().matcher(path);
                 if (matcher.matches()) {
+                    routeMatched = true;
                     Map<String, String> params = new HashMap<>();
                     for (int i = 1; i <= matcher.groupCount(); i++) {
                         params.put(String.valueOf(i), matcher.group(i));
                     }
 
                     // Apply filters
-                    for (Map.Entry<Pattern, Handler> filterEntry : routes.get(method).entrySet()) {
-                        Matcher filterMatcher = filterEntry.getKey().matcher(path);
-                        if (filterMatcher.matches()) {
-                            Map<String, String> filterParams = new HashMap<>();
-                            for (int i = 1; i <= filterMatcher.groupCount(); i++) {
-                                filterParams.put(String.valueOf(i), filterMatcher.group(i));
-                            }
-                            try {
-                                boolean proceed = ((Filter) filterEntry.getValue()).filter(
-                                        new Request(exchange),
-                                        new Response(exchange),
-                                        filterParams
-                                );
-                                if (!proceed) {
-                                    return; // Stop processing if filter returns false
+                    List<FilterEntry> methodFilters = filters.get(method);
+                    if (methodFilters != null) {
+                        for (FilterEntry filterEntry : methodFilters) {
+                            Matcher filterMatcher = filterEntry.pattern.matcher(path);
+                            if (filterMatcher.matches()) {
+                                Map<String, String> filterParams = new HashMap<>();
+                                for (int i = 1; i <= filterMatcher.groupCount(); i++) {
+                                    filterParams.put(String.valueOf(i), filterMatcher.group(i));
                                 }
-                            } catch (Exception e) {
-                                sendError(exchange, 500, "Internal server error: " + e.getMessage());
-                                return;
+                                try {
+                                    boolean proceed = filterEntry.filter.filter(
+                                            new Request(exchange),
+                                            new Response(exchange),
+                                            filterParams
+                                    );
+                                    if (!proceed) {
+                                        return; // Stop processing if filter returns false
+                                    }
+                                } catch (Exception e) {
+                                    sendError(exchange, 500, "Internal server error: " + e.getMessage());
+                                    return;
+                                }
                             }
                         }
                     }
@@ -121,35 +139,73 @@ public class WebServer {
                 }
             }
 
-            sendError(exchange, 404, "Not found");
+            if (!routeMatched) {
+                sendError(exchange, 404, "Not found");
+            }
         });
     }
 
     public WebServer path(String basePath, Runnable routes) {
-        Runnable wrappedRoutes = () -> {
-            Map<Method, Map<Pattern, Handler>> originalRoutes = new HashMap<>(this.routes);
-            for (Method method : Method.values()) {
-                if (!this.routes.containsKey(method)) {
-                    this.routes.put(method, new HashMap<>());
+        // Save current routes and filters
+        Map<Method, Map<Pattern, Handler>> previousRoutes = this.routes;
+        Map<Method, List<FilterEntry>> previousFilters = this.filters;
+
+        // Create new maps to collect routes and filters within this path
+        this.routes = new HashMap<>();
+        this.filters = new HashMap<>();
+
+        // Initialize empty maps for all methods
+        for (Method method : Method.values()) {
+            this.routes.put(method, new HashMap<>());
+            this.filters.put(method, new ArrayList<>());
+        }
+
+        // Run the routes Runnable, which will populate this.routes and this.filters
+        routes.run();
+
+        // Prefix basePath to routes
+        for (Method method : Method.values()) {
+            Map<Pattern, Handler> methodRoutes = this.routes.get(method);
+            if (methodRoutes != null && !methodRoutes.isEmpty()) {
+                Map<Pattern, Handler> prefixedRoutes = new HashMap<>();
+                for (Map.Entry<Pattern, Handler> entry : methodRoutes.entrySet()) {
+                    Pattern pattern = entry.getKey();
+                    Handler handler = entry.getValue();
+                    Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
+                    prefixedRoutes.put(newPattern, handler);
                 }
+                previousRoutes.get(method).putAll(prefixedRoutes);
             }
-            routes.run();
-            for (Map.Entry<Method, Map<Pattern, Handler>> entry : this.routes.entrySet()) {
-                Method method = entry.getKey();
-                Map<Pattern, Handler> methodRoutes = entry.getValue();
-                Iterator<Map.Entry<Pattern, Handler>> iterator = methodRoutes.entrySet().iterator();
-                while (iterator.hasNext()) {
-                    Map.Entry<Pattern, Handler> route = iterator.next();
-                    Pattern pattern = route.getKey();
-                    Handler handler = route.getValue();
-                    originalRoutes.get(method).put(Pattern.compile("^" + basePath + pattern.pattern().substring(1)), handler);
+        }
+
+        // Prefix basePath to filters
+        for (Method method : Method.values()) {
+            List<FilterEntry> methodFilters = this.filters.get(method);
+            if (methodFilters != null && !methodFilters.isEmpty()) {
+                List<FilterEntry> prefixedFilters = new ArrayList<>();
+                for (FilterEntry filterEntry : methodFilters) {
+                    Pattern pattern = filterEntry.pattern;
+                    Filter filter = filterEntry.filter;
+                    Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
+                    prefixedFilters.add(new FilterEntry(newPattern, filter));
                 }
+                // Ensure previousFilters has a non-null list for this method
+                List<FilterEntry> previousMethodFilters = previousFilters.get(method);
+                if (previousMethodFilters == null) {
+                    previousMethodFilters = new ArrayList<>();
+                    previousFilters.put(method, previousMethodFilters);
+                }
+                previousMethodFilters.addAll(prefixedFilters);
             }
-            this.routes.putAll(originalRoutes);
-        };
-        wrappedRoutes.run();
+        }
+
+        // Restore routes and filters
+        this.routes = previousRoutes;
+        this.filters = previousFilters;
+
         return this;
     }
+
 
     private void sendError(HttpExchange exchange, int code, String message) throws IOException {
         exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
@@ -166,12 +222,8 @@ public class WebServer {
     }
 
     public WebServer filter(WebServer.Method method, String path, WebServer.Filter filter) {
-        routes.computeIfAbsent(method, k -> new HashMap<>())
-              .put(Pattern.compile("^" + path + "$"), (req, res, params) -> {
-                  if (!filter.filter(req, res, params)) {
-                      return; // Stop processing if filter returns false
-                  }
-              });
+        filters.computeIfAbsent(method, k -> new ArrayList<>())
+                .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
         return this;
     }
 
@@ -180,17 +232,20 @@ public class WebServer {
     }
 
     public static void main(String[] args) throws IOException {
-        compose(args, new App()).start();
+        exampleComposition(args, new ExampleApp()).start();
     }
 
-    public static WebServer compose(String[] args, App app) throws IOException {
+    public static WebServer exampleComposition(String[] args, ExampleApp app) throws IOException {
         return new WebServer(8080) {{
 
             path("/foo", () -> {
-                filter(Method.GET, "/*", (req, res, params) -> {
+                filter(Method.GET, "/.*", (req, res, params) -> {
                     System.out.println("filter");
-                    return new Random().nextBoolean();
-                    // 50% of requests to /foo/* should be vetoed (for testing of filters)
+                    boolean proceed = new Random().nextBoolean();
+                    if (!proceed) {
+                        res.write("Access Denied", 403);
+                    }
+                    return proceed;
                 });
                 handle(Method.GET, "/bar", (req, res, params) -> {
                     res.write("Hello, World!");
@@ -210,7 +265,8 @@ public class WebServer {
 
         }};
     }
-    public static class App {
+
+    public static class ExampleApp {
 
         public void foobar(Request req, Response res, Map<String, String> params) throws IOException {
             res.write(String.format("Hello, %s %s!", params.get("1"), params.get("2")));
