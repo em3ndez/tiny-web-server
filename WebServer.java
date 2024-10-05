@@ -190,9 +190,11 @@ public class WebServer {
                 filter(Method.GET, "/*", (req, res, params) -> {
                     System.out.println("filter");
                     return new Random().nextBoolean();
+                    // 50% of requests to /foo/* should be vetoed (for testing of filters)
                 });
                 handle(Method.GET, "/bar", (req, res, params) -> {
                     res.write("Hello, World!");
+                    // This endpoint is /foo/bar if that wasn't obvious
                 });
             });
 
