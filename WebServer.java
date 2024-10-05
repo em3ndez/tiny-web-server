@@ -139,26 +139,38 @@ public class WebServer {
         server.start();
     }
 
+    public static class Path {
+        public Path(WebServer server, Consumer<WebServer> routeDefinitions) {
+            routeDefinitions.accept(server);
+        }
+    }
+
     public static void main(String[] args) throws IOException {
-        WebServer server = new WebServerBuilder(8080)
-            .addHandler(Method.GET, "/", (req, res, params) -> res.write("Hello, World!"))
-            .path("/users", users -> users
-                .addHandler(Method.GET, "", (req, res, params) -> res.write("List users"))
-                .addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")))
-                .path("/(\\w+)/posts", posts -> posts
-                    .addHandler(Method.GET, "", (req, res, params) -> res.write("Posts by user: " + params.get("1")))
-                    .addHandler(Method.GET, "/(\\d+)", (req, res, params) -> res.write("Post " + params.get("2") + " by user: " + params.get("1")))
-                )
-            )
-            .path("/api", api -> api
-                .path("/v1", v1 -> v1
-                    .addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v1 Status: OK"))
-                )
-                .path("/v2", v2 -> v2
-                    .addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v2 Status: OK"))
-                )
-            )
-            .build();
+        WebServer server = new WebServer(8080);
+
+        new Path(server, s -> {
+            s.addHandler(Method.GET, "/", (req, res, params) -> res.write("Hello, World!"));
+
+            new Path(s.path("/users"), users -> {
+                users.addHandler(Method.GET, "", (req, res, params) -> res.write("List users"));
+                users.addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")));
+
+                new Path(users.path("/(\\w+)/posts"), posts -> {
+                    posts.addHandler(Method.GET, "", (req, res, params) -> res.write("Posts by user: " + params.get("1")));
+                    posts.addHandler(Method.GET, "/(\\d+)", (req, res, params) -> res.write("Post " + params.get("2") + " by user: " + params.get("1")));
+                });
+            });
+
+            new Path(s.path("/api"), api -> {
+                new Path(api.path("/v1"), v1 -> {
+                    v1.addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v1 Status: OK"));
+                });
+
+                new Path(api.path("/v2"), v2 -> {
+                    v2.addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v2 Status: OK"));
+                });
+            });
+        });
 
         server.start();
         System.out.println("Server running on port 8080");
