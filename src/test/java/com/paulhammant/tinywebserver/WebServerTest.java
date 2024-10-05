@@ -53,19 +53,18 @@ public class WebServerTest {
                     svr = exampleComposition(new String[0], app);
                     svr.start();
                     Mockito.doAnswer(invocation -> {
-                        WebServer.Response res = invocation.getArgument(1);
-                        res.write("something");
+                        invocation.<WebServer.Response>getArgument(1).write("invoked");
                         return null;
                     }).when(app).foobar(Mockito.any(), Mockito.any(), Mockito.any());
                 });
                 it("invokes ExampleApp method", () -> {
                     try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
-                        assertThat(response.body().string(), equalTo("journaled"));
+                        assertThat(response.body().string(), equalTo("invoked"));
                     }
                 });
                 after(() -> {
                     svr.stop();
-                    Mockito.verify(app).foobar(Mockito.any(), Mockito.any(), Mockito.any());
+                    Mockito.verify(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.any(Map<String,String>.class));
                 });
             });
         });
@@ -79,7 +78,6 @@ public class WebServerTest {
 
     public static void main(String[] args) {
         Runner runner = new Runner();
-        TestBlock rootBlock = runner.defineTests(Collections.singletonList(WebServerTest.class));
-        runner.run(rootBlock, new DefaultReporter());
+        runner.run(runner.defineTests(Collections.singletonList(WebServerTest.class)), new DefaultReporter());
     }
 }
