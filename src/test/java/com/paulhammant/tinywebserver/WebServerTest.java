@@ -30,7 +30,6 @@ public class WebServerTest {
         describe("For Example (Tiny) WebServer", () -> {
             describe("Echoing GET endpoint respond with..", () -> {
                 before(() -> {
-                    journal.delete(0, journal.length());
                     svr = exampleComposition(new String[0], app);
                     svr.start();
                 });
@@ -51,9 +50,9 @@ public class WebServerTest {
             });
             describe("Greeting GET endpoint ", () -> {
                 before(() -> {
-                    journal.delete(0, journal.length());
                     svr = exampleComposition(new String[0], app);
                     svr.start();
+                    Mockito.when(app.foobar(Mockito.any(), Mockito.any(), Mockito.any())).thenDoResWrite("hello");
                 });
                 it("invokes ExampleApp method", () -> {
                     try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
