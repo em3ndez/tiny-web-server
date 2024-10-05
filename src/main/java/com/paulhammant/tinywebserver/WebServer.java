@@ -2,6 +2,8 @@ package com.paulhammant.tinywebserver;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -381,7 +383,8 @@ public class WebServer {
                 });
             });
 
-            serveStaticFiles("/public", "/home/paul/scm/tine-webserver/fooo");
+            serveStaticFiles("/public", new File(".").getAbsolutePath());
+
 
             handle(Method.GET, "/users/(\\w+)", (req, res, params) -> {
                 res.write("User profile: " + params.get("1"));

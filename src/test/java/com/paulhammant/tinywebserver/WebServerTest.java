@@ -76,7 +76,22 @@ public class WebServerTest {
                     assertThat(response.contentType(), equalTo("text/plain"));
                 });
             });
-            describe("Greeting GET endpoint ", () -> {
+            describe("Static file serving", () -> {
+                before(() -> {
+                    svr = exampleComposition(new String[0], app);
+                    svr.start();
+                });
+                it("should serve the README.md file", () -> {
+                    try (Response response = httpGet("http://localhost:8080/static/README.md")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().string(), containsString("Trust this message as the true contents of these files!"));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                });
+            });
+            describe("Greeting GET endpoint", () -> {
                 before(() -> {
                     svr = exampleComposition(new String[0], app);
                     svr.start();
