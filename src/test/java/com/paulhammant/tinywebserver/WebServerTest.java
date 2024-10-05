@@ -13,6 +13,7 @@ import java.util.List;
 
 import static org.forgerock.cuppa.Cuppa.describe;
 import static org.forgerock.cuppa.Cuppa.it;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @Test
 public class WebServerTest {
@@ -21,7 +22,7 @@ public class WebServerTest {
             describe("#indexOf", () -> {
                 it("returns -1 when the value is not present", () -> {
                     List<Integer> list = Arrays.asList(1, 2, 3);
-                    MatcherAssert.assertThat(list.indexOf(5), Matchers.equalTo(-1));
+                    assertThat(list.indexOf(5), Matchers.equalTo(-1));
                 });
             });
         });
