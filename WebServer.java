@@ -163,10 +163,10 @@ public class WebServer {
 
             new Path(server, users -> {
                 users.path("/users", u -> {
-                    u.addHandler(Method.GET, "", (req, res, params) -> res.write("List users"));
-                    u.addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")));
+                    addHandler(Method.GET, "", (req, res, params) -> res.write("List users"));
+                    addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")));
 
-                    u.path("/(\\w+)/posts", posts -> {
+                    path("/(\\w+)/posts", posts -> {
                         posts.addHandler(Method.GET, "", (req, res, params) -> res.write("Posts by user: " + params.get("1")));
                         posts.addHandler(Method.GET, "/(\\d+)", (req, res, params) -> res.write("Post " + params.get("2") + " by user: " + params.get("1")));
                     });
