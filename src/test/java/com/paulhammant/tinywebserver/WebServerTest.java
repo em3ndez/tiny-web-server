@@ -49,7 +49,7 @@ public class WebServerTest {
                 });
             });
 
-            describe("DirectRequest method", () -> {
+            describe("WebServer's directRequest method", () -> {
                 before(() -> {
                     svr = exampleComposition(new String[0], app);
                 });
