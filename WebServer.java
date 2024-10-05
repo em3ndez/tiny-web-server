@@ -117,7 +117,7 @@ public class WebServer {
         new WebServer(8080) {{
 
             path("/foo", () -> {
-                handle(Method.GET, "/", (req, res, params) -> {
+                handle(Method.GET, "/bar", (req, res, params) -> {
                     res.write("Hello, World!");
                 });
             });
