@@ -104,7 +104,7 @@ public class WebServer {
         exchange.getResponseBody().close();
     }
 
-    public WebServer handler(Method method, String path, Handler handler) {
+    public WebServer handle(Method method, String path, Handler handler) {
         routes.get(method).put(Pattern.compile("^" + path + "$"), handler);
         return this;
     }
@@ -115,19 +115,22 @@ public class WebServer {
 
     public static void main(String[] args) throws IOException {
         new WebServer(8080) {{
-            handler(Method.GET, "/", (req, res, params) -> {
-                res.write("Hello, World!");
+
+            path("/foo", () -> {
+                handle(Method.GET, "/", (req, res, params) -> {
+                    res.write("Hello, World!");
+                });
             });
 
-            handler(Method.GET, "/users/(\\w+)", (req, res, params) -> {
+            handle(Method.GET, "/users/(\\w+)", (req, res, params) -> {
                 res.write("User profile: " + params.get("1"));
             });
 
-            handler(Method.POST, "/echo", (req, res, params) -> {
+            handle(Method.POST, "/echo", (req, res, params) -> {
                 res.write("You sent: " + req.getBody());
             });
 
-            handler(Method.GET, "/greeting/(\\w+)/(\\w+)", (req, res, params) -> {
+            handle(Method.GET, "/greeting/(\\w+)/(\\w+)", (req, res, params) -> {
                 res.write(String.format("Hello, %s %s!",
                         params.get("1"),
                         params.get("2")
