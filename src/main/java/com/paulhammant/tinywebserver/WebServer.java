@@ -24,16 +24,23 @@ public class WebServer {
         void handle(Request request, Response response, Map<String, String> pathParams);
     }
 
-    public void simulateRequest(Method method, String path, String body) {
+    public record SimulatedResponse(String body, int statusCode, String contentType, Map<String, List<String>> headers) {}
+
+    public SimulatedResponse simulateRequest(Method method, String path, String body, Map<String, List<String>> headers) {
         Map<Pattern, Handler> methodRoutes = routes.get(method);
         if (methodRoutes == null) {
             System.out.println("Method not allowed");
-            return;
+            return new SimulatedResponse("Method not allowed", 405, "text/plain", Collections.emptyMap());
         }
 
         boolean routeMatched = false;
 
-        for (Map.Entry<Pattern, Handler> route : methodRoutes.entrySet()) {
+        final StringBuilder responseBody = new StringBuilder();
+        final int[] responseCode = {200};
+        final String[] contentType = {"text/plain"};
+        final Map<String, List<String>> responseHeaders = new HashMap<>();
+
+        for (var route : methodRoutes.entrySet()) {
             Matcher matcher = route.getKey().matcher(path);
             if (matcher.matches()) {
                 routeMatched = true;
@@ -45,6 +52,8 @@ public class WebServer {
                 // Create pseudo request and response
                 Request request = new Request(null) {
                     @Override
+                    public Map<String, List<String>> getHeaders() { return headers; }
+                    @Override
                     public String getBody() { return body; }
                     @Override
                     public String getPath() { return path; }
@@ -52,8 +61,19 @@ public class WebServer {
 
                 Response response = new Response(null) {
                     @Override
+                    public void write(String content, int statusCode) {
+                        responseBody.append(content);
+                        responseCode[0] = statusCode;
+                    }
+
+                    @Override
                     public void write(String content) {
-                        System.out.println("Response: " + content);
+                        write(content, 200);
+                    }
+
+                    @Override
+                    public void setHeader(String name, String value) {
+                        responseHeaders.put(name, List.of(value));
                     }
                 };
 
@@ -69,7 +89,7 @@ public class WebServer {
                             }
                             boolean proceed = filterEntry.filter.filter(request, response, filterParams);
                             if (!proceed) {
-                                return; // Stop processing if filter returns false
+                                return new SimulatedResponse(responseBody.toString(), responseCode[0], contentType[0], responseHeaders);
                             }
                         }
                     }
@@ -77,13 +97,11 @@ public class WebServer {
 
                 // Handle the request
                 route.getValue().handle(request, response, params);
-                return;
+                return new SimulatedResponse(responseBody.toString(), responseCode[0], contentType[0], responseHeaders);
             }
         }
 
-        if (!routeMatched) {
-            System.out.println("Not found");
-        }
+        return new SimulatedResponse("Not found", 404, "text/plain", Collections.emptyMap());
     }
 
     @FunctionalInterface
