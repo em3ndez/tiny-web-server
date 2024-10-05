@@ -1,13 +1,33 @@
-import org.junit.Test;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+package com.paulhammant.tinywebserver;
 
+import org.forgerock.cuppa.Runner;
+import org.forgerock.cuppa.Test;
+import org.forgerock.cuppa.model.TestBlock;
+import org.forgerock.cuppa.reporters.DefaultReporter;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.forgerock.cuppa.Cuppa.describe;
+import static org.forgerock.cuppa.Cuppa.it;
+
+@Test
 public class WebServerTest {
+    {
+        describe("List", () -> {
+            describe("#indexOf", () -> {
+                it("returns -1 when the value is not present", () -> {
+                    List<Integer> list = Arrays.asList(1, 2, 3);
+                    assertThat(list.indexOf(5)).isEqualTo(-1);
+                });
+            });
+        });
+    }
 
-    @Test
-    public void shouldCreateWebServer() throws Exception {
-        WebServer server = new WebServer(8080);
-        assertThat(server, is(notNullValue()));
+    public static void main(String[] args) {
+        Runner runner = new Runner();
+        TestBlock rootBlock = runner.defineTests(Collections.singletonList(WebServerTest.class));
+        runner.run(rootBlock, new DefaultReporter());
     }
 }
