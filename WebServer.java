@@ -120,25 +120,6 @@ public class WebServer {
                     return;
                 }
             }
-                Matcher matcher = route.getKey().matcher(path);
-                if (matcher.matches()) {
-                    Map<String, String> params = new HashMap<>();
-                    for (int i = 1; i <= matcher.groupCount(); i++) {
-                        params.put(String.valueOf(i), matcher.group(i));
-                    }
-
-                    try {
-                        route.getValue().handle(
-                                new Request(exchange),
-                                new Response(exchange),
-                                params
-                        );
-                    } catch (Exception e) {
-                        sendError(exchange, 500, "Internal server error: " + e.getMessage());
-                    }
-                    return;
-                }
-            }
 
             sendError(exchange, 404, "Not found");
         });
