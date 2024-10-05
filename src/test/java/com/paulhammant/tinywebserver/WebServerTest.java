@@ -48,6 +48,34 @@ public class WebServerTest {
                     Mockito.verifyNoInteractions(app);
                 });
             });
+
+            describe("SimulateRequest method", () -> {
+                before(() -> {
+                    svr = exampleComposition(new String[0], app);
+                });
+                it("should return correct response for a simulated GET request", () -> {
+                    WebServer.SimulatedResponse response = svr.simulateRequest(
+                        WebServer.Method.GET,
+                        "/users/Jimmy",
+                        null,
+                        Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("User profile: Jimmy"));
+                    assertThat(response.statusCode(), equalTo(200));
+                    assertThat(response.contentType(), equalTo("text/plain"));
+                });
+                it("should return 404 for a non-existent path", () -> {
+                    WebServer.SimulatedResponse response = svr.simulateRequest(
+                        WebServer.Method.GET,
+                        "/nonexistent",
+                        null,
+                        Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Not found"));
+                    assertThat(response.statusCode(), equalTo(404));
+                    assertThat(response.contentType(), equalTo("text/plain"));
+                });
+            });
             describe("Greeting GET endpoint ", () -> {
                 before(() -> {
                     svr = exampleComposition(new String[0], app);
