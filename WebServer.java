@@ -7,85 +7,36 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.function.Consumer;
-import java.util.Base64;
 
 public class WebServer {
-    public enum Method {GET, POST, PUT, DELETE}
+    public enum Method { GET, POST, PUT, DELETE }
 
     private final HttpServer server;
-    private final Map<Method, Map<Pattern, RouteConfig>> routes = new HashMap<>();
+    private final Map<Method, Map<Pattern, Handler>> routes = new HashMap<>();
     private String pathPrefix = "";
-    private final List<Filter> currentFilters = new ArrayList<>();
-
-    // Simple in-memory storage for demo purposes
-    private final Set<String> loggedInUsers = new HashSet<>();
-    private final Map<String, String> validTokens = new HashMap<>();
 
     @FunctionalInterface
     public interface Handler {
         void handle(Request request, Response response, Map<String, String> pathParams) throws IOException;
     }
 
-    @FunctionalInterface
-    public interface Filter {
-        boolean doFilter(Request request, Response response, Map<String, String> pathParams) throws IOException;
-    }
-
-    private static class RouteConfig {
-        final Handler handler;
-        final List<Filter> filters;
-
-        RouteConfig(Handler handler, List<Filter> filters) {
-            this.handler = handler;
-            this.filters = new ArrayList<>(filters);
-        }
-    }
-
     public static class Request {
         private final HttpExchange exchange;
         private final String body;
-        private final Map<String, Object> attributes = new HashMap<>();
 
         public Request(HttpExchange exchange) throws IOException {
             this.exchange = exchange;
             this.body = new String(exchange.getRequestBody().readAllBytes());
         }
 
-        public String getBody() {
-            return body;
-        }
-
-        public Map<String, List<String>> getHeaders() {
-            return exchange.getRequestHeaders();
-        }
-
-        public String getPath() {
-            return exchange.getRequestURI().getPath();
-        }
-
-        public String getQuery() {
-            return exchange.getRequestURI().getQuery();
-        }
-
-        public void setAttribute(String key, Object value) {
-            attributes.put(key, value);
-        }
-
-        public Object getAttribute(String key) {
-            return attributes.get(key);
-        }
-
-        public Optional<String> getAuthHeader() {
-            return exchange.getRequestHeaders()
-                    .getOrDefault("Authorization", List.of())
-                    .stream()
-                    .findFirst();
-        }
+        public String getBody() { return body; }
+        public Map<String, List<String>> getHeaders() { return exchange.getRequestHeaders(); }
+        public String getPath() { return exchange.getRequestURI().getPath(); }
+        public String getQuery() { return exchange.getRequestURI().getQuery(); }
     }
 
     public static class Response {
         private final HttpExchange exchange;
-        private boolean headersSent = false;
 
         public Response(HttpExchange exchange) {
             this.exchange = exchange;
@@ -107,12 +58,10 @@ public class WebServer {
     public class RouteGroup {
         private final String groupPrefix;
         private final String previousPrefix;
-        private final List<Filter> previousFilters;
 
         private RouteGroup(String prefix) {
             this.groupPrefix = prefix;
             this.previousPrefix = pathPrefix;
-            this.previousFilters = new ArrayList<>(currentFilters);
             pathPrefix = previousPrefix + prefix;
         }
 
@@ -123,8 +72,6 @@ public class WebServer {
 
         public void end() {
             pathPrefix = previousPrefix;
-            currentFilters.clear();
-            currentFilters.addAll(previousFilters);
         }
     }
 
@@ -140,13 +87,13 @@ public class WebServer {
             String path = exchange.getRequestURI().getPath();
             Method method = Method.valueOf(exchange.getRequestMethod());
 
-            Map<Pattern, RouteConfig> methodRoutes = routes.get(method);
+            Map<Pattern, Handler> methodRoutes = routes.get(method);
             if (methodRoutes == null) {
                 sendError(exchange, 405, "Method not allowed");
                 return;
             }
 
-            for (Map.Entry<Pattern, RouteConfig> route : methodRoutes.entrySet()) {
+            for (Map.Entry<Pattern, Handler> route : methodRoutes.entrySet()) {
                 Matcher matcher = route.getKey().matcher(path);
                 if (matcher.matches()) {
                     Map<String, String> params = new HashMap<>();
@@ -154,22 +101,12 @@ public class WebServer {
                         params.put(String.valueOf(i), matcher.group(i));
                     }
 
-                    Request request = new Request(exchange);
-                    Response response = new Response(exchange);
-
                     try {
-                        boolean shouldContinue = route.getValue().filters.stream()
-                                .allMatch(filter -> {
-                                    try {
-                                        return filter.doFilter(request, response, params);
-                                    } catch (IOException e) {
-                                        return false;
-                                    }
-                                });
-
-                        if (shouldContinue) {
-                            route.getValue().handler.handle(request, response, params);
-                        }
+                        route.getValue().handle(
+                                new Request(exchange),
+                                new Response(exchange),
+                                params
+                        );
                     } catch (Exception e) {
                         sendError(exchange, 500, "Internal server error: " + e.getMessage());
                     }
@@ -189,16 +126,8 @@ public class WebServer {
         exchange.getResponseBody().close();
     }
 
-    public WebServer filter(Filter filter) {
-        currentFilters.add(filter);
-        return this;
-    }
-
-    public WebServer handler(Method method, String path, Handler handler) {
-        routes.get(method).put(
-                Pattern.compile("^" + pathPrefix + path + "$"),
-                new RouteConfig(handler, currentFilters)
-        );
+    public WebServer addHandler(Method method, String path, Handler handler) {
+        routes.get(method).put(Pattern.compile("^" + pathPrefix + path + "$"), handler);
         return this;
     }
 
@@ -211,113 +140,62 @@ public class WebServer {
     }
 
     public static void main(String[] args) throws IOException {
-        new App() {{
+        new WebServer(8080) {{
             // Root routes
-            handler(Method.GET, "/", (req, res, params) -> handleRoot(req, res, params));
+            addHandler(Method.GET, "/", (req, res, params) -> {
+                res.write("Hello, World!");
+            });
 
-            // Login endpoint
-            handler(Method.POST, "/login", (req, res, params) -> handleLogin(req, res, params));
-
-            // User routes with MustBeLoggedIn filter
+            // User routes group
             path("/users") {{
-                    filter((req, res, params) -> authenticateBasicAuth(req, res, params));
+                addHandler(Method.GET, "", (req, res, params) -> {
+                    res.write("List users");
+                });
 
-                    handler(Method.GET, "", (req, res, params) -> handleListUsers(req, res, params));
+                addHandler(Method.GET, "/(\\w+)", (req, res, params) -> {
+                    res.write("User profile: " + params.get("1"));
+                });
 
-                    handler(Method.GET, "/(\\w+)", (req, res, params) -> handleGetUserProfile(req, res, params));
+                // Nested group for user posts
+                path("/(\\w+)/posts") {{
+                    addHandler(Method.GET, "", (req, res, params) -> {
+                        res.write("Posts by user: " + params.get("1"));
+                    });
+
+                    addHandler(Method.GET, "/(\\d+)", (req, res, params) -> {
+                        res.write("Post " + params.get("2") + " by user: " + params.get("1"));
+                    });
 
                     end();
+                }};
+
+                end();
             }};
 
-            // API routes with MustHaveValidToken filter
+            // API routes group
             path("/api") {{
-                    filter((req, res, params) -> authenticateToken(req, res, params));
+                path("/v1") {{
+                    addHandler(Method.GET, "/status", (req, res, params) -> {
+                        res.write("API v1 Status: OK");
+                    });
 
-                    path("/v1") {{
-                        handler(Method.GET, "/status", (req, res, params) -> handleApiStatus(req, res, params));
-
-                        end();
-                    }};
                     end();
+                }};
+
+                path("/v2") {{
+                    addHandler(Method.GET, "/status", (req, res, params) -> {
+                        res.write("API v2 Status: OK");
+                    });
+
+                    end();
+                }};
+
+                end();
             }};
 
             start();
 
             System.out.println("Server running on port 8080");
         }};
-    }
-
-    private static class App extends WebServer {
-        public App() throws IOException {
-            super(8080);
-        }
-
-        protected void handleRoot(Request req, Response res, Map<String, String> params) throws IOException {
-            res.write("Hello, World!");
-        }
-
-        protected void handleLogin(Request req, Response res, Map<String, String> params) throws IOException {
-            String[] credentials = new String(
-                    Base64.getDecoder().decode(
-                            req.getAuthHeader().orElse("").replace("Basic ", "")
-                    )
-            ).split(":");
-
-            if (credentials.length == 2) {
-                String username = credentials[0];
-                String password = credentials[1];
-
-                if (password.length() > 3) {
-                    loggedInUsers.add(username);
-                    String token = Base64.getEncoder().encodeToString(
-                            (username + ":" + System.currentTimeMillis()).getBytes()
-                    );
-                    validTokens.put(token, username);
-                    res.write("Token: " + token);
-                    return;
-                }
-            }
-            res.write("Invalid credentials", 401);
-        }
-
-        protected boolean authenticateBasicAuth(Request req, Response res, Map<String, String> params) throws IOException {
-            String[] credentials = new String(
-                    Base64.getDecoder().decode(
-                            req.getAuthHeader().orElse("").replace("Basic ", "")
-                    )
-            ).split(":");
-
-            if (credentials.length == 2 && loggedInUsers.contains(credentials[0])) {
-                req.setAttribute("username", credentials[0]);
-                return true;
-            }
-            res.write("Must be logged in", 401);
-            return false;
-        }
-
-        protected void handleListUsers(Request req, Response res, Map<String, String> params) throws IOException {
-            res.write("List users - logged in as: " + req.getAttribute("username"));
-        }
-
-        protected void handleGetUserProfile(Request req, Response res, Map<String, String> params) throws IOException {
-            res.write("User profile: " + params.get("1") +
-                    " (viewed by: " + req.getAttribute("username") + ")");
-        }
-
-        protected boolean authenticateToken(Request req, Response res, Map<String, String> params) throws IOException {
-            String token = req.getAuthHeader().orElse("")
-                    .replace("Bearer ", "");
-
-            if (validTokens.containsKey(token)) {
-                req.setAttribute("username", validTokens.get(token));
-                return true;
-            }
-            res.write("Invalid token", 401);
-            return false;
-        }
-
-        protected void handleApiStatus(Request req, Response res, Map<String, String> params) throws IOException {
-            res.write("API v1 Status: OK (user: " + req.getAttribute("username") + ")");
-        }
     }
 }
