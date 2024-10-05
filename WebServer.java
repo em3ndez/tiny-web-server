@@ -139,8 +139,11 @@ public class WebServer {
     }
 
     public static void main(String[] args) throws IOException {
-        final App app = new App();
-        new WebServer(8080) {{
+        compose(args, new App()).start();
+    }
+
+    public static WebServer compose(String[] args, App app) throws IOException {
+        return new WebServer(8080) {{
 
             path("/foo", () -> {
                 handle(Method.GET, "/bar", (req, res, params) -> {
@@ -158,20 +161,12 @@ public class WebServer {
 
             handle(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
 
-            start();
-
-            System.out.println("Server running on port 8080");
         }};
     }
     public static class App {
 
         public void foobar(Request req, Response res, Map<String, String> params) throws IOException {
-            res.write(String.format("Hello, %s %s!",
-                    params.get("1"),
-                    params.get("2")
-            ));
-
+            res.write(String.format("Hello, %s %s!", params.get("1"), params.get("2")));
         }
-
     }
 }
