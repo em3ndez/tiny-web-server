@@ -97,7 +97,22 @@ public class WebServer {
     }
 
     public WebServer path(String basePath, Runnable routes) {
-        routes.run();
+        Runnable wrappedRoutes = () -> {
+            Map<Method, Map<Pattern, Handler>> originalRoutes = new HashMap<>(this.routes);
+            this.routes.clear();
+            routes.run();
+            for (Map.Entry<Method, Map<Pattern, Handler>> entry : this.routes.entrySet()) {
+                Method method = entry.getKey();
+                Map<Pattern, Handler> methodRoutes = entry.getValue();
+                for (Map.Entry<Pattern, Handler> route : methodRoutes.entrySet()) {
+                    Pattern pattern = route.getKey();
+                    Handler handler = route.getValue();
+                    originalRoutes.get(method).put(Pattern.compile("^" + basePath + pattern.pattern().substring(1)), handler);
+                }
+            }
+            this.routes.putAll(originalRoutes);
+        };
+        wrappedRoutes.run();
         return this;
     }
 
