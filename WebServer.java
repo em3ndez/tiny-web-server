@@ -129,7 +129,8 @@ public class WebServer {
     }
 
     public WebServer handle(WebServer.Method method, String path, WebServer.Handler handler) {
-        routes.get(method).put(Pattern.compile("^" + path + "$"), handler);
+        routes.computeIfAbsent(method, k -> new HashMap<>())
+              .put(Pattern.compile("^" + path + "$"), handler);
         return this;
     }
 
