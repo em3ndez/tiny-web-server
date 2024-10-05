@@ -84,6 +84,49 @@ public class WebServer {
                         params.put(String.valueOf(i), matcher.group(i));
                     }
 
+                    // Apply filters
+                    for (Map.Entry<Pattern, Handler> filterEntry : routes.get(method).entrySet()) {
+                        Matcher filterMatcher = filterEntry.getKey().matcher(path);
+                        if (filterMatcher.matches()) {
+                            Map<String, String> filterParams = new HashMap<>();
+                            for (int i = 1; i <= filterMatcher.groupCount(); i++) {
+                                filterParams.put(String.valueOf(i), filterMatcher.group(i));
+                            }
+                            try {
+                                boolean proceed = ((Filter) filterEntry.getValue()).filter(
+                                        new Request(exchange),
+                                        new Response(exchange),
+                                        filterParams
+                                );
+                                if (!proceed) {
+                                    return; // Stop processing if filter returns false
+                                }
+                            } catch (Exception e) {
+                                sendError(exchange, 500, "Internal server error: " + e.getMessage());
+                                return;
+                            }
+                        }
+                    }
+
+                    try {
+                        route.getValue().handle(
+                                new Request(exchange),
+                                new Response(exchange),
+                                params
+                        );
+                    } catch (Exception e) {
+                        sendError(exchange, 500, "Internal server error: " + e.getMessage());
+                    }
+                    return;
+                }
+            }
+                Matcher matcher = route.getKey().matcher(path);
+                if (matcher.matches()) {
+                    Map<String, String> params = new HashMap<>();
+                    for (int i = 1; i <= matcher.groupCount(); i++) {
+                        params.put(String.valueOf(i), matcher.group(i));
+                    }
+
                     try {
                         route.getValue().handle(
                                 new Request(exchange),
@@ -140,7 +183,12 @@ public class WebServer {
     }
 
     public WebServer filter(WebServer.Method method, String path, WebServer.Filter filter) {
-        // complete this for filter
+        routes.computeIfAbsent(method, k -> new HashMap<>())
+              .put(Pattern.compile("^" + path + "$"), (req, res, params) -> {
+                  if (!filter.filter(req, res, params)) {
+                      return; // Stop processing if filter returns false
+                  }
+              });
         return this;
     }
 
