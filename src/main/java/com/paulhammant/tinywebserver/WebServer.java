@@ -21,12 +21,12 @@ public class WebServer {
 
     @FunctionalInterface
     public interface Handler {
-        void handle(Request request, Response response, Map<String, String> pathParams) throws IOException;
+        void handle(Request request, Response response, Map<String, String> pathParams);
     }
 
     @FunctionalInterface
     public interface Filter {
-        boolean filter(Request request, Response response, Map<String, String> pathParams) throws IOException;
+        boolean filter(Request request, Response response, Map<String, String> pathParams);
     }
 
     public static class FilterEntry {
@@ -43,9 +43,13 @@ public class WebServer {
         private final HttpExchange exchange;
         private final String body;
 
-        public Request(HttpExchange exchange) throws IOException {
+        public Request(HttpExchange exchange) {
             this.exchange = exchange;
-            this.body = new String(exchange.getRequestBody().readAllBytes());
+            try {
+                this.body = new String(exchange.getRequestBody().readAllBytes());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         public String getBody() { return body; }
@@ -61,21 +65,33 @@ public class WebServer {
             this.exchange = exchange;
         }
 
-        public void write(String content) throws IOException {
+        public void write(String content) {
             write(content, 200);
         }
 
-        public void write(String content, int statusCode) throws IOException {
+        public void write(String content, int statusCode) {
+            blah(content, statusCode, exchange);
+        }
+
+        private static void blah(String content, int statusCode, HttpExchange exchange) {
             exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
             byte[] bytes = content.getBytes();
-            exchange.sendResponseHeaders(statusCode, bytes.length);
-            exchange.getResponseBody().write(bytes);
-            exchange.getResponseBody().close();
+            try {
+                exchange.sendResponseHeaders(statusCode, bytes.length);
+                exchange.getResponseBody().write(bytes);
+                exchange.getResponseBody().close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    public WebServer(int port) throws IOException {
-        server = HttpServer.create(new InetSocketAddress(port), 0);
+    public WebServer(int port) {
+        try {
+            server = HttpServer.create(new InetSocketAddress(port), 0);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
         for (Method method : Method.values()) {
@@ -212,12 +228,8 @@ public class WebServer {
     }
 
 
-    private void sendError(HttpExchange exchange, int code, String message) throws IOException {
-        exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
-        byte[] bytes = message.getBytes();
-        exchange.sendResponseHeaders(code, bytes.length);
-        exchange.getResponseBody().write(bytes);
-        exchange.getResponseBody().close();
+    private void sendError(HttpExchange exchange, int code, String message) {
+        Response.blah(message, code, exchange);
     }
 
     public WebServer handle(WebServer.Method method, String path, WebServer.Handler handler) {
@@ -238,27 +250,41 @@ public class WebServer {
             Path path = Paths.get(directory, filePath);
             System.out.println(path.toString());
             if (Files.exists(path) && !Files.isDirectory(path)) {
-                String contentType = Files.probeContentType(path);
-                res.exchange.getResponseHeaders().set("Content-Type", contentType != null ? contentType : "application/octet-stream");
-                byte[] fileBytes = Files.readAllBytes(path);
-                res.exchange.sendResponseHeaders(200, fileBytes.length);
-                res.exchange.getResponseBody().write(fileBytes);
-                res.exchange.getResponseBody().close();
+                try {
+                    String contentType = Files.probeContentType(path);
+                    res.exchange.getResponseHeaders().set("Content-Type", contentType != null ? contentType : "application/octet-stream");
+                    byte[] fileBytes = Files.readAllBytes(path);
+                    res.exchange.sendResponseHeaders(200, fileBytes.length);
+                    res.exchange.getResponseBody().write(fileBytes);
+                    res.exchange.getResponseBody().close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             } else {
                 sendError(res.exchange, 404, "File not found");
             }
         });
         return this;
     }
-    public void start() {
+    public WebServer start() {
         server.start();
+        return this;
     }
 
-    public static void main(String[] args) throws IOException {
+    public WebServer stop() {
+        server.stop(0);
+        return this;
+    }
+
+    /*
+     * An inline example of composing (Tiny) WebServer.
+     * If anyone was using this tech for their own solution they would
+     * not use these two methods, even if they were inspired by them.
+     */
+    public static void main(String[] args) {
         exampleComposition(args, new ExampleApp()).start();
     }
-
-    public static WebServer exampleComposition(String[] args, ExampleApp app) throws IOException {
+    public static WebServer exampleComposition(String[] args, ExampleApp app) {
         return new WebServer(8080) {{
 
             path("/foo", () -> {
@@ -292,8 +318,7 @@ public class WebServer {
     }
 
     public static class ExampleApp {
-
-        public void foobar(Request req, Response res, Map<String, String> params) throws IOException {
+        public void foobar(Request req, Response res, Map<String, String> params) {
             res.write(String.format("Hello, %s %s!", params.get("1"), params.get("2")));
         }
     }
