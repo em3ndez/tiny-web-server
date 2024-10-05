@@ -6,14 +6,12 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.function.Consumer;
 
 public class WebServer {
     public enum Method { GET, POST, PUT, DELETE }
 
     private final HttpServer server;
     private final Map<Method, Map<Pattern, Handler>> routes = new HashMap<>();
-    private String pathPrefix = "";
 
     @FunctionalInterface
     public interface Handler {
@@ -52,26 +50,6 @@ public class WebServer {
             exchange.sendResponseHeaders(statusCode, bytes.length);
             exchange.getResponseBody().write(bytes);
             exchange.getResponseBody().close();
-        }
-    }
-
-    public class RouteGroup {
-        private final String groupPrefix;
-        private final String previousPrefix;
-
-        private RouteGroup(String prefix) {
-            this.groupPrefix = prefix;
-            this.previousPrefix = pathPrefix;
-            pathPrefix = previousPrefix + prefix;
-        }
-
-        public RouteGroup routes(Consumer<WebServer> routeDefinitions) {
-            routeDefinitions.accept(WebServer.this);
-            return this;
-        }
-
-        public void end() {
-            pathPrefix = previousPrefix;
         }
     }
 
@@ -127,68 +105,38 @@ public class WebServer {
     }
 
     public WebServer addHandler(Method method, String path, Handler handler) {
-        routes.get(method).put(Pattern.compile("^" + pathPrefix + path + "$"), handler);
+        routes.get(method).put(Pattern.compile("^" + path + "$"), handler);
         return this;
-    }
-
-    public RouteGroup path(String prefix) {
-        return new RouteGroup(prefix);
     }
 
     public void start() {
         server.start();
     }
 
-    public static class Path extends WebServer {
-        private final WebServer server;
-
-        public Path(WebServer server, String prefix, Consumer<Path> routeDefinitions) {
-            super(server.server.getAddress().getPort());
-            RouteGroup group = server.path(prefix);
-            routeDefinitions.accept(this);
-            group.end();
-        }
-            this.server = server;
-            routeDefinitions.accept(server);
-        }
-
-        public Path path(String prefix, Consumer<Path> routeDefinitions) {
-            RouteGroup group = server.path(prefix);
-            routeDefinitions.accept(this);
-            group.end();
-            return this;
-        }
-    }
-
     public static void main(String[] args) throws IOException {
-        WebServer server = new WebServer(8080);
-
-        new Path(server, "/", s -> {
-            s.addHandler(Method.GET, "/", (req, res, params) -> res.write("Hello, World!"));
-
-            new Path(server, "/users", u -> {
-                    addHandler(Method.GET, "", (req, res, params) -> res.write("List users"));
-                    addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")));
-
-                    path("/(\\w+)/posts", posts -> {
-                        posts.addHandler(Method.GET, "", (req, res, params) -> res.write("Posts by user: " + params.get("1")));
-                        posts.addHandler(Method.GET, "/(\\d+)", (req, res, params) -> res.write("Post " + params.get("2") + " by user: " + params.get("1")));
-                    });
-                });
-
-            new Path(server, "/api", api -> {
-                    api.path("/v1", v1 -> {
-                        v1.addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v1 Status: OK"));
-                    });
-
-                    api.path("/v2", v2 -> {
-                        v2.addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v2 Status: OK"));
-                    });
-                });
+        new WebServer(8080) {{
+            addHandler(Method.GET, "/", (req, res, params) -> {
+                res.write("Hello, World!");
             });
-        });
 
-        server.start();
-        System.out.println("Server running on port 8080");
+            addHandler(Method.GET, "/users/(\\w+)", (req, res, params) -> {
+                res.write("User profile: " + params.get("1"));
+            });
+
+            addHandler(Method.POST, "/echo", (req, res, params) -> {
+                res.write("You sent: " + req.getBody());
+            });
+
+            addHandler(Method.GET, "/greeting/(\\w+)/(\\w+)", (req, res, params) -> {
+                res.write(String.format("Hello, %s %s!",
+                        params.get("1"),
+                        params.get("2")
+                ));
+            });
+
+            start();
+
+            System.out.println("Server running on port 8080");
+        }};
     }
 }
