@@ -18,6 +18,11 @@ public class WebServer {
         void handle(Request request, Response response, Map<String, String> pathParams) throws IOException;
     }
 
+    @FunctionalInterface
+    public interface Filter {
+        void filter(Request request, Response response, Map<String, String> pathParams) throws IOException;
+    }
+
     public static class Request {
         private final HttpExchange exchange;
         private final String body;
