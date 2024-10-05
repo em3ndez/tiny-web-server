@@ -71,7 +71,6 @@ public class WebServer {
                         write(content, 200);
                     }
 
-                    @Override
                     public void setHeader(String name, String value) {
                         responseHeaders.put(name, List.of(value));
                     }
