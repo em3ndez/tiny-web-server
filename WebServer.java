@@ -20,7 +20,7 @@ public class WebServer {
 
     @FunctionalInterface
     public interface Filter {
-        void filter(Request request, Response response, Map<String, String> pathParams) throws IOException;
+        boolean filter(Request request, Response response, Map<String, String> pathParams) throws IOException;
     }
 
     public static class Request {
@@ -76,7 +76,28 @@ public class WebServer {
                 return;
             }
 
-            for (Map.Entry<Pattern, Handler> route : methodRoutes.entrySet()) {
+            for (Map.Entry<Pattern, Filter> filterEntry : routes.get(method).entrySet()) {
+                Matcher filterMatcher = filterEntry.getKey().matcher(path);
+                if (filterMatcher.matches()) {
+                    Map<String, String> filterParams = new HashMap<>();
+                    for (int i = 1; i <= filterMatcher.groupCount(); i++) {
+                        filterParams.put(String.valueOf(i), filterMatcher.group(i));
+                    }
+                    try {
+                        boolean proceed = filterEntry.getValue().filter(
+                                new Request(exchange),
+                                new Response(exchange),
+                                filterParams
+                        );
+                        if (!proceed) {
+                            return; // Stop processing if filter returns false
+                        }
+                    } catch (Exception e) {
+                        sendError(exchange, 500, "Internal server error: " + e.getMessage());
+                        return;
+                    }
+                }
+            }
                 Matcher matcher = route.getKey().matcher(path);
                 if (matcher.matches()) {
                     Map<String, String> params = new HashMap<>();
