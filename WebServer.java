@@ -137,7 +137,9 @@ public class WebServer {
             for (Map.Entry<Method, Map<Pattern, Handler>> entry : this.routes.entrySet()) {
                 Method method = entry.getKey();
                 Map<Pattern, Handler> methodRoutes = entry.getValue();
-                for (Map.Entry<Pattern, Handler> route : methodRoutes.entrySet()) {
+                Iterator<Map.Entry<Pattern, Handler>> iterator = methodRoutes.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<Pattern, Handler> route = iterator.next();
                     Pattern pattern = route.getKey();
                     Handler handler = route.getValue();
                     originalRoutes.get(method).put(Pattern.compile("^" + basePath + pattern.pattern().substring(1)), handler);
