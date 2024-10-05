@@ -99,7 +99,11 @@ public class WebServer {
     public WebServer path(String basePath, Runnable routes) {
         Runnable wrappedRoutes = () -> {
             Map<Method, Map<Pattern, Handler>> originalRoutes = new HashMap<>(this.routes);
-            this.routes.clear();
+            for (Method method : Method.values()) {
+                if (!this.routes.containsKey(method)) {
+                    this.routes.put(method, new HashMap<>());
+                }
+            }
             routes.run();
             for (Map.Entry<Method, Map<Pattern, Handler>> entry : this.routes.entrySet()) {
                 Method method = entry.getKey();
