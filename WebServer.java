@@ -140,8 +140,18 @@ public class WebServer {
     }
 
     public static class Path {
+        private final WebServer server;
+
         public Path(WebServer server, Consumer<WebServer> routeDefinitions) {
+            this.server = server;
             routeDefinitions.accept(server);
+        }
+
+        public Path path(String prefix, Consumer<Path> routeDefinitions) {
+            RouteGroup group = server.path(prefix);
+            routeDefinitions.accept(this);
+            group.end();
+            return this;
         }
     }
 
@@ -151,23 +161,25 @@ public class WebServer {
         new Path(server, s -> {
             s.addHandler(Method.GET, "/", (req, res, params) -> res.write("Hello, World!"));
 
-            new Path(s.path("/users"), users -> {
-                users.addHandler(Method.GET, "", (req, res, params) -> res.write("List users"));
-                users.addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")));
+            new Path(s, users -> {
+                users.path("/users", u -> {
+                    u.addHandler(Method.GET, "", (req, res, params) -> res.write("List users"));
+                    u.addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")));
 
-                new Path(users.path("/(\\w+)/posts"), posts -> {
-                    posts.addHandler(Method.GET, "", (req, res, params) -> res.write("Posts by user: " + params.get("1")));
-                    posts.addHandler(Method.GET, "/(\\d+)", (req, res, params) -> res.write("Post " + params.get("2") + " by user: " + params.get("1")));
-                });
-            });
-
-            new Path(s.path("/api"), api -> {
-                new Path(api.path("/v1"), v1 -> {
-                    v1.addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v1 Status: OK"));
+                    u.path("/(\\w+)/posts", posts -> {
+                        posts.addHandler(Method.GET, "", (req, res, params) -> res.write("Posts by user: " + params.get("1")));
+                        posts.addHandler(Method.GET, "/(\\d+)", (req, res, params) -> res.write("Post " + params.get("2") + " by user: " + params.get("1")));
+                    });
                 });
 
-                new Path(api.path("/v2"), v2 -> {
-                    v2.addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v2 Status: OK"));
+                users.path("/api", api -> {
+                    api.path("/v1", v1 -> {
+                        v1.addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v1 Status: OK"));
+                    });
+
+                    api.path("/v2", v2 -> {
+                        v2.addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v2 Status: OK"));
+                    });
                 });
             });
         });
