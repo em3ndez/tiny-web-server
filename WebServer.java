@@ -140,62 +140,27 @@ public class WebServer {
     }
 
     public static void main(String[] args) throws IOException {
-        new WebServer(8080) {{
-            // Root routes
-            addHandler(Method.GET, "/", (req, res, params) -> {
-                res.write("Hello, World!");
-            });
+        WebServer server = new WebServerBuilder(8080)
+            .addHandler(Method.GET, "/", (req, res, params) -> res.write("Hello, World!"))
+            .path("/users", users -> users
+                .addHandler(Method.GET, "", (req, res, params) -> res.write("List users"))
+                .addHandler(Method.GET, "/(\\w+)", (req, res, params) -> res.write("User profile: " + params.get("1")))
+                .path("/(\\w+)/posts", posts -> posts
+                    .addHandler(Method.GET, "", (req, res, params) -> res.write("Posts by user: " + params.get("1")))
+                    .addHandler(Method.GET, "/(\\d+)", (req, res, params) -> res.write("Post " + params.get("2") + " by user: " + params.get("1")))
+                )
+            )
+            .path("/api", api -> api
+                .path("/v1", v1 -> v1
+                    .addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v1 Status: OK"))
+                )
+                .path("/v2", v2 -> v2
+                    .addHandler(Method.GET, "/status", (req, res, params) -> res.write("API v2 Status: OK"))
+                )
+            )
+            .build();
 
-            // User routes group
-            path("/users") {{
-                addHandler(Method.GET, "", (req, res, params) -> {
-                    res.write("List users");
-                });
-
-                addHandler(Method.GET, "/(\\w+)", (req, res, params) -> {
-                    res.write("User profile: " + params.get("1"));
-                });
-
-                // Nested group for user posts
-                path("/(\\w+)/posts") {{
-                    addHandler(Method.GET, "", (req, res, params) -> {
-                        res.write("Posts by user: " + params.get("1"));
-                    });
-
-                    addHandler(Method.GET, "/(\\d+)", (req, res, params) -> {
-                        res.write("Post " + params.get("2") + " by user: " + params.get("1"));
-                    });
-
-                    end();
-                }};
-
-                end();
-            }};
-
-            // API routes group
-            path("/api") {{
-                path("/v1") {{
-                    addHandler(Method.GET, "/status", (req, res, params) -> {
-                        res.write("API v1 Status: OK");
-                    });
-
-                    end();
-                }};
-
-                path("/v2") {{
-                    addHandler(Method.GET, "/status", (req, res, params) -> {
-                        res.write("API v2 Status: OK");
-                    });
-
-                    end();
-                }};
-
-                end();
-            }};
-
-            start();
-
-            System.out.println("Server running on port 8080");
-        }};
+        server.start();
+        System.out.println("Server running on port 8080");
     }
 }
