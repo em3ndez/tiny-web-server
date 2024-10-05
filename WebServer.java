@@ -53,7 +53,10 @@ public class WebServer {
         }
     }
 
-    public WebServer(int port) throws IOException {
+    public WebServer path(String basePath, Runnable routes) {
+        routes.run();
+        return this;
+    }
         server = HttpServer.create(new InetSocketAddress(port), 0);
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
@@ -116,7 +119,9 @@ public class WebServer {
     public static void main(String[] args) throws IOException {
         new WebServer(8080) {{
 
-            path("/foo", () -> {
+            path("/foo", () -> handle(Method.GET, "/foo/bar", (req, res, params) -> {
+                res.write("Hello, World!");
+            }));
                 handle(Method.GET, "/bar", (req, res, params) -> {
                     res.write("Hello, World!");
                 });
