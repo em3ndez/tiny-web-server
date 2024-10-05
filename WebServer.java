@@ -53,10 +53,7 @@ public class WebServer {
         }
     }
 
-    public WebServer path(String basePath, Runnable routes) {
-        routes.run();
-        return this;
-    }
+    public WebServer(int port) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), 0);
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
@@ -97,6 +94,12 @@ public class WebServer {
 
             sendError(exchange, 404, "Not found");
         });
+    }
+
+    public WebServer path(String basePath, Runnable routes) {
+        routes.run();
+        return this;
+    }
     }
 
     private void sendError(HttpExchange exchange, int code, String message) throws IOException {
