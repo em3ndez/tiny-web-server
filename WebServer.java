@@ -2,6 +2,9 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -227,7 +230,23 @@ public class WebServer {
         return this;
     }
 
-    public void start() {
+    public WebServer serveStaticFiles(String basePath, String directory) {
+        handle(Method.GET, basePath + "/(.*)", (req, res, params) -> {
+            String filePath = params.get("1");
+            Path path = Paths.get(directory, filePath);
+            if (Files.exists(path) && !Files.isDirectory(path)) {
+                String contentType = Files.probeContentType(path);
+                res.exchange.getResponseHeaders().set("Content-Type", contentType != null ? contentType : "application/octet-stream");
+                byte[] fileBytes = Files.readAllBytes(path);
+                res.exchange.sendResponseHeaders(200, fileBytes.length);
+                res.exchange.getResponseBody().write(fileBytes);
+                res.exchange.getResponseBody().close();
+            } else {
+                sendError(res.exchange, 404, "File not found");
+            }
+        });
+        return this;
+    }
         server.start();
     }
 
