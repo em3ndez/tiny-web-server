@@ -234,6 +234,7 @@ public class WebServer {
         handle(Method.GET, basePath + "/(.*)", (req, res, params) -> {
             String filePath = params.get("1");
             Path path = Paths.get(directory, filePath);
+            System.out.println(path.toString());
             if (Files.exists(path) && !Files.isDirectory(path)) {
                 String contentType = Files.probeContentType(path);
                 res.exchange.getResponseHeaders().set("Content-Type", contentType != null ? contentType : "application/octet-stream");
@@ -247,6 +248,7 @@ public class WebServer {
         });
         return this;
     }
+    public void start() {
         server.start();
     }
 
@@ -271,6 +273,8 @@ public class WebServer {
                     // This endpoint is /foo/bar if that wasn't obvious
                 });
             });
+
+            serveStaticFiles("public", "/home/paul/scm/tine-webserver/fooo");
 
             handle(Method.GET, "/users/(\\w+)", (req, res, params) -> {
                 res.write("User profile: " + params.get("1"));
