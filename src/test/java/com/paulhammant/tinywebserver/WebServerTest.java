@@ -64,7 +64,7 @@ public class WebServerTest {
                 });
                 after(() -> {
                     svr.stop();
-                    Mockito.verify(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.any(Map<String,String>.class));
+                    Mockito.verify(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.<Map<String, String>>any());
                 });
             });
         });
