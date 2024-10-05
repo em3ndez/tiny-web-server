@@ -100,7 +100,6 @@ public class WebServer {
         routes.run();
         return this;
     }
-    }
 
     private void sendError(HttpExchange exchange, int code, String message) throws IOException {
         exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
@@ -110,7 +109,7 @@ public class WebServer {
         exchange.getResponseBody().close();
     }
 
-    public WebServer handle(Method method, String path, Handler handler) {
+    public WebServer handle(WebServer.Method method, String path, WebServer.Handler handler) {
         routes.get(method).put(Pattern.compile("^" + path + "$"), handler);
         return this;
     }
@@ -120,11 +119,10 @@ public class WebServer {
     }
 
     public static void main(String[] args) throws IOException {
+        final App app = new App();
         new WebServer(8080) {{
 
-            path("/foo", () -> handle(Method.GET, "/foo/bar", (req, res, params) -> {
-                res.write("Hello, World!");
-            }));
+            path("/foo", () -> {
                 handle(Method.GET, "/bar", (req, res, params) -> {
                     res.write("Hello, World!");
                 });
@@ -138,16 +136,22 @@ public class WebServer {
                 res.write("You sent: " + req.getBody());
             });
 
-            handle(Method.GET, "/greeting/(\\w+)/(\\w+)", (req, res, params) -> {
-                res.write(String.format("Hello, %s %s!",
-                        params.get("1"),
-                        params.get("2")
-                ));
-            });
+            handle(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
 
             start();
 
             System.out.println("Server running on port 8080");
         }};
+    }
+    public static class App {
+
+        public void foobar(Request req, Response res, Map<String, String> params) throws IOException {
+            res.write(String.format("Hello, %s %s!",
+                    params.get("1"),
+                    params.get("2")
+            ));
+
+        }
+
     }
 }
