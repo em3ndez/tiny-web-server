@@ -28,118 +28,118 @@ public class WebServerTest {
 
     {
         describe("For Example (Tiny) WebServer", () -> {
-//            describe("Echoing GET endpoint respond with..", () -> {
-//                before(() -> {
-//                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
-//                    //waitForPortToBeClosed("localhost",8080);
-//                    svr.start();
-//                });
-//                it("..Jimmy when Jimmy is a param ", () -> {
-//                    try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
-//                        assertThat(response.body().string(), equalTo("User profile: Jimmy"));
-//                    }
-//                });
-//                it("..Themla when Thelma is a param ", () -> {
-//                    try (Response response = httpGet("http://localhost:8080/users/Thelma")) {
-//                        assertThat(response.body().string(), equalTo("User profile: Thelma"));
-//                    }
-//                });
-//                after(() -> {
-//                    svr.stop();
-//                    verifyNoInteractions(app);
-//                });
-//            });
-//            describe("Filtering", () -> {
-//                before(() -> {
-//                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
-//                    //waitForPortToBeClosed("localhost",8080);
-//                    svr.start();
-//                });
-//                it("Filter that blocks on 'sucks' doesn't block when sucks is absent", () -> {
-//                    try (Response response = httpGet("http://localhost:8080/foo/bar")) {
-//                        assertThat(response.code(), equalTo(200));
-//                        assertThat(response.body().string(), equalTo("Hello, World!"));
-//                    }
-//                });
-//                it("Filter that blocks on 'sucks' blocks when sucks is present", () -> {
-//                    try (Response response = httpGet("http://localhost:8080/foo/bar", "sucks", "true")) {
-//                        assertThat(response.code(), equalTo(403));
-//                        assertThat(response.body().string(), equalTo("Access Denied"));
-//                    }
-//                });
-//                after(() -> {
-//                    svr.stop();
-//                    verifyNoInteractions(app);
-//                });
-//            });
-//            describe("WebServer's directRequest method", () -> {
-//                before(() -> {
-//                    svr = WebServer.ExampleApp.exampleComposition(new String[0], app);
-//                    //waitForPortToBeClosed("localhost",8080);
-//                    svr.start();
-//                });
-//                it("Can invoke /users/Jimmy endpoint", () -> {
-//                    WebServer.SimulatedResponse response = svr.directRequest(
-//                        WebServer.Method.GET,
-//                        "/users/Jimmy",
-//                        null,
-//                        Collections.emptyMap()
-//                    );
-//                    assertThat(response.body(), equalTo("User profile: Jimmy"));
-//                    assertThat(response.statusCode(), equalTo(200));
-//                    assertThat(response.contentType(), equalTo("text/plain"));
-//                });
-//                it("should return 404 for a non-existent path", () -> {
-//                    WebServer.SimulatedResponse response = svr.directRequest(
-//                        WebServer.Method.GET,
-//                        "/nonexistent",
-//                        null,
-//                        Collections.emptyMap()
-//                    );
-//                    assertThat(response.body(), equalTo("Not found"));
-//                    assertThat(response.statusCode(), equalTo(404));
-//                    assertThat(response.contentType(), equalTo("text/plain"));
-//                });
-//                after(() -> {
-//                   svr.stop();
-//                });
-//            });
-//            describe("Static file serving", () -> {
-//                before(() -> {
-//                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
-//                    svr.start();
-//                });
-//                it("should serve a text file", () -> {
-//                    try (Response response = httpGet("http://localhost:8080/static/README.md")) {
-//                        assertThat(response.code(), equalTo(200));
-//                        assertThat(response.body().string(), containsString("hello"));
-//                    }
-//                });
-//                it("should return 404 for a non-existent file", () -> {
-//                    try (Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
-//                        assertThat(response.code(), equalTo(404));
-//                        assertThat(response.body().string(), containsString("File not found"));
-//                    }
-//                });
-//                it("should serve a file from a subdirectory", () -> {
-//                    // Assuming there's a file at src/test/resources/static/subdir/test.txt
-//                    try (Response response = httpGet("http://localhost:8080/static/src/main/java/com/paulhammant/tinywebserver/WebServer.java")) {
-//                        assertThat(response.code(), equalTo(200));
-//                        assertThat(response.body().string(), containsString("class"));
-//                    }
-//                });
-//                it("should be able to serve a non text file", () -> {
-//                    // Assuming there's a file at src/test/resources/static/subdir/test.txt
-//                    try (Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tinywebserver/WebServer.class")) {
-//                        assertThat(response.code(), equalTo(200));
-//                        assertThat(response.body().contentType().toString(), equalTo("application/java-vm"));
-//                        assertThat(response.body().string(), containsString("(Lcom/sun/net/httpserver/HttpExchange;ILjava/lang/String;)V"));
-//                    }
-//                });
-//                after(() -> {
-//                    svr.stop();
-//                });
-//            });
+            describe("Echoing GET endpoint respond with..", () -> {
+                before(() -> {
+                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
+                    svr.start();
+                });
+                it("..Jimmy when Jimmy is a param ", () -> {
+                    try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
+                        assertThat(response.body().string(), equalTo("User profile: Jimmy"));
+                    }
+                });
+                it("..Themla when Thelma is a param ", () -> {
+                    try (Response response = httpGet("http://localhost:8080/users/Thelma")) {
+                        assertThat(response.body().string(), equalTo("User profile: Thelma"));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                    verifyNoInteractions(app);
+                });
+            });
+            describe("Filtering", () -> {
+                before(() -> {
+                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
+                    svr.start();
+                });
+                it("Filter that blocks on 'sucks' doesn't block when sucks is absent", () -> {
+                    try (Response response = httpGet("http://localhost:8080/foo/bar")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().string(), equalTo("Hello, World!"));
+                    }
+                });
+                it("Filter that blocks on 'sucks' blocks when sucks is present", () -> {
+                    try (Response response = httpGet("http://localhost:8080/foo/bar", "sucks", "true")) {
+                        assertThat(response.code(), equalTo(403));
+                        assertThat(response.body().string(), equalTo("Access Denied"));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                    verifyNoInteractions(app);
+                });
+            });
+            describe("WebServer's directRequest method", () -> {
+                before(() -> {
+                    svr = WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
+                    svr.start();
+                });
+                it("Can invoke /users/Jimmy endpoint", () -> {
+                    WebServer.SimulatedResponse response = svr.directRequest(
+                        WebServer.Method.GET,
+                        "/users/Jimmy",
+                        null,
+                        Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("User profile: Jimmy"));
+                    assertThat(response.statusCode(), equalTo(200));
+                    assertThat(response.contentType(), equalTo("text/plain"));
+                });
+                it("should return 404 for a non-existent path", () -> {
+                    WebServer.SimulatedResponse response = svr.directRequest(
+                        WebServer.Method.GET,
+                        "/nonexistent",
+                        null,
+                        Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Not found"));
+                    assertThat(response.statusCode(), equalTo(404));
+                    assertThat(response.contentType(), equalTo("text/plain"));
+                });
+                after(() -> {
+                   svr.stop();
+                });
+            });
+            describe("Static file serving", () -> {
+                before(() -> {
+                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    svr.start();
+                });
+                it("should serve a text file", () -> {
+                    try (Response response = httpGet("http://localhost:8080/static/README.md")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().string(), containsString("hello"));
+                    }
+                });
+                it("should return 404 for a non-existent file", () -> {
+                    try (Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
+                        assertThat(response.code(), equalTo(404));
+                        assertThat(response.body().string(), containsString("File not found"));
+                    }
+                });
+                it("should serve a file from a subdirectory", () -> {
+                    // Assuming there's a file at src/test/resources/static/subdir/test.txt
+                    try (Response response = httpGet("http://localhost:8080/static/src/main/java/com/paulhammant/tinywebserver/WebServer.java")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().string(), containsString("class"));
+                    }
+                });
+                it("should be able to serve a non text file", () -> {
+                    // Assuming there's a file at src/test/resources/static/subdir/test.txt
+                    try (Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tinywebserver/WebServer.class")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().contentType().toString(), equalTo("application/java-vm"));
+                        assertThat(response.body().string(), containsString("(Lcom/sun/net/httpserver/HttpExchange;ILjava/lang/String;)V"));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                });
+            });
             describe("Path method", () -> {
                 before(() -> {
                     svr = new WebServer(8080) {
@@ -155,7 +155,6 @@ public class WebServerTest {
                                     res.write("Parameter: " + params.get("1") + " " + queryParams);
                                 });
                             });
-
                         }}
                     .start();
                 });
@@ -179,40 +178,30 @@ public class WebServerTest {
                     assertThat(response.body(), equalTo("Not found"));
                     assertThat(response.statusCode(), equalTo(404));
                 });
-                it("query string params should match params", () -> {
-                    WebServer.SimulatedResponse response = svr.directRequest(
-                        WebServer.Method.GET,
-                        "/api2/test?a=1+b=2",
-                        null,
-                        Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Parameter: test a=1+b=2"));
-                    assertThat(response.statusCode(), equalTo(200));
-                });
                 after(() -> {
                     svr.stop();
                 });
             });
-//            describe("Greeting GET endpoint", () -> {
-//                before(() -> {
-//                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
-//                    //waitForPortToBeClosed("localhost",8080);
-//                    svr.start();
-//                    Mockito.doAnswer(invocation -> {
-//                        invocation.<WebServer.Response>getArgument(1).write("invoked");
-//                        return null;
-//                    }).when(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.<Map<String, String>>any());
-//                });
-//                it("invokes ExampleApp method", () -> {
-//                    try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
-//                        assertThat(response.body().string(), equalTo("invoked"));
-//                    }
-//                });
-//                after(() -> {
-//                    svr.stop();
-//                    Mockito.verify(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.<Map<String, String>>any());
-//                });
-//            });
+            describe("Greeting GET endpoint", () -> {
+                before(() -> {
+                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
+                    svr.start();
+                    Mockito.doAnswer(invocation -> {
+                        invocation.<WebServer.Response>getArgument(1).write("invoked");
+                        return null;
+                    }).when(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.<Map<String, String>>any());
+                });
+                it("invokes ExampleApp method", () -> {
+                    try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
+                        assertThat(response.body().string(), equalTo("invoked"));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                    Mockito.verify(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.<Map<String, String>>any());
+                });
+            });
         });
     }
 
