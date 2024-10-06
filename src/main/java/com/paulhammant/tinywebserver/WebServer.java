@@ -101,7 +101,7 @@ public class WebServer {
                 return new SimulatedResponse(responseBody.toString(), responseCode[0], contentType[0], responseHeaders);
             }
         }
-
+        System.out.println("not matched2 " + path);
         return new SimulatedResponse("Not found", 404, "text/plain", Collections.emptyMap());
     }
 
@@ -242,6 +242,8 @@ public class WebServer {
             }
 
             if (!routeMatched) {
+                System.out.println("not matched2 " + path);
+
                 sendError(exchange, 404, "Not found");
             }
         });
@@ -326,6 +328,7 @@ public class WebServer {
     }
 
     public WebServer serveStaticFiles(String basePath, String directory) {
+        System.out.println("s regn " + basePath + "/(.*)");
         handle(Method.GET, basePath + "/(.*)", (req, res, params) -> {
             String filePath = params.get("1");
             Path path = Paths.get(directory, filePath);
@@ -342,6 +345,7 @@ public class WebServer {
                     throw new RuntimeException(e);
                 }
             } else {
+                System.out.println("not matched1 " + path);
                 sendError(res.exchange, 404, "File not found");
             }
         });
@@ -349,11 +353,13 @@ public class WebServer {
     }
     public WebServer start() {
         server.start();
+        System.out.println("svr started");
         return this;
     }
 
     public WebServer stop() {
         server.stop(0);
+        System.out.println("svr stopped");
         return this;
     }
 
@@ -383,7 +389,7 @@ public class WebServer {
                 });
             });
 
-            serveStaticFiles("/public", new File(".").getAbsolutePath());
+            serveStaticFiles("/static", new File(".").getAbsolutePath());
 
 
             handle(Method.GET, "/users/(\\w+)", (req, res, params) -> {
