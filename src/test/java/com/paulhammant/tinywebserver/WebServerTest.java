@@ -148,9 +148,11 @@ public class WebServerTest {
                                 });
                             });
                             path("/api2", () -> {
-                                handle(TinyWeb.Method.GET, "/(\\w+)?(\\w*)", (req, res, params) -> {
+                                handle(TinyWeb.Method.GET, "/(\\w+)?(.*)", (req, res, params) -> {
+                                    System.out.println("QQ test invokes this");
                                     Map<String, String> queryParams = req.getQueryParams();
-                                    res.write("Parameter: " + params.get("1") + " " + queryParams);
+                                    System.out.println("but query string map is empty");
+                                    res.write("Parameter: " + params.get("1") + " "+ params.get("2") + " " + queryParams);
                                 });
                             });
                         }}
@@ -174,6 +176,16 @@ public class WebServerTest {
                         Collections.emptyMap()
                     );
                     assertThat(response.body(), equalTo("Not found"));
+                    assertThat(response.statusCode(), equalTo(404));
+                });
+                it("qq test", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                        TinyWeb.Method.GET,
+                        "/api2/test/123?a=1&b=2",
+                        null,
+                        Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Parameter: test {}"));
                     assertThat(response.statusCode(), equalTo(404));
                 });
                 after(() -> {
