@@ -101,7 +101,6 @@ public class WebServer {
                 return new SimulatedResponse(responseBody.toString(), responseCode[0], contentType[0], responseHeaders);
             }
         }
-        System.out.println("not matched2 " + path);
         return new SimulatedResponse("Not found", 404, "text/plain", Collections.emptyMap());
     }
 
@@ -246,8 +245,6 @@ public class WebServer {
             }
 
             if (!routeMatched) {
-                System.out.println("not matched2 " + path);
-
                 sendError(exchange, 404, "Not found");
             }
         });
@@ -332,11 +329,9 @@ public class WebServer {
     }
 
     public WebServer serveStaticFiles(String basePath, String directory) {
-        System.out.println("s regn " + basePath + "/(.*)");
         handle(Method.GET, basePath + "/(.*)", (req, res, params) -> {
             String filePath = params.get("1");
             Path path = Paths.get(directory, filePath);
-            System.out.println(path.toString());
             if (Files.exists(path) && !Files.isDirectory(path)) {
                 try {
                     String contentType = Files.probeContentType(path);
@@ -349,7 +344,6 @@ public class WebServer {
                     throw new RuntimeException(e);
                 }
             } else {
-                System.out.println("not matched1 " + path);
                 sendError(res.exchange, 404, "File not found");
             }
         });
@@ -357,13 +351,11 @@ public class WebServer {
     }
     public WebServer start() {
         server.start();
-        System.out.println("svr started");
         return this;
     }
 
     public WebServer stop() {
         server.stop(0);
-        System.out.println("svr stopped");
         return this;
     }
 
@@ -373,45 +365,46 @@ public class WebServer {
      * not use these two methods, even if they were inspired by them.
      */
     public static void main(String[] args) {
-        exampleComposition(args, new ExampleApp()).start();
-    }
-    public static WebServer exampleComposition(String[] args, ExampleApp app) {
-        return new WebServer(8080) {{
-
-            path("/foo", () -> {
-                filter(Method.GET, "/.*", (req, res, params) -> {
-                    System.out.println("filter");
-                    boolean proceed = new Random().nextBoolean();
-                    if (!proceed) {
-                        res.write("Access Denied", 403);
-                    }
-                    return proceed;
-                });
-                handle(Method.GET, "/bar", (req, res, params) -> {
-                    res.write("Hello, World!");
-                    // This endpoint is /foo/bar if that wasn't obvious
-                });
-            });
-
-            serveStaticFiles("/static", new File(".").getAbsolutePath());
-
-
-            handle(Method.GET, "/users/(\\w+)", (req, res, params) -> {
-                res.write("User profile: " + params.get("1"));
-            });
-
-            handle(Method.POST, "/echo", (req, res, params) -> {
-                res.write("You sent: " + req.getBody());
-            });
-
-            handle(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
-
-        }};
+        ExampleApp.exampleComposition(args, new ExampleApp()).start();
     }
 
     public static class ExampleApp {
         public void foobar(Request req, Response res, Map<String, String> params) {
             res.write(String.format("Hello, %s %s!", params.get("1"), params.get("2")));
+        }
+
+        public static WebServer exampleComposition(String[] args, ExampleApp app) {
+            return new WebServer(8080) {{
+
+                path("/foo", () -> {
+                    filter(Method.GET, "/.*", (req, res, params) -> {
+                        System.out.println("filter");
+                        boolean proceed = new Random().nextBoolean();
+                        if (!proceed) {
+                            res.write("Access Denied", 403);
+                        }
+                        return proceed;
+                    });
+                    handle(Method.GET, "/bar", (req, res, params) -> {
+                        res.write("Hello, World!");
+                        // This endpoint is /foo/bar if that wasn't obvious
+                    });
+                });
+
+                serveStaticFiles("/static", new File(".").getAbsolutePath());
+
+
+                handle(Method.GET, "/users/(\\w+)", (req, res, params) -> {
+                    res.write("User profile: " + params.get("1"));
+                });
+
+                handle(Method.POST, "/echo", (req, res, params) -> {
+                    res.write("You sent: " + req.getBody());
+                });
+
+                handle(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
+
+            }};
         }
     }
 }

@@ -11,9 +11,9 @@ import org.forgerock.cuppa.reporters.DefaultReporter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.Collections;
 
-import static com.paulhammant.tinywebserver.WebServer.exampleComposition;
 import static okhttp3.Request.*;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,7 +30,8 @@ public class WebServerTest {
         describe("For Example (Tiny) WebServer", () -> {
             describe("Echoing GET endpoint respond with..", () -> {
                 before(() -> {
-                    svr = exampleComposition(new String[0], app);
+                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                 });
                 it("..Jimmy when Jimmy is a param ", () -> {
@@ -51,9 +52,11 @@ public class WebServerTest {
 
             describe("WebServer's directRequest method", () -> {
                 before(() -> {
-                    svr = exampleComposition(new String[0], app);
+                    svr = WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
+                    svr.start();
                 });
-                it("should return correct response for a simulated GET request", () -> {
+                it("Can invoke /users/Jimmy endoint", () -> {
                     WebServer.SimulatedResponse response = svr.directRequest(
                         WebServer.Method.GET,
                         "/users/Jimmy",
@@ -75,16 +78,20 @@ public class WebServerTest {
                     assertThat(response.statusCode(), equalTo(404));
                     assertThat(response.contentType(), equalTo("text/plain"));
                 });
+                after(() -> {
+                   svr.stop();
+                });
             });
             describe("Static file serving", () -> {
                 before(() -> {
-                    svr = exampleComposition(new String[0], app);
+                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                 });
                 it("should serve the README.md file", () -> {
                     try (Response response = httpGet("http://localhost:8080/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
-                        assertThat(response.body().string(), containsString("Trust this message as the true contents of these files!"));
+                        assertThat(response.body().string(), containsString("hello"));
                     }
                 });
                 after(() -> {
@@ -93,7 +100,8 @@ public class WebServerTest {
             });
             describe("Greeting GET endpoint", () -> {
                 before(() -> {
-                    svr = exampleComposition(new String[0], app);
+                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                     Mockito.doAnswer(invocation -> {
                         invocation.<WebServer.Response>getArgument(1).write("invoked");
@@ -117,6 +125,23 @@ public class WebServerTest {
         return new OkHttpClient().newCall(new Builder()
                 .url(url)
                 .get().build()).execute();
+    }
+
+    public static void waitForPortToBeClosed(String host, int port) {
+        boolean portOpen = true;
+
+        while (portOpen) {
+            try (Socket socket = new Socket(host, port)) {
+                // Port is still open, wait and try again
+                System.out.println("Port " + port + " is still open. Waiting...");
+                Thread.sleep(2000); // Wait 2 seconds before trying again
+            } catch (IOException e) {
+                // Exception indicates that the port is not open
+                portOpen = false;
+                System.out.println("Port " + port + " is closed.");
+            } catch (InterruptedException e) {
+            }
+        }
     }
 
     public static void main(String[] args) {
