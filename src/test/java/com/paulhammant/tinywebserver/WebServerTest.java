@@ -85,6 +85,33 @@ public class WebServerTest {
             describe("Static file serving", () -> {
                 before(() -> {
                     svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    svr.start();
+                });
+                it("should serve a text file", () -> {
+                    try (Response response = httpGet("http://localhost:8080/static/README.md")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().string(), containsString("hello"));
+                    }
+                });
+                it("should return 404 for a non-existent file", () -> {
+                    try (Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
+                        assertThat(response.code(), equalTo(404));
+                        assertThat(response.body().string(), containsString("File not found"));
+                    }
+                });
+                it("should serve a file from a subdirectory", () -> {
+                    // Assuming there's a file at src/test/resources/static/subdir/test.txt
+                    try (Response response = httpGet("http://localhost:8080/static/subdir/test.txt")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().string(), containsString("subdirectory test file"));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                });
+            });
+                before(() -> {
+                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                 });
