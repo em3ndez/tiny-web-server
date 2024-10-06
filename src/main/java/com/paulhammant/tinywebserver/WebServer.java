@@ -126,10 +126,14 @@ public class WebServer {
 
         public Request(HttpExchange exchange) {
             this.exchange = exchange;
-            try {
-                this.body = new String(exchange.getRequestBody().readAllBytes());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            if (exchange != null) {
+                try {
+                    this.body = new String(exchange.getRequestBody().readAllBytes());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                this.body = null;
             }
         }
 
