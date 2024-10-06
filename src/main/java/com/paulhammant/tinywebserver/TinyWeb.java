@@ -18,11 +18,71 @@ public class TinyWeb {
 
     public enum Method { GET, POST, PUT, DELETE }
 
-    public static class Server {
+    public static class Context {
 
-        private final HttpServer server;
-        private Map<Method, Map<Pattern, Handler>> routes = new HashMap<>();
-        private Map<Method, List<FilterEntry>> filters = new HashMap<>();
+        protected Map<Method, Map<Pattern, Handler>> routes = new HashMap<>();
+        protected Map<Method, List<FilterEntry>> filters = new HashMap<>();
+
+        public Context path(String basePath, Runnable routes) {
+            // Save current routes and filters
+            Map<Method, Map<Pattern, Handler>> previousRoutes = this.routes;
+            Map<Method, List<FilterEntry>> previousFilters = this.filters;
+
+            // Create new maps to collect routes and filters within this path
+            this.routes = new HashMap<>();
+            this.filters = new HashMap<>();
+
+            // Initialize empty maps for all methods
+            for (Method method : Method.values()) {
+                this.routes.put(method, new HashMap<>());
+                this.filters.put(method, new ArrayList<>());
+            }
+
+            // Run the routes Runnable, which will populate this.routes and this.filters
+            routes.run();
+
+            // Prefix basePath to routes
+            for (Method method : Method.values()) {
+                Map<Pattern, Handler> methodRoutes = this.routes.get(method);
+                if (methodRoutes != null && !methodRoutes.isEmpty()) {
+                    Map<Pattern, Handler> prefixedRoutes = new HashMap<>();
+                    for (Map.Entry<Pattern, Handler> entry : methodRoutes.entrySet()) {
+                        Pattern pattern = entry.getKey();
+                        Handler handler = entry.getValue();
+                        Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
+                        prefixedRoutes.put(newPattern, handler);
+                    }
+                    previousRoutes.get(method).putAll(prefixedRoutes);
+                }
+            }
+
+            // Prefix basePath to filters
+            for (Method method : Method.values()) {
+                List<FilterEntry> methodFilters = this.filters.get(method);
+                if (methodFilters != null && !methodFilters.isEmpty()) {
+                    List<FilterEntry> prefixedFilters = new ArrayList<>();
+                    for (FilterEntry filterEntry : methodFilters) {
+                        Pattern pattern = filterEntry.pattern;
+                        Filter filter = filterEntry.filter;
+                        Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
+                        prefixedFilters.add(new FilterEntry(newPattern, filter));
+                    }
+                    // Ensure previousFilters has a non-null list for this method
+                    List<FilterEntry> previousMethodFilters = previousFilters.get(method);
+                    if (previousMethodFilters == null) {
+                        previousMethodFilters = new ArrayList<>();
+                        previousFilters.put(method, previousMethodFilters);
+                    }
+                    previousMethodFilters.addAll(prefixedFilters);
+                }
+            }
+
+            // Restore routes and filters
+            this.routes = previousRoutes;
+            this.filters = previousFilters;
+
+            return this;
+        }
 
         public SimulatedResponse directRequest(Method method, String path, String body, Map<String, List<String>> headers) {
             Map<Pattern, Handler> methodRoutes = routes.get(method);
@@ -99,6 +159,51 @@ public class TinyWeb {
             }
             return new SimulatedResponse("Not found", 404, "text/plain", Collections.emptyMap());
         }
+
+        protected void sendError(HttpExchange exchange, int code, String message) {
+            Response.sendResponse(message, code, exchange);
+        }
+
+        public Context handle(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
+            routes.computeIfAbsent(method, k -> new HashMap<>())
+                    .put(Pattern.compile("^" + path + "$"), handler);
+            return this;
+        }
+
+        public Context filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
+            filters.computeIfAbsent(method, k -> new ArrayList<>())
+                    .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
+            return this;
+        }
+
+        public Context serveStaticFiles(String basePath, String directory) {
+            handle(Method.GET, basePath + "/(.*)", (req, res, params) -> {
+                String filePath = params.get("1");
+                Path path = Paths.get(directory, filePath);
+                if (Files.exists(path) && !Files.isDirectory(path)) {
+                    try {
+                        String contentType = Files.probeContentType(path);
+                        res.exchange.getResponseHeaders().set("Content-Type", contentType != null ? contentType : "application/octet-stream");
+                        byte[] fileBytes = Files.readAllBytes(path);
+                        res.exchange.sendResponseHeaders(200, fileBytes.length);
+                        res.exchange.getResponseBody().write(fileBytes);
+                        res.exchange.getResponseBody().close();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    sendError(res.exchange, 404, "File not found");
+                }
+            });
+            return this;
+        }
+
+    }
+
+    public static class Server extends Context {
+
+        private final HttpServer server;
+
 
         public Server(int port) {
             try {
@@ -180,104 +285,7 @@ public class TinyWeb {
             });
         }
 
-        public TinyWeb.Server path(String basePath, Runnable routes) {
-            // Save current routes and filters
-            Map<Method, Map<Pattern, Handler>> previousRoutes = this.routes;
-            Map<Method, List<FilterEntry>> previousFilters = this.filters;
 
-            // Create new maps to collect routes and filters within this path
-            this.routes = new HashMap<>();
-            this.filters = new HashMap<>();
-
-            // Initialize empty maps for all methods
-            for (Method method : Method.values()) {
-                this.routes.put(method, new HashMap<>());
-                this.filters.put(method, new ArrayList<>());
-            }
-
-            // Run the routes Runnable, which will populate this.routes and this.filters
-            routes.run();
-
-            // Prefix basePath to routes
-            for (Method method : Method.values()) {
-                Map<Pattern, Handler> methodRoutes = this.routes.get(method);
-                if (methodRoutes != null && !methodRoutes.isEmpty()) {
-                    Map<Pattern, Handler> prefixedRoutes = new HashMap<>();
-                    for (Map.Entry<Pattern, Handler> entry : methodRoutes.entrySet()) {
-                        Pattern pattern = entry.getKey();
-                        Handler handler = entry.getValue();
-                        Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
-                        prefixedRoutes.put(newPattern, handler);
-                    }
-                    previousRoutes.get(method).putAll(prefixedRoutes);
-                }
-            }
-
-            // Prefix basePath to filters
-            for (Method method : Method.values()) {
-                List<FilterEntry> methodFilters = this.filters.get(method);
-                if (methodFilters != null && !methodFilters.isEmpty()) {
-                    List<FilterEntry> prefixedFilters = new ArrayList<>();
-                    for (FilterEntry filterEntry : methodFilters) {
-                        Pattern pattern = filterEntry.pattern;
-                        Filter filter = filterEntry.filter;
-                        Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
-                        prefixedFilters.add(new FilterEntry(newPattern, filter));
-                    }
-                    // Ensure previousFilters has a non-null list for this method
-                    List<FilterEntry> previousMethodFilters = previousFilters.get(method);
-                    if (previousMethodFilters == null) {
-                        previousMethodFilters = new ArrayList<>();
-                        previousFilters.put(method, previousMethodFilters);
-                    }
-                    previousMethodFilters.addAll(prefixedFilters);
-                }
-            }
-
-            // Restore routes and filters
-            this.routes = previousRoutes;
-            this.filters = previousFilters;
-
-            return this;
-        }
-
-        private void sendError(HttpExchange exchange, int code, String message) {
-            Response.sendResponse(message, code, exchange);
-        }
-
-        public TinyWeb.Server handle(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
-            routes.computeIfAbsent(method, k -> new HashMap<>())
-                    .put(Pattern.compile("^" + path + "$"), handler);
-            return this;
-        }
-
-        public TinyWeb.Server filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
-            filters.computeIfAbsent(method, k -> new ArrayList<>())
-                    .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
-            return this;
-        }
-
-        public TinyWeb.Server serveStaticFiles(String basePath, String directory) {
-            handle(Method.GET, basePath + "/(.*)", (req, res, params) -> {
-                String filePath = params.get("1");
-                Path path = Paths.get(directory, filePath);
-                if (Files.exists(path) && !Files.isDirectory(path)) {
-                    try {
-                        String contentType = Files.probeContentType(path);
-                        res.exchange.getResponseHeaders().set("Content-Type", contentType != null ? contentType : "application/octet-stream");
-                        byte[] fileBytes = Files.readAllBytes(path);
-                        res.exchange.sendResponseHeaders(200, fileBytes.length);
-                        res.exchange.getResponseBody().write(fileBytes);
-                        res.exchange.getResponseBody().close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    sendError(res.exchange, 404, "File not found");
-                }
-            });
-            return this;
-        }
         public TinyWeb.Server start() {
             server.start();
             return this;
@@ -441,10 +449,6 @@ public class TinyWeb {
 
             }};
         }
-    }
-
-    public class WebContext {
-
     }
 
 }
