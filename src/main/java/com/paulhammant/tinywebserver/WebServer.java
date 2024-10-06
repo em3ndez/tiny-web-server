@@ -139,7 +139,28 @@ public class WebServer {
         public String getBody() { return body; }
         public Map<String, List<String>> getHeaders() { return exchange.getRequestHeaders(); }
         public String getPath() { return exchange.getRequestURI().getPath(); }
-        public String getQuery() { return exchange.getRequestURI().getQuery(); }
+        public String getQuery() {
+            if (exchange != null) {
+                return exchange.getRequestURI().getQuery();
+            }
+            return null;
+        }
+
+        public Map<String, String> getQueryParams() {
+            String query = getQuery();
+            if (query == null || query.isEmpty()) {
+                return Collections.emptyMap();
+            }
+            Map<String, String> queryParams = new HashMap<>();
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                String[] keyValue = pair.split("=");
+                if (keyValue.length == 2) {
+                    queryParams.put(keyValue[0], keyValue[1]);
+                }
+            }
+            return queryParams;
+        }
     }
 
     public static class Response {
@@ -311,7 +332,6 @@ public class WebServer {
         return this;
     }
 
-
     private void sendError(HttpExchange exchange, int code, String message) {
         Response.sendResponse(message, code, exchange);
     }
@@ -378,12 +398,12 @@ public class WebServer {
 
                 path("/foo", () -> {
                     filter(Method.GET, "/.*", (req, res, params) -> {
-                        System.out.println("filter");
-                        boolean proceed = new Random().nextBoolean();
-                        if (!proceed) {
+                        System.out.println("keys " + req.getHeaders().toString());
+                        if (req.getHeaders().containsKey("sucks")) {
                             res.write("Access Denied", 403);
                         }
-                        return proceed;
+                        System.out.println("filter");
+                        return true;
                     });
                     handle(Method.GET, "/bar", (req, res, params) -> {
                         res.write("Hello, World!");
@@ -403,6 +423,12 @@ public class WebServer {
                 });
 
                 handle(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
+
+                path("/api", () -> {
+                    handle(WebServer.Method.GET, "/test/(\\w+)", (req, res, params) -> {
+                        res.write("Parameter: " + params.get("1"));
+                    });
+                });
 
             }};
         }
