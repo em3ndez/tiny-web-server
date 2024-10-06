@@ -151,7 +151,6 @@ public class WebServerTest {
                                 handle(TinyWeb.Method.GET, "/(\\w+)?(.*)", (req, res, params) -> {
                                     System.out.println("QQ test invokes this");
                                     Map<String, String> queryParams = req.getQueryParams();
-                                    System.out.println("but query string map is empty");
                                     res.write("Parameter: " + params.get("1") + " "+ params.get("2") + " " + queryParams);
                                 });
                             });
