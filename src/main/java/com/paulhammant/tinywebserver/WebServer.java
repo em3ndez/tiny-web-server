@@ -124,21 +124,12 @@ public class WebServer {
         private final HttpExchange exchange;
         private final String body;
 
-        public Request(String body) {
-            this.exchange = null;
-            this.body = body;
-        }
-
         public Request(HttpExchange exchange) {
             this.exchange = exchange;
-            if (exchange != null) {
-                try {
-                    this.body = new String(exchange.getRequestBody().readAllBytes());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            } else {
-                this.body = body;
+            try {
+                this.body = new String(exchange.getRequestBody().readAllBytes());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
 
