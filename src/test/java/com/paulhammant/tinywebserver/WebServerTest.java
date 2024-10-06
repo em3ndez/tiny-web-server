@@ -98,7 +98,39 @@ public class WebServerTest {
                     svr.stop();
                 });
             });
-            describe("Greeting GET endpoint", () -> {
+            describe("Path method", () -> {
+                before(() -> {
+                    svr = new WebServer(8080);
+                    svr.path("/api", () -> {
+                        svr.handle(WebServer.Method.GET, "/test", (req, res, params) -> {
+                            res.write("API Test");
+                        });
+                    });
+                    svr.start();
+                });
+                it("should correctly prefix routes with base path", () -> {
+                    WebServer.SimulatedResponse response = svr.directRequest(
+                        WebServer.Method.GET,
+                        "/api/test",
+                        null,
+                        Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("API Test"));
+                    assertThat(response.statusCode(), equalTo(200));
+                });
+                it("should return 404 for non-prefixed path", () -> {
+                    WebServer.SimulatedResponse response = svr.directRequest(
+                        WebServer.Method.GET,
+                        "/test",
+                        null,
+                        Collections.emptyMap()
+                    );
+                    assertThat(response.statusCode(), equalTo(404));
+                });
+                after(() -> {
+                    svr.stop();
+                });
+            });
                 before(() -> {
                     svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
