@@ -235,6 +235,7 @@ public class WebServerTest {
                 // Port is still open, wait and try again
                 System.out.println("Port " + port + " is still open. Waiting...");
                 Thread.sleep(2000); // Wait 2 seconds before trying again
+                this.queryParams = parseQueryParams(exchange.getRequestURI().getQuery());
             } catch (IOException e) {
                 // Exception indicates that the port is not open
                 portOpen = false;
