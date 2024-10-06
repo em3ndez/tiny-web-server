@@ -150,7 +150,7 @@ public class WebServerTest {
                             path("/api2", () -> {
                                 handle(TinyWeb.Method.GET, "/(\\w+)?(.*)", (req, res, params) -> {
                                     System.out.println("QQ test invokes this");
-                                    Map<String, String> queryParams = req.getQueryParams() != null ? req.getQueryParams() : new HashMap<>();
+                                    Map<String, String> queryParams = new HashMap<>(req.getQueryParams());
                                     res.write("Parameter: " + params.get("1") + " "+ params.get("2") + " " + queryParams);
                                 });
                             });
