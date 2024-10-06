@@ -131,6 +131,7 @@ public class WebServerTest {
                     svr.stop();
                 });
             });
+            describe("Greeting GET endpoint", () -> {
                 before(() -> {
                     svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);

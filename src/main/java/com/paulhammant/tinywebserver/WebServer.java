@@ -313,7 +313,7 @@ public class WebServer {
 
 
     private void sendError(HttpExchange exchange, int code, String message) {
-        Response.blah(message, code, exchange);
+        Response.sendResponse(message, code, exchange);
     }
 
     public WebServer handle(WebServer.Method method, String path, WebServer.Handler handler) {
