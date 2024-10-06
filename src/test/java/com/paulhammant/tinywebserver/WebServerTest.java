@@ -148,10 +148,9 @@ public class WebServerTest {
                                 });
                             });
                             path("/api2", () -> {
-                                handle(TinyWeb.Method.GET, "/(\\w+)?(.*)", (req, res, params) -> {
-                                    System.out.println("QQ test invokes this");
-                                    Map<String, String> queryParams = new HashMap<>(req.getQueryParams());
-                                    res.write("Parameter: " + params.get("1") + " "+ params.get("2") + " " + queryParams);
+                                handle(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
+                                    Map<String, String> queryParams = req.getQueryParams();
+                                    res.write("Parameter: " + params.get("1") + " " + queryParams);
                                 });
                             });
                         }}
@@ -184,8 +183,8 @@ public class WebServerTest {
                         null,
                         Collections.emptyMap()
                     );
-                    assertThat(response.body(), equalTo("Parameter: test {}"));
-                    assertThat(response.statusCode(), equalTo(404));
+                    assertThat(response.body(), equalTo("Parameter: 123 {a=1, b=2}"));
+                    assertThat(response.statusCode(), equalTo(200));
                 });
                 after(() -> {
                     svr.stop();
