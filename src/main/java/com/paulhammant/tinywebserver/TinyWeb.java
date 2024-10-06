@@ -23,7 +23,7 @@ public class TinyWeb {
         protected Map<Method, Map<Pattern, Handler>> routes = new HashMap<>();
         protected Map<Method, List<FilterEntry>> filters = new HashMap<>();
 
-        public Context path(String basePath, Runnable routes) {
+        public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
             Map<Method, Map<Pattern, Handler>> previousRoutes = this.routes;
             Map<Method, List<FilterEntry>> previousFilters = this.filters;
@@ -81,7 +81,7 @@ public class TinyWeb {
             this.routes = previousRoutes;
             this.filters = previousFilters;
 
-            return this;
+            return new PathContext(this, basePath);
         }
 
         public SimulatedResponse directRequest(Method method, String path, String body, Map<String, List<String>> headers) {
@@ -198,6 +198,18 @@ public class TinyWeb {
             return this;
         }
 
+    }
+
+    public static class PathContext extends Context {
+
+        private final Context context;
+        private final String basePath;
+
+        public PathContext(Context context, String basePath) {
+
+            this.context = context;
+            this.basePath = basePath;
+        }
     }
 
     public static class Server extends Context {
