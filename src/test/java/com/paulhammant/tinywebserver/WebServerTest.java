@@ -1,12 +1,10 @@
 package com.paulhammant.tinywebserver;
 
-import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import org.mockito.Mockito;
 import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.model.TestBlock;
 import org.forgerock.cuppa.reporters.DefaultReporter;
 
 import org.jetbrains.annotations.NotNull;
@@ -23,14 +21,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @Test
 public class WebServerTest {
-    WebServer.ExampleApp app = Mockito.mock(WebServer.ExampleApp.class);
-    WebServer svr;
+    TinyWeb.ExampleApp app = Mockito.mock(TinyWeb.ExampleApp.class);
+    TinyWeb.Server svr;
 
     {
         describe("For Example (Tiny) WebServer", () -> {
             describe("Echoing GET endpoint respond with..", () -> {
                 before(() -> {
-                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                 });
@@ -51,7 +49,7 @@ public class WebServerTest {
             });
             describe("Filtering", () -> {
                 before(() -> {
-                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                 });
@@ -74,13 +72,13 @@ public class WebServerTest {
             });
             describe("WebServer's directRequest method", () -> {
                 before(() -> {
-                    svr = WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                 });
                 it("Can invoke /users/Jimmy endpoint", () -> {
-                    WebServer.SimulatedResponse response = svr.directRequest(
-                        WebServer.Method.GET,
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                        TinyWeb.Method.GET,
                         "/users/Jimmy",
                         null,
                         Collections.emptyMap()
@@ -90,8 +88,8 @@ public class WebServerTest {
                     assertThat(response.contentType(), equalTo("text/plain"));
                 });
                 it("should return 404 for a non-existent path", () -> {
-                    WebServer.SimulatedResponse response = svr.directRequest(
-                        WebServer.Method.GET,
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                        TinyWeb.Method.GET,
                         "/nonexistent",
                         null,
                         Collections.emptyMap()
@@ -106,7 +104,7 @@ public class WebServerTest {
             });
             describe("Static file serving", () -> {
                 before(() -> {
-                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     svr.start();
                 });
                 it("should serve a text file", () -> {
@@ -123,14 +121,14 @@ public class WebServerTest {
                 });
                 it("should serve a file from a subdirectory", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                    try (Response response = httpGet("http://localhost:8080/static/src/main/java/com/paulhammant/tinywebserver/WebServer.java")) {
+                    try (Response response = httpGet("http://localhost:8080/static/src/main/java/com/paulhammant/tinywebserver/TinyWeb.java")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), containsString("class"));
                     }
                 });
                 it("should be able to serve a non text file", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                    try (Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tinywebserver/WebServer.class")) {
+                    try (Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tinywebserver/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().contentType().toString(), equalTo("application/java-vm"));
                         assertThat(response.body().string(), containsString("(Lcom/sun/net/httpserver/HttpExchange;ILjava/lang/String;)V"));
@@ -142,15 +140,15 @@ public class WebServerTest {
             });
             describe("Path method", () -> {
                 before(() -> {
-                    svr = new WebServer(8080) {
+                    svr = new TinyWeb.Server(8080) {
                         {
                             path("/api", () -> {
-                                handle(WebServer.Method.GET, "/test/(\\w+)", (req, res, params) -> {
+                                handle(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
                                     res.write("Parameter: " + params.get("1"));
                                 });
                             });
                             path("/api2", () -> {
-                                handle(WebServer.Method.GET, "/(\\w+)?(\\w*)", (req, res, params) -> {
+                                handle(TinyWeb.Method.GET, "/(\\w+)?(\\w*)", (req, res, params) -> {
                                     Map<String, String> queryParams = req.getQueryParams();
                                     res.write("Parameter: " + params.get("1") + " " + queryParams);
                                 });
@@ -159,8 +157,8 @@ public class WebServerTest {
                     .start();
                 });
                 it("should correctly extract parameters from path", () -> {
-                    WebServer.SimulatedResponse response = svr.directRequest(
-                        WebServer.Method.GET,
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                        TinyWeb.Method.GET,
                         "/api/test/123",
                         null,
                         Collections.emptyMap()
@@ -169,8 +167,8 @@ public class WebServerTest {
                     assertThat(response.statusCode(), equalTo(200));
                 });
                 it("two params should not match a one param path", () -> {
-                    WebServer.SimulatedResponse response = svr.directRequest(
-                        WebServer.Method.GET,
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                        TinyWeb.Method.GET,
                         "/api/test/123/456",
                         null,
                         Collections.emptyMap()
@@ -184,13 +182,13 @@ public class WebServerTest {
             });
             describe("Greeting GET endpoint", () -> {
                 before(() -> {
-                    svr =  WebServer.ExampleApp.exampleComposition(new String[0], app);
+                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                     Mockito.doAnswer(invocation -> {
-                        invocation.<WebServer.Response>getArgument(1).write("invoked");
+                        invocation.<TinyWeb.Response>getArgument(1).write("invoked");
                         return null;
-                    }).when(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.<Map<String, String>>any());
+                    }).when(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
                 });
                 it("invokes ExampleApp method", () -> {
                     try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
@@ -199,7 +197,7 @@ public class WebServerTest {
                 });
                 after(() -> {
                     svr.stop();
-                    Mockito.verify(app).foobar(Mockito.any(WebServer.Request.class), Mockito.any(WebServer.Response.class), Mockito.<Map<String, String>>any());
+                    Mockito.verify(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
                 });
             });
         });
