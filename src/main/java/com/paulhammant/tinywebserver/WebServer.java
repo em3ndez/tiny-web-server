@@ -154,10 +154,10 @@ public class WebServer {
         }
 
         public void write(String content, int statusCode) {
-            blah(content, statusCode, exchange);
+            sendResponse(content, statusCode, exchange);
         }
 
-        private static void blah(String content, int statusCode, HttpExchange exchange) {
+        private static void sendResponse(String content, int statusCode, HttpExchange exchange) {
             exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
             byte[] bytes = content.getBytes();
             try {
