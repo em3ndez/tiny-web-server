@@ -150,9 +150,6 @@ public class WebServerTest {
                             path("/api2", () -> {
                                 handle(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
                                     Map<String, String> queryParams = req.getQueryParams();
-                                    if (queryParams == null) {
-                                        queryParams = new HashMap<>();
-                                    }
                                     res.write("Parameter: " + params.get("1") + " " + queryParams);
                                 });
                             });
