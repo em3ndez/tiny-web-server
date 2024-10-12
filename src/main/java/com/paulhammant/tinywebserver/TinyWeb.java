@@ -81,7 +81,7 @@ public class TinyWeb {
             this.routes = previousRoutes;
             this.filters = previousFilters;
 
-            return new PathContext(this, basePath);
+            return new PathContext(basePath, this);
         }
 
         public SimulatedResponse directRequest(Method method, String path, String body, Map<String, List<String>> headers) {
@@ -202,13 +202,28 @@ public class TinyWeb {
 
     public static class PathContext extends Context {
 
-        private final Context context;
         private final String basePath;
+        private final TinyWeb.Context parentContext;
 
-        public PathContext(Context context, String basePath) {
-
-            this.context = context;
+        public PathContext(String basePath, TinyWeb.Context parentContext) {
             this.basePath = basePath;
+            this.parentContext = parentContext;
+        }
+
+        @Override
+        public PathContext handle(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
+            String fullPath = basePath + path;
+            parentContext.routes.computeIfAbsent(method, k -> new HashMap<>())
+                    .put(Pattern.compile("^" + fullPath + "$"), handler);
+            return this;
+        }
+
+        @Override
+        public PathContext filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
+            String fullPath = basePath + path;
+            parentContext.filters.computeIfAbsent(method, k -> new ArrayList<>())
+                    .add(new TinyWeb.FilterEntry(Pattern.compile("^" + fullPath + "$"), filter));
+            return this;
         }
     }
 
@@ -338,16 +353,22 @@ public class TinyWeb {
         private final HttpExchange exchange;
         private final String body;
 
+        private final Map<String, String> queryParams;
+
         public Request(HttpExchange exchange) {
             this.exchange = exchange;
             if (exchange != null) {
                 try {
                     this.body = new String(exchange.getRequestBody().readAllBytes());
+                    this.queryParams = parseQueryParams(exchange.getRequestURI().getQuery());
+
                 } catch (IOException e) {
+
                     throw new RuntimeException(e);
                 }
             } else {
                 this.body = null;
+                this.queryParams = null;
             }
         }
 
@@ -360,6 +381,22 @@ public class TinyWeb {
             }
             return null;
         }
+
+        private Map<String, String> parseQueryParams(String query) {
+            if (query == null || query.isEmpty()) {
+                return Collections.emptyMap();
+            }
+            Map<String, String> queryParams = new HashMap<>();
+            String[] pairs = query.split("&");
+            for (String pair : pairs) {
+                String[] keyValue = pair.split("=");
+                if (keyValue.length == 2) {
+                    queryParams.put(keyValue[0], keyValue[1]);
+                }
+            }
+            return queryParams;
+        }
+
 
         public Map<String, String> getQueryParams() {
             String query = getQuery();
