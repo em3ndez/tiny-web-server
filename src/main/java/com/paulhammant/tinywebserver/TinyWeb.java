@@ -518,6 +518,10 @@ public class TinyWeb {
 
                 endPoint(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
 
+                endPoint(Method.PUT, "/update", (req, res, params) -> {
+                    res.write("Updated data: " + req.getBody(), 200);
+                });
+
                 path("/api", () -> {
                     endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
                         res.write("Parameter: " + params.get("1"));

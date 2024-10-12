@@ -106,7 +106,25 @@ public class TinyWebTest {
                     assertThat(response.statusCode(), equalTo(201));
                 });
             });
-            describe("WebServer's directRequest method", () -> {
+            describe("ExampleApp PUT method", () -> {
+                before(() -> {
+                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                    svr.start();
+                });
+                it("should handle PUT requests correctly", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                        TinyWeb.Method.PUT,
+                        "/update",
+                        "new data",
+                        Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Updated data: new data"));
+                    assertThat(response.statusCode(), equalTo(200));
+                });
+                after(() -> {
+                    svr.stop();
+                });
+            });
                 before(() -> {
                     svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
