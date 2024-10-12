@@ -87,7 +87,6 @@ public class TinyWeb {
         public SimulatedResponse directRequest(Method method, String path, String body, Map<String, List<String>> headers) {
             Map<Pattern, Handler> methodRoutes = routes.get(method);
             if (methodRoutes == null) {
-                System.out.println("Method not allowed");
                 return new SimulatedResponse("Method not allowed", 405, "text/plain", Collections.emptyMap());
             }
 
@@ -168,6 +167,7 @@ public class TinyWeb {
                     return new SimulatedResponse(responseBody.toString(), responseCode[0], contentType[0], responseHeaders);
                 }
             }
+            //TODO: If there is a DELETE attempt on a URL that has a GET, then the statusCode should be 405
             return new SimulatedResponse("Not found", 404, "text/plain", Collections.emptyMap());
         }
 
