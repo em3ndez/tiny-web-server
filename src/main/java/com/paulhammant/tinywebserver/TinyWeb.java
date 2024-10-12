@@ -128,22 +128,7 @@ public class TinyWeb {
                     };
 
                     // We need a subclass of Response for direct requests that doesn't attempt to utilize exchange
-                    Response response = new Response(null) {
-                        @Override
-                        public void write(String content, int statusCode) {
-                            responseBody.append(content);
-                            responseCode[0] = statusCode;
-                        }
-
-                        @Override
-                        public void write(String content) {
-                            write(content, 200);
-                        }
-
-                        public void setHeader(String name, String value) {
-                            responseHeaders.put(name, List.of(value));
-                        }
-                    };
+                    Response response = new DirectResponse(responseBody, responseCode, responseHeaders);
 
                     // Apply filters
                     List<FilterEntry> methodFilters = filters.get(method);
@@ -459,7 +444,33 @@ public class TinyWeb {
         }
     }
 
-    public static class Response {
+    public static class DirectResponse extends Response {
+        private final StringBuilder responseBody;
+        private final int[] responseCode;
+        private final Map<String, List<String>> responseHeaders;
+
+        public DirectResponse(StringBuilder responseBody, int[] responseCode, Map<String, List<String>> responseHeaders) {
+            super(null);
+            this.responseBody = responseBody;
+            this.responseCode = responseCode;
+            this.responseHeaders = responseHeaders;
+        }
+
+        @Override
+        public void write(String content, int statusCode) {
+            responseBody.append(content);
+            responseCode[0] = statusCode;
+        }
+
+        @Override
+        public void write(String content) {
+            write(content, 200);
+        }
+
+        public void setHeader(String name, String value) {
+            responseHeaders.put(name, List.of(value));
+        }
+    }
         private final HttpExchange exchange;
 
         public Response(HttpExchange exchange) {
