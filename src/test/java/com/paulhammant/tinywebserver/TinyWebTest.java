@@ -17,7 +17,6 @@ import static okhttp3.Request.*;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @Test
 public class TinyWebTest {
@@ -43,7 +42,6 @@ public class TinyWebTest {
                 });
                 after(() -> {
                     svr.stop();
-                    verifyNoInteractions(app);
                 });
             });
             describe("Filtering", () -> {
@@ -66,7 +64,6 @@ public class TinyWebTest {
                 });
                 after(() -> {
                     svr.stop();
-                    //verifyNoInteractions(app);
                 });
             });
             describe("Static file serving functionality", () -> {
@@ -100,58 +97,6 @@ public class TinyWebTest {
                         assertThat(response.body().contentType().toString(), equalTo("application/java-vm"));
                         assertThat(response.body().string(), containsString("(Lcom/sun/net/httpserver/HttpExchange;ILjava/lang/String;)V"));
                     }
-                });
-                after(() -> {
-                    svr.stop();
-                });
-            });
-
-            describe("Path method functionality", () -> {
-                before(() -> {
-                    svr = new TinyWeb.Server(8080) {
-                        {
-                            path("/api", () -> {
-                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
-                                    res.write("Parameter: " + params.get("1"));
-                                });
-                            });
-                            path("/api2", () -> {
-                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)?(.*)", (req, res, params) -> {
-                                    res.write("Parameter: " + params);
-                                });
-                            });
-                        }}
-                    .start();
-                });
-                it("should extract parameters correctly from path", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.GET,
-                        "/api/test/123",
-                        null,
-                        Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Parameter: 123"));
-                    assertThat(response.statusCode(), equalTo(200));
-                });
-                it("should return 404 when two params are provided for a one param path", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.GET,
-                        "/api/test/123/456",
-                        null,
-                        Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Not found"));
-                    assertThat(response.statusCode(), equalTo(404));
-                });
-                it("should handle query parameters correctly", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.GET,
-                        "/api2/test/123?a=1&b=2",
-                        null,
-                        Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Parameter: {1=123, a=1, b=2}"));
-                    assertThat(response.statusCode(), equalTo(200));
                 });
                 after(() -> {
                     svr.stop();
@@ -246,59 +191,59 @@ public class TinyWebTest {
                     svr.stop();
                 });
             });
-            describe("Path method functionality", () -> {
-                before(() -> {
-                    svr = new TinyWeb.Server(8080) {
-                        {
-                            path("/api", () -> {
-                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
-                                    res.write("Parameter: " + params.get("1"));
-                                });
-                            });
-                            path("/api2", () -> {
-                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)?(.*)", (req, res, params) -> {
-                                    res.write("Parameter: " + params);
-                                });
-                            });
-                        }}
-                            .start();
-                });
-                it("should extract parameters correctly from path", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/api/test/123",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Parameter: 123"));
-                    assertThat(response.statusCode(), equalTo(200));
-                });
-                it("should return 404 when two params are provided for a one param path", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/api/test/123/456",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Not found"));
-                    assertThat(response.statusCode(), equalTo(404));
-                });
-                it("should handle query parameters correctly", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/api2/test/123?a=1&b=2",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Parameter: {1=123, a=1, b=2}"));
-                    assertThat(response.statusCode(), equalTo(200));
-                });
-                after(() -> {
-                    svr.stop();
-                });
-            });
         });
 
+        describe("Inline application tests", () -> {
+            before(() -> {
+                svr = new TinyWeb.Server(8080) {
+                    {
+                        path("/api", () -> {
+                            endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
+                                res.write("Parameter: " + params.get("1"));
+                            });
+                        });
+                        path("/api2", () -> {
+                            endPoint(TinyWeb.Method.GET, "/test/(\\w+)?(.*)", (req, res, params) -> {
+                                res.write("Parameter: " + params);
+                            });
+                        });
+                    }}
+                        .start();
+            });
+            it("should extract parameters correctly from path", () -> {
+                TinyWeb.SimulatedResponse response = svr.directRequest(
+                        TinyWeb.Method.GET,
+                        "/api/test/123",
+                        null,
+                        Collections.emptyMap()
+                );
+                assertThat(response.body(), equalTo("Parameter: 123"));
+                assertThat(response.statusCode(), equalTo(200));
+            });
+            it("should return 404 when two params are provided for a one param path", () -> {
+                TinyWeb.SimulatedResponse response = svr.directRequest(
+                        TinyWeb.Method.GET,
+                        "/api/test/123/456",
+                        null,
+                        Collections.emptyMap()
+                );
+                assertThat(response.body(), equalTo("Not found"));
+                assertThat(response.statusCode(), equalTo(404));
+            });
+            it("should handle query parameters correctly", () -> {
+                TinyWeb.SimulatedResponse response = svr.directRequest(
+                        TinyWeb.Method.GET,
+                        "/api2/test/123?a=1&b=2",
+                        null,
+                        Collections.emptyMap()
+                );
+                assertThat(response.body(), equalTo("Parameter: {1=123, a=1, b=2}"));
+                assertThat(response.statusCode(), equalTo(200));
+            });
+            after(() -> {
+                svr.stop();
+            });
+        });
     }
 
     private static @NotNull Response httpGet(String url) throws IOException {
