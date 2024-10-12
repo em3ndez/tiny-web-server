@@ -33,10 +33,6 @@ public class WebServerTest {
                     svr.start();
                 });
                 describe("DirectRequest Filtering", () -> {
-                    before(() -> {
-                        svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                        svr.start();
-                    });
                     it("Filter that blocks on 'sucks' doesn't block when sucks is absent", () -> {
                         TinyWeb.SimulatedResponse response = svr.directRequest(
                             TinyWeb.Method.GET,
@@ -58,10 +54,6 @@ public class WebServerTest {
                         );
                         assertThat(response.statusCode(), equalTo(403));
                         assertThat(response.body(), equalTo("Access Denied"));
-                    });
-                    after(() -> {
-                        svr.stop();
-                        verifyNoInteractions(app);
                     });
                 });
                 it("..Jimmy when Jimmy is a param ", () -> {

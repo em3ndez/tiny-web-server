@@ -410,7 +410,7 @@ public class TinyWeb {
             return null;
         }
 
-        private Map<String, String> parseQueryParams(String query) {
+        protected Map<String, String> parseQueryParams(String query) {
             if (query == null || query.isEmpty()) {
                 return Collections.emptyMap();
             }
