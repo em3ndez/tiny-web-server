@@ -164,12 +164,12 @@ public class WebServerTest {
                     svr = new TinyWeb.Server(8080) {
                         {
                             path("/api", () -> {
-                                handle(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
+                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
                                     res.write("Parameter: " + params.get("1"));
                                 });
                             });
                             path("/api2", () -> {
-                                handle(TinyWeb.Method.GET, "/test/(\\w+)?(.*)", (req, res, params) -> {
+                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)?(.*)", (req, res, params) -> {
                                     res.write("Parameter: " + params);
                                 });
                             });

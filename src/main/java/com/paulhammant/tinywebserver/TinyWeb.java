@@ -179,7 +179,7 @@ public class TinyWeb {
             Response.sendResponse(message, code, exchange);
         }
 
-        public Context handle(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
+        public Context endPoint(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
             routes.computeIfAbsent(method, k -> new HashMap<>())
                     .put(Pattern.compile("^" + path + "$"), handler);
             return this;
@@ -192,7 +192,7 @@ public class TinyWeb {
         }
 
         public Context serveStaticFiles(String basePath, String directory) {
-            handle(Method.GET, basePath + "/(.*)", (req, res, params) -> {
+            endPoint(Method.GET, basePath + "/(.*)", (req, res, params) -> {
                 String filePath = params.get("1");
                 Path path = Paths.get(directory, filePath);
                 if (Files.exists(path) && !Files.isDirectory(path)) {
@@ -204,7 +204,7 @@ public class TinyWeb {
                         res.exchange.getResponseBody().write(fileBytes);
                         res.exchange.getResponseBody().close();
                     } catch (IOException e) {
-                        throw new TinyWebServerException("Internal Static File Serving error for " + path, e);
+                        throw new WebServerException("Internal Static File Serving error for " + path, e);
                     }
                 } else {
                     sendError(res.exchange, 404, "File not found");
@@ -212,7 +212,6 @@ public class TinyWeb {
             });
             return this;
         }
-
     }
 
     public static class PathContext extends Context {
@@ -226,7 +225,7 @@ public class TinyWeb {
         }
 
         @Override
-        public PathContext handle(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
+        public PathContext endPoint(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
             String fullPath = basePath + path;
             parentContext.routes.computeIfAbsent(method, k -> new HashMap<>())
                     .put(Pattern.compile("^" + fullPath + "$"), handler);
@@ -242,8 +241,8 @@ public class TinyWeb {
         }
     }
 
-    public static class TinyWebServerException extends RuntimeException {
-        public TinyWebServerException(String message, Throwable cause) {
+    public static class WebServerException extends RuntimeException {
+        public WebServerException(String message, Throwable cause) {
             super(message, cause);
         }
     }
@@ -256,7 +255,7 @@ public class TinyWeb {
             try {
                 server = HttpServer.create(new InetSocketAddress(port), 0);
             } catch (IOException e) {
-                throw new TinyWebServerException("Can't listen on port " + port, e);
+                throw new WebServerException("Can't listen on port " + port, e);
             }
             server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
@@ -305,8 +304,8 @@ public class TinyWeb {
                                         if (!proceed) {
                                             return; // Stop processing if filter returns false
                                         }
-                                    } catch (TinyWebServerException e) {
-                                        e.printStackTrace();
+                                    } catch (WebServerException e) {
+                                        webServerException(e);
                                         sendError(exchange, 500, "Internal server error: " + e.getMessage());
                                         return;
                                     }
@@ -320,8 +319,8 @@ public class TinyWeb {
                                     new Response(exchange),
                                     params
                             );
-                        } catch (TinyWebServerException e) {
-                            e.printStackTrace();
+                        } catch (WebServerException e) {
+                            webServerException(e);
                             sendError(exchange, 500, "Internal server error: " + e.getMessage());
                         }
                         return;
@@ -334,6 +333,10 @@ public class TinyWeb {
             });
         }
 
+        protected void webServerException(WebServerException e) {
+            System.out.println(e.getMessage() + "\nStack Trace:");
+            e.printStackTrace(System.out);
+        }
 
         public TinyWeb.Server start() {
             server.start();
@@ -385,7 +388,7 @@ public class TinyWeb {
                     this.queryParams = parseQueryParams(exchange.getRequestURI().getQuery());
 
                 } catch (IOException e) {
-                    throw new TinyWebServerException("Internal request error, for " + exchange.getRequestURI(), e);
+                    throw new WebServerException("Internal request error, for " + exchange.getRequestURI(), e);
                 }
             } else {
                 this.body = null;
@@ -460,7 +463,7 @@ public class TinyWeb {
                 exchange.getResponseBody().write(bytes);
                 exchange.getResponseBody().close();
             } catch (IOException e) {
-                throw new TinyWebServerException("Internal response error, for " + exchange.getRequestURI(), e);
+                throw new WebServerException("Internal response error, for " + exchange.getRequestURI(), e);
             }
         }
     }
@@ -492,7 +495,7 @@ public class TinyWeb {
                         }
                         return true; // proceed
                     });
-                    handle(Method.GET, "/bar", (req, res, params) -> {
+                    endPoint(Method.GET, "/bar", (req, res, params) -> {
                         res.write("Hello, World!");
                         // This endpoint is /foo/bar if that wasn't obvious
                     });
@@ -501,18 +504,18 @@ public class TinyWeb {
                 serveStaticFiles("/static", new File(".").getAbsolutePath());
 
 
-                handle(Method.GET, "/users/(\\w+)", (req, res, params) -> {
+                endPoint(Method.GET, "/users/(\\w+)", (req, res, params) -> {
                     res.write("User profile: " + params.get("1"));
                 });
 
-                handle(Method.POST, "/echo", (req, res, params) -> {
+                endPoint(Method.POST, "/echo", (req, res, params) -> {
                     res.write("You sent: " + req.getBody());
                 });
 
-                handle(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
+                endPoint(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
 
                 path("/api", () -> {
-                    handle(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
+                    endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
                         res.write("Parameter: " + params.get("1"));
                     });
                 });
