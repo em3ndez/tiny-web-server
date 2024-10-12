@@ -127,6 +127,7 @@ public class TinyWeb {
                         }
                     };
 
+                    // We need a subclass of Response for direct requests that doesn't attempt to utilize exchange
                     Response response = new Response(null) {
                         @Override
                         public void write(String content, int statusCode) {
