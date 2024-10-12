@@ -208,7 +208,7 @@ public class TinyWeb {
                         res.exchange.getResponseBody().write(fileBytes);
                         res.exchange.getResponseBody().close();
                     } catch (IOException e) {
-                        throw new WebServerException("Internal Static File Serving error for " + path, e);
+                        throw new ServerException("Internal Static File Serving error for " + path, e);
                     }
                 } else {
                     sendError(res.exchange, 404, "File not found");
@@ -245,8 +245,8 @@ public class TinyWeb {
         }
     }
 
-    public static class WebServerException extends RuntimeException {
-        public WebServerException(String message, Throwable cause) {
+    public static class ServerException extends RuntimeException {
+        public ServerException(String message, Throwable cause) {
             super(message, cause);
         }
     }
@@ -259,7 +259,7 @@ public class TinyWeb {
             try {
                 server = HttpServer.create(new InetSocketAddress(port), 0);
             } catch (IOException e) {
-                throw new WebServerException("Can't listen on port " + port, e);
+                throw new ServerException("Can't listen on port " + port, e);
             }
             server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
@@ -308,8 +308,8 @@ public class TinyWeb {
                                         if (!proceed) {
                                             return; // Stop processing if filter returns false
                                         }
-                                    } catch (WebServerException e) {
-                                        webServerException(e);
+                                    } catch (ServerException e) {
+                                        serverException(e);
                                         sendError(exchange, 500, "Internal server error: " + e.getMessage());
                                         return;
                                     }
@@ -323,8 +323,8 @@ public class TinyWeb {
                                     new Response(exchange),
                                     params
                             );
-                        } catch (WebServerException e) {
-                            webServerException(e);
+                        } catch (ServerException e) {
+                            serverException(e);
                             sendError(exchange, 500, "Internal server error: " + e.getMessage());
                         }
                         return;
@@ -337,7 +337,7 @@ public class TinyWeb {
             });
         }
 
-        protected void webServerException(WebServerException e) {
+        protected void serverException(ServerException e) {
             System.out.println(e.getMessage() + "\nStack Trace:");
             e.printStackTrace(System.out);
         }
@@ -392,7 +392,7 @@ public class TinyWeb {
                     this.queryParams = parseQueryParams(exchange.getRequestURI().getQuery());
 
                 } catch (IOException e) {
-                    throw new WebServerException("Internal request error, for " + exchange.getRequestURI(), e);
+                    throw new ServerException("Internal request error, for " + exchange.getRequestURI(), e);
                 }
             } else {
                 this.body = null;
@@ -467,7 +467,7 @@ public class TinyWeb {
                 exchange.getResponseBody().write(bytes);
                 exchange.getResponseBody().close();
             } catch (IOException e) {
-                throw new WebServerException("Internal response error, for " + exchange.getRequestURI(), e);
+                throw new ServerException("Internal response error, for " + exchange.getRequestURI(), e);
             }
         }
     }

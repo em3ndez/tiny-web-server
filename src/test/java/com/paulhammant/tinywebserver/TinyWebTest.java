@@ -20,7 +20,7 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @Test
-public class WebServerTest {
+public class TinyWebTest {
     TinyWeb.ExampleApp app = Mockito.mock(TinyWeb.ExampleApp.class);
     TinyWeb.Server svr;
 
@@ -268,6 +268,6 @@ public class WebServerTest {
 
     public static void main(String[] args) {
         Runner runner = new Runner();
-        runner.run(runner.defineTests(Collections.singletonList(WebServerTest.class)), new DefaultReporter());
+        runner.run(runner.defineTests(Collections.singletonList(TinyWebTest.class)), new DefaultReporter());
     }
 }
