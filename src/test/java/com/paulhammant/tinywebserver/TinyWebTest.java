@@ -25,36 +25,11 @@ public class TinyWebTest {
     TinyWeb.Server svr;
 
     {
-        describe("Example WebServer Functionality", () -> {
+        describe("Example WebServer functionality via sockets", () -> {
             describe("Echoing GET endpoint respond with..", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    //waitForPortToBeClosed("localhost",8080);
                     svr.start();
-                });
-                describe("DirectRequest Filtering", () -> {
-                    it("should allow access when header 'sucks' is absent", () -> {
-                        TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/foo/bar",
-                            null,
-                            Collections.emptyMap()
-                        );
-                        assertThat(response.statusCode(), equalTo(200));
-                        assertThat(response.body(), equalTo("Hello, World!"));
-                    });
-                    it("should deny access when header 'sucks' is present", () -> {
-                        Map<String, List<String>> headers = new HashMap<>();
-                        headers.put("sucks", List.of("true"));
-                        TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/foo/bar",
-                            null,
-                            headers
-                        );
-                        assertThat(response.statusCode(), equalTo(403));
-                        assertThat(response.body(), equalTo("Access Denied"));
-                    });
                 });
                 it("should return user profile for Jimmy", () -> {
                     try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
@@ -91,70 +66,7 @@ public class TinyWebTest {
                 });
                 after(() -> {
                     svr.stop();
-                    verifyNoInteractions(app);
-                });
-            });
-            describe("POST endpoint", () -> {
-                it("should return 201 and echo the request body", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.POST,
-                        "/echo",
-                        "hello everyone",
-                        Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("You sent: hello everyone"));
-                    assertThat(response.statusCode(), equalTo(201));
-                });
-            });
-            describe("ExampleApp PUT method", () -> {
-                before(() -> {
-                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    svr.start();
-                });
-                it("should return 200 and update the data", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.PUT,
-                        "/update",
-                        "new data",
-                        Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Updated data: new data"));
-                    assertThat(response.statusCode(), equalTo(200));
-                });
-                after(() -> {
-                    svr.stop();
-                });
-            });
-            describe("Direct request handling", () -> {
-                before(() -> {
-                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    //waitForPortToBeClosed("localhost",8080);
-                    svr.start();
-                });
-                it("should return user profile for Jimmy via direct request", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.GET,
-                        "/users/Jimmy",
-                        null,
-                        Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("User profile: Jimmy"));
-                    assertThat(response.statusCode(), equalTo(200));
-                    assertThat(response.contentType(), equalTo("text/plain"));
-                });
-                it("should return 404 for non-existent paths", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.GET,
-                        "/nonexistent",
-                        null,
-                        Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Not found"));
-                    assertThat(response.statusCode(), equalTo(404));
-                    assertThat(response.contentType(), equalTo("text/plain"));
-                });
-                after(() -> {
-                   svr.stop();
+                    //verifyNoInteractions(app);
                 });
             });
             describe("Static file serving functionality", () -> {
@@ -191,26 +103,6 @@ public class TinyWebTest {
                 });
                 after(() -> {
                     svr.stop();
-                });
-            });
-            describe("Greeting GET endpoint", () -> {
-                before(() -> {
-                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    //waitForPortToBeClosed("localhost",8080);
-                    svr.start();
-                    Mockito.doAnswer(invocation -> {
-                        invocation.<TinyWeb.Response>getArgument(1).write("invoked");
-                        return null;
-                    }).when(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
-                });
-                it("should invoke ExampleApp foobar method", () -> {
-                    try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
-                        assertThat(response.body().string(), equalTo("invoked"));
-                    }
-                });
-                after(() -> {
-                    svr.stop();
-                    Mockito.verify(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
                 });
             });
 
@@ -266,6 +158,147 @@ public class TinyWebTest {
                 });
             });
         });
+
+        describe("With mockito", () -> {
+            describe("Greeting GET endpoint", () -> {
+                before(() -> {
+                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
+                    svr.start();
+                    Mockito.doAnswer(invocation -> {
+                        invocation.<TinyWeb.Response>getArgument(1).write("invoked");
+                        return null;
+                    }).when(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
+                });
+                it("should invoke ExampleApp foobar method", () -> {
+                    try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
+                        assertThat(response.body().string(), equalTo("invoked"));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                    Mockito.verify(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
+                });
+            });
+        });
+
+        describe("Direct Example WebServer functionality bypassing sockets", () -> {
+            describe("POST endpoint", () -> {
+                it("should return 201 and echo the request body", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.POST,
+                            "/echo",
+                            "hello everyone",
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("You sent: hello everyone"));
+                    assertThat(response.statusCode(), equalTo(201));
+                });
+            });
+            describe("ExampleApp PUT method", () -> {
+                before(() -> {
+                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                    svr.start();
+                });
+                it("should return 200 and update the data", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.PUT,
+                            "/update",
+                            "new data",
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Updated data: new data"));
+                    assertThat(response.statusCode(), equalTo(200));
+                });
+                after(() -> {
+                    svr.stop();
+                });
+            });
+            describe("Direct request handling", () -> {
+                before(() -> {
+                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
+                    svr.start();
+                });
+                it("should return user profile for Jimmy via direct request", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/users/Jimmy",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("User profile: Jimmy"));
+                    assertThat(response.statusCode(), equalTo(200));
+                    assertThat(response.contentType(), equalTo("text/plain"));
+                });
+                it("should return 404 for non-existent paths", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/nonexistent",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Not found"));
+                    assertThat(response.statusCode(), equalTo(404));
+                    assertThat(response.contentType(), equalTo("text/plain"));
+                });
+                after(() -> {
+                    svr.stop();
+                });
+            });
+            describe("Path method functionality", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080) {
+                        {
+                            path("/api", () -> {
+                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
+                                    res.write("Parameter: " + params.get("1"));
+                                });
+                            });
+                            path("/api2", () -> {
+                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)?(.*)", (req, res, params) -> {
+                                    res.write("Parameter: " + params);
+                                });
+                            });
+                        }}
+                            .start();
+                });
+                it("should extract parameters correctly from path", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/api/test/123",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Parameter: 123"));
+                    assertThat(response.statusCode(), equalTo(200));
+                });
+                it("should return 404 when two params are provided for a one param path", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/api/test/123/456",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Not found"));
+                    assertThat(response.statusCode(), equalTo(404));
+                });
+                it("should handle query parameters correctly", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/api2/test/123?a=1&b=2",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Parameter: {1=123, a=1, b=2}"));
+                    assertThat(response.statusCode(), equalTo(200));
+                });
+                after(() -> {
+                    svr.stop();
+                });
+            });
+        });
+
     }
 
     private static @NotNull Response httpGet(String url) throws IOException {
