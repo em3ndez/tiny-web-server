@@ -25,7 +25,7 @@ public class TinyWebTest {
     TinyWeb.Server svr;
 
     {
-        describe("Example WebServer functionality via sockets", () -> {
+        describe("ExampleApp.exampleComposition() server tested via sockets", () -> {
             describe("Echoing GET endpoint respond with..", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
@@ -159,7 +159,7 @@ public class TinyWebTest {
             });
         });
 
-        describe("With mockito", () -> {
+        describe("ExampleApp.exampleComposition() app tested with Mockito", () -> {
             describe("Greeting GET endpoint", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
