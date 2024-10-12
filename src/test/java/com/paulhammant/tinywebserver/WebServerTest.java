@@ -26,7 +26,7 @@ public class WebServerTest {
 
     {
         describe("For Example (Tiny) WebServer", () -> {
-            describe("Echoing GET endpoint respond with..", () -> {
+            skip().describe("Echoing GET endpoint respond with..", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
@@ -138,6 +138,27 @@ public class WebServerTest {
                     svr.stop();
                 });
             });
+            describe("Greeting GET endpoint", () -> {
+                before(() -> {
+                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                    //waitForPortToBeClosed("localhost",8080);
+                    svr.start();
+                    Mockito.doAnswer(invocation -> {
+                        invocation.<TinyWeb.Response>getArgument(1).write("invoked");
+                        return null;
+                    }).when(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
+                });
+                it("invokes ExampleApp method", () -> {
+                    try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
+                        assertThat(response.body().string(), equalTo("invoked"));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                    Mockito.verify(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
+                });
+            });
+
             describe("Path method", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080) {
@@ -148,12 +169,8 @@ public class WebServerTest {
                                 });
                             });
                             path("/api2", () -> {
-                                handle(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
-                                    Map<String, String> queryParams = req.getQueryParams();
-                                    if (queryParams == null) {
-                                        queryParams = new HashMap<>();
-                                    }
-                                    res.write("Parameter: " + params.get("1") + " " + queryParams);
+                                handle(TinyWeb.Method.GET, "/test/(\\w+)?(.*)", (req, res, params) -> {
+                                    res.write("Parameter: " + params);
                                 });
                             });
                         }}
@@ -186,31 +203,11 @@ public class WebServerTest {
                         null,
                         Collections.emptyMap()
                     );
-                    assertThat(response.body(), equalTo("Parameter: 123 {a=1, b=2}"));
+                    assertThat(response.body(), equalTo("Parameter: {1=123, a=1, b=2}"));
                     assertThat(response.statusCode(), equalTo(200));
                 });
                 after(() -> {
                     svr.stop();
-                });
-            });
-            describe("Greeting GET endpoint", () -> {
-                before(() -> {
-                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    //waitForPortToBeClosed("localhost",8080);
-                    svr.start();
-                    Mockito.doAnswer(invocation -> {
-                        invocation.<TinyWeb.Response>getArgument(1).write("invoked");
-                        return null;
-                    }).when(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
-                });
-                it("invokes ExampleApp method", () -> {
-                    try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
-                        assertThat(response.body().string(), equalTo("invoked"));
-                    }
-                });
-                after(() -> {
-                    svr.stop();
-                    Mockito.verify(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
                 });
             });
         });

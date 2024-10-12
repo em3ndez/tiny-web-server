@@ -101,10 +101,17 @@ public class TinyWeb {
             for (var route : methodRoutes.entrySet()) {
                 Matcher matcher = route.getKey().matcher(path);
                 if (matcher.matches()) {
-                    routeMatched = true;
                     Map<String, String> params = new HashMap<>();
-                    for (int i = 1; i <= matcher.groupCount(); i++) {
-                        params.put(String.valueOf(i), matcher.group(i));
+                    int groupCount = matcher.groupCount();
+                    Pattern key = route.getKey();
+                    for (int i = 1; i <= groupCount; i++) {
+                        if (key.toString().endsWith("?(.*)$") && i == groupCount) {
+                            placeQueryStringItemsInParams(params, matcher.group(i));
+                        } else {
+                            String group = matcher.group(i);
+                            String key1 = String.valueOf(i);
+                            params.put(key1, group);
+                        }
                     }
 
                     // Create pseudo request and response
@@ -160,6 +167,14 @@ public class TinyWeb {
             return new SimulatedResponse("Not found", 404, "text/plain", Collections.emptyMap());
         }
 
+        private static void placeQueryStringItemsInParams(Map<String, String> params, String group) {
+            String[] qsParams = group.substring(1).split("&");
+            for (String qsParam : qsParams) {
+                String[] paramParts = qsParam.split("=");
+                params.put(paramParts[0], paramParts[1]);
+            }
+        }
+
         protected void sendError(HttpExchange exchange, int code, String message) {
             Response.sendResponse(message, code, exchange);
         }
@@ -189,7 +204,7 @@ public class TinyWeb {
                         res.exchange.getResponseBody().write(fileBytes);
                         res.exchange.getResponseBody().close();
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new TinyWebServerException("Internal Static File Serving error for " + path, e);
                     }
                 } else {
                     sendError(res.exchange, 404, "File not found");
@@ -227,6 +242,11 @@ public class TinyWeb {
         }
     }
 
+    public static class TinyWebServerException extends RuntimeException {
+        public TinyWebServerException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
     public static class Server extends Context {
 
         private final HttpServer server;
@@ -236,7 +256,7 @@ public class TinyWeb {
             try {
                 server = HttpServer.create(new InetSocketAddress(port), 0);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new TinyWebServerException("Can't listen on port " + port, e);
             }
             server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
@@ -285,7 +305,8 @@ public class TinyWeb {
                                         if (!proceed) {
                                             return; // Stop processing if filter returns false
                                         }
-                                    } catch (Exception e) {
+                                    } catch (TinyWebServerException e) {
+                                        e.printStackTrace();
                                         sendError(exchange, 500, "Internal server error: " + e.getMessage());
                                         return;
                                     }
@@ -299,7 +320,8 @@ public class TinyWeb {
                                     new Response(exchange),
                                     params
                             );
-                        } catch (Exception e) {
+                        } catch (TinyWebServerException e) {
+                            e.printStackTrace();
                             sendError(exchange, 500, "Internal server error: " + e.getMessage());
                         }
                         return;
@@ -363,8 +385,7 @@ public class TinyWeb {
                     this.queryParams = parseQueryParams(exchange.getRequestURI().getQuery());
 
                 } catch (IOException e) {
-
-                    throw new RuntimeException(e);
+                    throw new TinyWebServerException("Internal request error, for " + exchange.getRequestURI(), e);
                 }
             } else {
                 this.body = null;
@@ -398,6 +419,7 @@ public class TinyWeb {
         }
 
 
+        // TODO: NEEDED
         public Map<String, String> getQueryParams() {
             String query = getQuery();
             if (query == null || query.isEmpty()) {
@@ -438,7 +460,7 @@ public class TinyWeb {
                 exchange.getResponseBody().write(bytes);
                 exchange.getResponseBody().close();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new TinyWebServerException("Internal response error, for " + exchange.getRequestURI(), e);
             }
         }
     }
@@ -464,11 +486,9 @@ public class TinyWeb {
 
                 path("/foo", () -> {
                     filter(Method.GET, "/.*", (req, res, params) -> {
-                        System.out.println("keys " + req.getHeaders().toString());
                         if (req.getHeaders().containsKey("sucks")) {
                             res.write("Access Denied", 403);
                         }
-                        System.out.println("filter");
                         return true;
                     });
                     handle(Method.GET, "/bar", (req, res, params) -> {
