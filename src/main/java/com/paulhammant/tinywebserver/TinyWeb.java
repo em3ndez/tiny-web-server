@@ -189,7 +189,12 @@ public class TinyWeb {
         }
 
         protected void sendError(HttpExchange exchange, int code, String message) {
-            Response.sendResponse(message, code, exchange);
+            if (exchange != null) {
+                Response.sendResponse(message, code, exchange);
+            } else {
+                // Handle the case where exchange is null, e.g., during directRequest
+                throw new ServerException("Error " + code + ": " + message, null);
+            }
         }
 
         public Context endPoint(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
