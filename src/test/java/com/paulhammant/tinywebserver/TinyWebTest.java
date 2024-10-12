@@ -187,6 +187,36 @@ public class TinyWebTest {
                     assertThat(response.statusCode(), equalTo(404));
                     assertThat(response.contentType(), equalTo("text/plain"));
                 });
+                it("should handle POST requests correctly", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.POST,
+                            "/echo",
+                            "test post body",
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("You sent: test post body"));
+                    assertThat(response.statusCode(), equalTo(201));
+                });
+                it("should handle PUT requests correctly", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.PUT,
+                            "/update",
+                            "test put body",
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Updated data: test put body"));
+                    assertThat(response.statusCode(), equalTo(200));
+                });
+                it("should return 405 for unsupported DELETE method", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.DELETE,
+                            "/users/Jimmy",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Method not allowed"));
+                    assertThat(response.statusCode(), equalTo(405));
+                });
                 after(() -> {
                     svr.stop();
                 });
