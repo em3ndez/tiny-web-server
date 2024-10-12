@@ -337,6 +337,53 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
+            describe("Static file serving tests", () -> {
+
+                before(() -> {
+                    svr = new TinyWeb.Server(8080) {{
+                        serveStaticFiles("/static", "src/test/resources/static");
+                    }}.start();
+                });
+
+                it("should serve a static file correctly", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/static/test.txt",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.statusCode(), equalTo(200));
+                    assertThat(response.body(), containsString("This is a test file."));
+                });
+
+                it("should return 404 for a non-existent static file", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/static/nonexistent.txt",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.statusCode(), equalTo(404));
+                    assertThat(response.body(), containsString("File not found"));
+                });
+
+                it("should prevent directory traversal attack", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/static/../../java/com/paulhammant/tinywebserver/TinyWebTest.java",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.statusCode(), equalTo(404));
+                    assertThat(response.body(), containsString("File not found"));
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+
         });
     }
 
