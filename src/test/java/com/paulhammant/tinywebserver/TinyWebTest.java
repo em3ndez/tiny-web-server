@@ -42,6 +42,7 @@ public class TinyWebTest {
                 });
                 after(() -> {
                     svr.stop();
+                    svr = null;
                 });
             });
             describe("Filtering", () -> {
@@ -64,6 +65,7 @@ public class TinyWebTest {
                 });
                 after(() -> {
                     svr.stop();
+                    svr = null;
                 });
             });
             describe("Static file serving functionality", () -> {
@@ -100,6 +102,7 @@ public class TinyWebTest {
                 });
                 after(() -> {
                     svr.stop();
+                    svr = null;
                 });
             });
         });
@@ -123,11 +126,16 @@ public class TinyWebTest {
                 after(() -> {
                     svr.stop();
                     Mockito.verify(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
+                    svr = null;
                 });
             });
         });
 
         describe("Direct Example WebServer functionality bypassing sockets", () -> {
+            before(() -> {
+                svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                svr.start();
+            });
             describe("POST endpoint", () -> {
                 it("should return 201 and echo the request body", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
@@ -141,10 +149,6 @@ public class TinyWebTest {
                 });
             });
             describe("ExampleApp PUT method", () -> {
-                before(() -> {
-                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    svr.start();
-                });
                 it("should return 200 and update the data", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                             TinyWeb.Method.PUT,
@@ -155,16 +159,8 @@ public class TinyWebTest {
                     assertThat(response.body(), equalTo("Updated data: new data"));
                     assertThat(response.statusCode(), equalTo(200));
                 });
-                after(() -> {
-                    svr.stop();
-                });
             });
             describe("Direct request handling", () -> {
-                before(() -> {
-                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    //waitForPortToBeClosed("localhost",8080);
-                    svr.start();
-                });
                 it("should return user profile for Jimmy via direct request", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                             TinyWeb.Method.GET,
@@ -273,77 +269,73 @@ public class TinyWebTest {
                     assertThat(response.body(), equalTo("Method not allowed"));
                     assertThat(response.statusCode(), equalTo(405));
                 });
-
-                after(() -> {
-                    svr.stop();
-                });
-
-                after(() -> {
-                    svr.stop();
-                });
+            });
+            after(() -> {
+                svr.stop();
+                svr = null;
             });
         });
 
         describe("Inline application tests", () -> {
-            before(() -> {
-                svr = new TinyWeb.Server(8080) {
-                    {
-                        path("/api", () -> {
-                            endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
-                                res.write("Parameter: " + params.get("1"));
+            describe("Can extract parameters", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080) {{
+                            path("/api", () -> {
+                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
+                                    res.write("Parameter: " + params.get("1"));
+                                });
                             });
-                        });
+                        }}.start();
+                });
+                it("should extract parameters correctly from path", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/api/test/123",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Parameter: 123"));
+                    assertThat(response.statusCode(), equalTo(200));
+                });
+                it("should return 404 when two params are provided for a one param path", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/api/test/123/456",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Not found"));
+                    assertThat(response.statusCode(), equalTo(404));
+                });
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+            describe("Can extract query Parameters", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080) {{
                         path("/api2", () -> {
                             endPoint(TinyWeb.Method.GET, "/test/(\\w+)?(.*)", (req, res, params) -> {
                                 res.write("Parameter: " + params);
                             });
                         });
-                    }}
-                        .start();
-            });
-            it("should extract parameters correctly from path", () -> {
-                TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.GET,
-                        "/api/test/123",
-                        null,
-                        Collections.emptyMap()
-                );
-                assertThat(response.body(), equalTo("Parameter: 123"));
-                assertThat(response.statusCode(), equalTo(200));
-            });
-            it("should return 404 when two params are provided for a one param path", () -> {
-                TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.GET,
-                        "/api/test/123/456",
-                        null,
-                        Collections.emptyMap()
-                );
-                assertThat(response.body(), equalTo("Not found"));
-                assertThat(response.statusCode(), equalTo(404));
-            });
-            it("should handle query parameters correctly", () -> {
-                TinyWeb.SimulatedResponse response = svr.directRequest(
-                        TinyWeb.Method.GET,
-                        "/api2/test/123?a=1&b=2",
-                        null,
-                        Collections.emptyMap()
-                );
-                assertThat(response.body(), equalTo("Parameter: {1=123, a=1, b=2}"));
-                assertThat(response.statusCode(), equalTo(200));
-            });
-
-            // Insert two tests here ONE
-
-            // Insert two tests here TWO
-
-            // Insert two tests here THREE
-
-            // Insert two tests here FOUR
-
-            // Insert two tests here FIVE
-
-            after(() -> {
-                svr.stop();
+                    }}.start();
+                });
+                it("should handle query parameters correctly", () -> {
+                    TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/api2/test/123?a=1&b=2",
+                            null,
+                            Collections.emptyMap()
+                    );
+                    assertThat(response.body(), equalTo("Parameter: {1=123, a=1, b=2}"));
+                    assertThat(response.statusCode(), equalTo(200));
+                });
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
             });
         });
     }
