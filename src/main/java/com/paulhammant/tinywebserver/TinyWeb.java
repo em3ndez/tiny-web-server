@@ -513,7 +513,7 @@ public class TinyWeb {
                 });
 
                 endPoint(Method.POST, "/echo", (req, res, params) -> {
-                    res.write("You sent: " + req.getBody());
+                    res.write("You sent: " + req.getBody(), 201);
                 });
 
                 endPoint(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);

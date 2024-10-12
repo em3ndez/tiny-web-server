@@ -95,24 +95,18 @@ public class TinyWebTest {
                 });
             });
             describe("POST endpoint", () -> {
-                before(() -> {
-                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    svr.start();
-                });
                 it("should handle POST requests correctly", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                         TinyWeb.Method.POST,
-                        "/api/post-endpoint",
-                        "postData",
+                        "/echo",
+                        "hello everyone",
                         Collections.emptyMap()
                     );
-                    assertThat(response.body(), equalTo("Post response"));
+                    assertThat(response.body(), equalTo("You sent: hello everyone"));
                     assertThat(response.statusCode(), equalTo(201));
                 });
-                after(() -> {
-                    svr.stop();
-                });
             });
+            describe("WebServer's directRequest method", () -> {
                 before(() -> {
                     svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
