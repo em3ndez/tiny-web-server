@@ -125,6 +125,7 @@ public class TinyWebTest {
                     svr.stop();
                 });
             });
+            describe("WebServer's directRequest method", () -> {
                 before(() -> {
                     svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
