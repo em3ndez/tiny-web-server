@@ -25,7 +25,7 @@ public class TinyWebTest {
     TinyWeb.Server svr;
 
     {
-        describe("For Example (Tiny) WebServer", () -> {
+        describe("Example WebServer Functionality", () -> {
             describe("Echoing GET endpoint respond with..", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
@@ -33,7 +33,7 @@ public class TinyWebTest {
                     svr.start();
                 });
                 describe("DirectRequest Filtering", () -> {
-                    it("Filter that blocks on 'sucks' doesn't block when sucks is absent", () -> {
+                    it("should allow access when header 'sucks' is absent", () -> {
                         TinyWeb.SimulatedResponse response = svr.directRequest(
                             TinyWeb.Method.GET,
                             "/foo/bar",
@@ -43,7 +43,7 @@ public class TinyWebTest {
                         assertThat(response.statusCode(), equalTo(200));
                         assertThat(response.body(), equalTo("Hello, World!"));
                     });
-                    it("Filter that blocks on 'sucks' blocks when sucks is present", () -> {
+                    it("should deny access when header 'sucks' is present", () -> {
                         Map<String, List<String>> headers = new HashMap<>();
                         headers.put("sucks", List.of("true"));
                         TinyWeb.SimulatedResponse response = svr.directRequest(
@@ -56,12 +56,12 @@ public class TinyWebTest {
                         assertThat(response.body(), equalTo("Access Denied"));
                     });
                 });
-                it("..Jimmy when Jimmy is a param ", () -> {
+                it("should return user profile for Jimmy", () -> {
                     try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
                         assertThat(response.body().string(), equalTo("User profile: Jimmy"));
                     }
                 });
-                it("..Themla when Thelma is a param ", () -> {
+                it("should return user profile for Thelma", () -> {
                     try (Response response = httpGet("http://localhost:8080/users/Thelma")) {
                         assertThat(response.body().string(), equalTo("User profile: Thelma"));
                     }
@@ -77,13 +77,13 @@ public class TinyWebTest {
                     //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                 });
-                it("Filter that blocks on 'sucks' doesn't block when sucks is absent", () -> {
+                it("should allow access when header 'sucks' is absent", () -> {
                     try (Response response = httpGet("http://localhost:8080/foo/bar")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), equalTo("Hello, World!"));
                     }
                 });
-                it("Filter that blocks on 'sucks' blocks when sucks is present", () -> {
+                it("should deny access when header 'sucks' is present", () -> {
                     try (Response response = httpGet("http://localhost:8080/foo/bar", "sucks", "true")) {
                         assertThat(response.code(), equalTo(403));
                         assertThat(response.body().string(), equalTo("Access Denied"));
@@ -95,7 +95,7 @@ public class TinyWebTest {
                 });
             });
             describe("POST endpoint", () -> {
-                it("should handle POST requests correctly", () -> {
+                it("should return 201 and echo the request body", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                         TinyWeb.Method.POST,
                         "/echo",
@@ -111,7 +111,7 @@ public class TinyWebTest {
                     svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     svr.start();
                 });
-                it("should handle PUT requests correctly", () -> {
+                it("should return 200 and update the data", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                         TinyWeb.Method.PUT,
                         "/update",
@@ -125,13 +125,13 @@ public class TinyWebTest {
                     svr.stop();
                 });
             });
-            describe("WebServer's directRequest method", () -> {
+            describe("Direct request handling", () -> {
                 before(() -> {
                     svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                 });
-                it("Can invoke /users/Jimmy endpoint", () -> {
+                it("should return user profile for Jimmy via direct request", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                         TinyWeb.Method.GET,
                         "/users/Jimmy",
@@ -142,7 +142,7 @@ public class TinyWebTest {
                     assertThat(response.statusCode(), equalTo(200));
                     assertThat(response.contentType(), equalTo("text/plain"));
                 });
-                it("should return 404 for a non-existent path", () -> {
+                it("should return 404 for non-existent paths", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                         TinyWeb.Method.GET,
                         "/nonexistent",
@@ -157,31 +157,31 @@ public class TinyWebTest {
                    svr.stop();
                 });
             });
-            describe("Static file serving", () -> {
+            describe("Static file serving functionality", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     svr.start();
                 });
-                it("should serve a text file", () -> {
+                it("should return 200 and serve a text file", () -> {
                     try (Response response = httpGet("http://localhost:8080/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), containsString("hello"));
                     }
                 });
-                it("should return 404 for a non-existent file", () -> {
+                it("should return 404 for non-existent files", () -> {
                     try (Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
                         assertThat(response.code(), equalTo(404));
                         assertThat(response.body().string(), containsString("File not found"));
                     }
                 });
-                it("should serve a file from a subdirectory", () -> {
+                it("should return 200 and serve a file from a subdirectory", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
                     try (Response response = httpGet("http://localhost:8080/static/src/main/java/com/paulhammant/tinywebserver/TinyWeb.java")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), containsString("class"));
                     }
                 });
-                it("should be able to serve a non text file", () -> {
+                it("should return 200 and serve a non-text file", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
                     try (Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tinywebserver/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
@@ -203,7 +203,7 @@ public class TinyWebTest {
                         return null;
                     }).when(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
                 });
-                it("invokes ExampleApp method", () -> {
+                it("should invoke ExampleApp foobar method", () -> {
                     try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
                         assertThat(response.body().string(), equalTo("invoked"));
                     }
@@ -214,7 +214,7 @@ public class TinyWebTest {
                 });
             });
 
-            describe("Path method", () -> {
+            describe("Path method functionality", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080) {
                         {
@@ -231,7 +231,7 @@ public class TinyWebTest {
                         }}
                     .start();
                 });
-                it("should correctly extract parameters from path", () -> {
+                it("should extract parameters correctly from path", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                         TinyWeb.Method.GET,
                         "/api/test/123",
@@ -241,7 +241,7 @@ public class TinyWebTest {
                     assertThat(response.body(), equalTo("Parameter: 123"));
                     assertThat(response.statusCode(), equalTo(200));
                 });
-                it("two params should not match a one param path", () -> {
+                it("should return 404 when two params are provided for a one param path", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                         TinyWeb.Method.GET,
                         "/api/test/123/456",
@@ -251,7 +251,7 @@ public class TinyWebTest {
                     assertThat(response.body(), equalTo("Not found"));
                     assertThat(response.statusCode(), equalTo(404));
                 });
-                it("qq test", () -> {
+                it("should handle query parameters correctly", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                         TinyWeb.Method.GET,
                         "/api2/test/123?a=1&b=2",
