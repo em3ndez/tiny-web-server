@@ -207,7 +207,7 @@ public class TinyWebTest {
                     assertThat(response.body(), equalTo("Updated data: test put body"));
                     assertThat(response.statusCode(), equalTo(200));
                 });
-                only().it("should return 405 for unsupported DELETE method", () -> {
+                it("should return 405 for unsupported DELETE method", () -> {
                     TinyWeb.SimulatedResponse response = svr.directRequest(
                             TinyWeb.Method.DELETE,
                             "/users/Jimmy",
