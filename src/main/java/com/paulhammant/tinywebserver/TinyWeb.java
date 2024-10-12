@@ -167,7 +167,16 @@ public class TinyWeb {
                     return new SimulatedResponse(responseBody.toString(), responseCode[0], contentType[0], responseHeaders);
                 }
             }
-            //TODO: If there is a DELETE attempt on a URL that has a GET, then the statusCode should be 405
+            // Check if the path exists for a different method
+            for (Method m : Method.values()) {
+                if (m != method && routes.get(m) != null) {
+                    for (Pattern pattern : routes.get(m).keySet()) {
+                        if (pattern.matcher(path).matches()) {
+                            return new SimulatedResponse("Method not allowed", 405, "text/plain", Collections.emptyMap());
+                        }
+                    }
+                }
+            }
             return new SimulatedResponse("Not found", 404, "text/plain", Collections.emptyMap());
         }
 
