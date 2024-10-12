@@ -122,6 +122,10 @@ public class TinyWeb {
                         public String getBody() { return body; }
                         @Override
                         public String getPath() { return path; }
+                        @Override
+                        public Map<String, String> getQueryParams() {
+                            return parseQueryParams(path.contains("?") ? path.split("\\?")[1] : null);
+                        }
                     };
 
                     Response response = new Response(null) {

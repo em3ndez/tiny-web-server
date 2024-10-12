@@ -32,6 +32,38 @@ public class WebServerTest {
                     //waitForPortToBeClosed("localhost",8080);
                     svr.start();
                 });
+                describe("DirectRequest Filtering", () -> {
+                    before(() -> {
+                        svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                        svr.start();
+                    });
+                    it("Filter that blocks on 'sucks' doesn't block when sucks is absent", () -> {
+                        TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/foo/bar",
+                            null,
+                            Collections.emptyMap()
+                        );
+                        assertThat(response.statusCode(), equalTo(200));
+                        assertThat(response.body(), equalTo("Hello, World!"));
+                    });
+                    it("Filter that blocks on 'sucks' blocks when sucks is present", () -> {
+                        Map<String, List<String>> headers = new HashMap<>();
+                        headers.put("sucks", List.of("true"));
+                        TinyWeb.SimulatedResponse response = svr.directRequest(
+                            TinyWeb.Method.GET,
+                            "/foo/bar",
+                            null,
+                            headers
+                        );
+                        assertThat(response.statusCode(), equalTo(403));
+                        assertThat(response.body(), equalTo("Access Denied"));
+                    });
+                    after(() -> {
+                        svr.stop();
+                        verifyNoInteractions(app);
+                    });
+                });
                 it("..Jimmy when Jimmy is a param ", () -> {
                     try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
                         assertThat(response.body().string(), equalTo("User profile: Jimmy"));
