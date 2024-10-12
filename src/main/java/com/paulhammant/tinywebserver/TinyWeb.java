@@ -488,8 +488,9 @@ public class TinyWeb {
                     filter(Method.GET, "/.*", (req, res, params) -> {
                         if (req.getHeaders().containsKey("sucks")) {
                             res.write("Access Denied", 403);
+                            return false; // don't proceed
                         }
-                        return true;
+                        return true; // proceed
                     });
                     handle(Method.GET, "/bar", (req, res, params) -> {
                         res.write("Hello, World!");

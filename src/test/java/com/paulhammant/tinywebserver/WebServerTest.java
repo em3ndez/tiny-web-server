@@ -26,7 +26,7 @@ public class WebServerTest {
 
     {
         describe("For Example (Tiny) WebServer", () -> {
-            skip().describe("Echoing GET endpoint respond with..", () -> {
+            describe("Echoing GET endpoint respond with..", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     //waitForPortToBeClosed("localhost",8080);
