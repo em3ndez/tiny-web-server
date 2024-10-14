@@ -22,14 +22,6 @@ public class TinyWeb {
 
     public static class Context {
 
-        private static void placeQueryStringItemsInParams(Map<String, String> params, String group) {
-            String[] qsParams = group.substring(1).split("&");
-            for (String qsParam : qsParams) {
-                String[] paramParts = qsParam.split("=");
-                params.put(paramParts[0], paramParts[1]);
-            }
-        }
-
         protected Map<Method, Map<Pattern, Handler>> routes = new HashMap<>();
         protected Map<Method, List<FilterEntry>> filters = new HashMap<>();
 

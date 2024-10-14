@@ -92,7 +92,7 @@ public class TinyWebTest {
                         assertThat(response.body().string(), containsString("class"));
                     }
                 });
-                only().it("should return 200 and serve a non-text file", () -> {
+                it("should return 200 and serve a non-text file", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
                     try (Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tinywebserver/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
@@ -207,7 +207,7 @@ public class TinyWebTest {
                 it("should prevent directory traversal attack", () -> {
                     try (Response response = httpGet("http://localhost:8080/static/../../java/com/paulhammant/tinywebserver/TinyWebTest.java")) {
                         assertThat(response.code(), equalTo(404));
-                        assertThat(response.body().string(), containsString("File not found"));
+                        assertThat(response.body().string(), containsString("Not found"));
                     }
                 });
 
