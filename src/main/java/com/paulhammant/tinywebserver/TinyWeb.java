@@ -86,86 +86,6 @@ public class TinyWeb {
             return new PathContext(basePath, this);
         }
 
-        public SimulatedResponse directRequest(Method method, String path, String body, Map<String, List<String>> headers) {
-            Map<Pattern, Handler> methodRoutes = routes.get(method);
-            if (methodRoutes == null) {
-                return new SimulatedResponse("Method not allowed", 405, "text/plain", Collections.emptyMap());
-            }
-
-            boolean routeMatched = false;
-
-            DirectHttpExchange exchange = new DirectHttpExchange(
-                method.name(),
-                URI.create(path),
-                headers
-            );
-
-            for (var route : methodRoutes.entrySet()) {
-                Matcher matcher = route.getKey().matcher(path);
-                if (matcher.matches()) {
-                    Map<String, String> params = new HashMap<>();
-                    int groupCount = matcher.groupCount();
-                    Pattern key = route.getKey();
-                    for (int i = 1; i <= groupCount; i++) {
-                        if (key.toString().endsWith("?(.*)$") && i == groupCount) {
-                            placeQueryStringItemsInParams(params, matcher.group(i));
-                        } else {
-                            String group = matcher.group(i);
-                            String key1 = String.valueOf(i);
-                            params.put(key1, group);
-                        }
-                    }
-
-                    // Create pseudo request and response
-                    Request request = new Request(exchange);
-                    Response response = new Response(exchange);
-
-                    // Apply filters
-                    List<FilterEntry> methodFilters = filters.get(method);
-                    if (methodFilters != null) {
-                        for (FilterEntry filterEntry : methodFilters) {
-                            Matcher filterMatcher = filterEntry.pattern.matcher(path);
-                            if (filterMatcher.matches()) {
-                                Map<String, String> filterParams = new HashMap<>();
-                                for (int i = 1; i <= filterMatcher.groupCount(); i++) {
-                                    filterParams.put(String.valueOf(i), filterMatcher.group(i));
-                                }
-                                boolean proceed = filterEntry.filter.filter(request, response, filterParams);
-                                if (!proceed) {
-                                    return new SimulatedResponse(
-                                        new String(((ByteArrayOutputStream) exchange.getResponseBody()).toByteArray()),
-                                        exchange.getResponseCode(),
-                                        exchange.getResponseHeaders().getFirst("Content-Type"),
-                                        exchange.getResponseHeaders()
-                                    );
-                                }
-                            }
-                        }
-                    }
-
-                    // Handle the request
-                    route.getValue().handle(request, response, params);
-                    return new SimulatedResponse(
-                        new String(((ByteArrayOutputStream) exchange.getResponseBody()).toByteArray()),
-                        exchange.getResponseCode(),
-                        exchange.getResponseHeaders().getFirst("Content-Type"),
-                        exchange.getResponseHeaders()
-                    );
-                }
-            }
-            // Check if the path exists for a different method
-            for (Method m : Method.values()) {
-                if (m != method && routes.get(m) != null) {
-                    for (Pattern pattern : routes.get(m).keySet()) {
-                        if (pattern.matcher(path).matches()) {
-                            return new SimulatedResponse("Method not allowed", 405, "text/plain", Collections.emptyMap());
-                        }
-                    }
-                }
-            }
-            return new SimulatedResponse("Not found", 404, "text/plain", Collections.emptyMap());
-        }
-
         private static void placeQueryStringItemsInParams(Map<String, String> params, String group) {
             String[] qsParams = group.substring(1).split("&");
             for (String qsParam : qsParams) {
@@ -355,8 +275,6 @@ public class TinyWeb {
     public interface Handler {
         void handle(Request request, Response response, Map<String, String> pathParams);
     }
-
-    public record SimulatedResponse(String body, int statusCode, String contentType, Map<String, List<String>> headers) {}
 
 
     @FunctionalInterface
