@@ -145,24 +145,16 @@ public class TinyWebTest {
                         }}.start();
                 });
                 it("should extract parameters correctly from path", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/api/test/123",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Parameter: 123"));
-                    assertThat(response.statusCode(), equalTo(200));
+                    try (Response response = httpGet("http://localhost:8080/api/test/123")) {
+                        assertThat(response.body().string(), equalTo("Parameter: 123"));
+                        assertThat(response.code(), equalTo(200));
+                    }
                 });
                 it("should return 404 when two params are provided for a one param path", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/api/test/123/456",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Not found"));
-                    assertThat(response.statusCode(), equalTo(404));
+                    try (Response response = httpGet("http://localhost:8080/api/test/123/456")) {
+                        assertThat(response.body().string(), equalTo("Not found"));
+                        assertThat(response.code(), equalTo(404));
+                    }
                 });
                 after(() -> {
                     svr.stop();
@@ -180,14 +172,10 @@ public class TinyWebTest {
                     }}.start();
                 });
                 it("should handle query parameters correctly", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/api2/test/123?a=1&b=2",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Parameter: {1=123, a=1, b=2}"));
-                    assertThat(response.statusCode(), equalTo(200));
+                    try (Response response = httpGet("http://localhost:8080/api2/test/123?a=1&b=2")) {
+                        assertThat(response.body().string(), equalTo("Parameter: {1=123, a=1, b=2}"));
+                        assertThat(response.code(), equalTo(200));
+                    }
                 });
                 after(() -> {
                     svr.stop();
@@ -203,36 +191,24 @@ public class TinyWebTest {
                 });
 
                 it("should serve a static file correctly", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/static/test.txt",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.statusCode(), equalTo(200));
-                    assertThat(response.body(), containsString("This is a test file."));
+                    try (Response response = httpGet("http://localhost:8080/static/test.txt")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().string(), containsString("This is a test file."));
+                    }
                 });
 
                 it("should return 404 for a non-existent static file", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/static/nonexistent.txt",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.statusCode(), equalTo(404));
-                    assertThat(response.body(), containsString("File not found"));
+                    try (Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
+                        assertThat(response.code(), equalTo(404));
+                        assertThat(response.body().string(), containsString("File not found"));
+                    }
                 });
 
                 it("should prevent directory traversal attack", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/static/../../java/com/paulhammant/tinywebserver/TinyWebTest.java",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.statusCode(), equalTo(404));
-                    assertThat(response.body(), containsString("File not found"));
+                    try (Response response = httpGet("http://localhost:8080/static/../../java/com/paulhammant/tinywebserver/TinyWebTest.java")) {
+                        assertThat(response.code(), equalTo(404));
+                        assertThat(response.body().string(), containsString("File not found"));
+                    }
                 });
 
                 after(() -> {
