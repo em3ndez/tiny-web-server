@@ -76,19 +76,21 @@ public class TinyWebTest {
                 it("should return 200 and serve a text file", () -> {
                     try (Response response = httpGet("http://localhost:8080/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().contentType().toString(), equalTo("text/markdown"));
                         assertThat(response.body().string(), containsString("hello"));
                     }
                 });
                 it("should return 404 for non-existent files", () -> {
                     try (Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
                         assertThat(response.code(), equalTo(404));
-                        assertThat(response.body().string(), containsString("File not found"));
+                        assertThat(response.body().string(), containsString("Not found"));
                     }
                 });
                 it("should return 200 and serve a file from a subdirectory", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
                     try (Response response = httpGet("http://localhost:8080/static/src/main/java/com/paulhammant/tinywebserver/TinyWeb.java")) {
                         assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().contentType().toString(), equalTo("text/x-java"));
                         assertThat(response.body().string(), containsString("class"));
                     }
                 });
@@ -97,7 +99,7 @@ public class TinyWebTest {
                     try (Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tinywebserver/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
                         // Expected: "application/java-vm"
-                        //     but: was "text/plain; charset=UTF-8"
+                        //     but: was "text/plain; charset=UTF-8" TODO
                         assertThat(response.body().contentType().toString(), equalTo("application/java-vm"));
                         assertThat(response.body().string(), containsString("(Lcom/sun/net/httpserver/HttpExchange;ILjava/lang/String;)V"));
                     }
@@ -165,15 +167,15 @@ public class TinyWebTest {
                 before(() -> {
                     svr = new TinyWeb.Server(8080) {{
                         path("/api2", () -> {
-                            endPoint(TinyWeb.Method.GET, "/test/(\\w+)?(.*)", (req, res, params) -> {
-                                res.write("Parameter: " + params);
+                            endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
+                                res.write("Parameter: " + params + " " + req.getQueryParams());
                             });
                         });
                     }}.start();
                 });
                 it("should handle query parameters correctly", () -> {
                     try (Response response = httpGet("http://localhost:8080/api2/test/123?a=1&b=2")) {
-                        assertThat(response.body().string(), equalTo("Parameter: {1=123, a=1, b=2}"));
+                        assertThat(response.body().string(), equalTo("Parameter: {1=123} {a=1, b=2}"));
                         assertThat(response.code(), equalTo(200));
                     }
                 });
@@ -200,7 +202,7 @@ public class TinyWebTest {
                 it("should return 404 for a non-existent static file", () -> {
                     try (Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
                         assertThat(response.code(), equalTo(404));
-                        assertThat(response.body().string(), containsString("File not found"));
+                        assertThat(response.body().string(), containsString("Not found"));
                     }
                 });
 

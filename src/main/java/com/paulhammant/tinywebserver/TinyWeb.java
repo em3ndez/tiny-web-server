@@ -86,14 +86,6 @@ public class TinyWeb {
             return new PathContext(basePath, this);
         }
 
-        private static void placeQueryStringItemsInParams(Map<String, String> params, String group) {
-            String[] qsParams = group.substring(1).split("&");
-            for (String qsParam : qsParams) {
-                String[] paramParts = qsParam.split("=");
-                params.put(paramParts[0], paramParts[1]);
-            }
-        }
-
         protected void sendError(HttpExchange exchange, int code, String message) {
                 new Response(exchange).write(message, code);
         }
@@ -127,7 +119,7 @@ public class TinyWeb {
                         throw new ServerException("Internal Static File Serving error for " + path, e);
                     }
                 } else {
-                    sendError(res.exchange, 404, "File not found");
+                    sendError(res.exchange, 404, "Not found");
                 }
             });
             return this;
@@ -201,8 +193,14 @@ public class TinyWeb {
                     if (matcher.matches()) {
                         routeMatched = true;
                         Map<String, String> params = new HashMap<>();
-                        for (int i = 1; i <= matcher.groupCount(); i++) {
-                            params.put(String.valueOf(i), matcher.group(i));
+                        int groupCount = matcher.groupCount();
+                        Pattern key = route.getKey();
+                        for (int i = 1; i <= groupCount; i++) {
+//                            if (key.toString().endsWith("?(.*)$") && i == groupCount) {
+//                                placeQueryStringItemsInParams(params, matcher.group(i));
+//                            } else {
+                                params.put(String.valueOf(i), matcher.group(i));
+//                            }
                         }
 
                         // Apply filters
@@ -378,8 +376,9 @@ public class TinyWeb {
             exchange.getResponseHeaders().set(name, value);
         }
 
+
+
         protected void sendResponse(String content, int statusCode) {
-            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
             byte[] bytes = content.getBytes();
             try {
                 exchange.sendResponseHeaders(statusCode, bytes.length);
