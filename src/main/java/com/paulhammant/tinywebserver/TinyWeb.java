@@ -3,6 +3,7 @@ package com.paulhammant.tinywebserver;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -433,30 +434,6 @@ public class TinyWeb {
                 }
             }
             return queryParams;
-        }
-    }
-
-    public static class DirectResponse extends Response {
-        private final StringBuilder responseBody;
-        private final int[] responseCode;
-        private final Map<String, List<String>> responseHeaders;
-
-        public DirectResponse(StringBuilder responseBody, int[] responseCode, Map<String, List<String>> responseHeaders) {
-            super(null);
-            this.responseBody = responseBody;
-            this.responseCode = responseCode;
-            this.responseHeaders = responseHeaders;
-        }
-
-        @Override
-        public void setHeader(String name, String value) {
-            responseHeaders.put(name, List.of(value));
-        }
-
-        @Override
-        protected void sendResponse(String content, int statusCode) {
-            responseBody.append(content);
-            responseCode[0] = statusCode;
         }
     }
 
