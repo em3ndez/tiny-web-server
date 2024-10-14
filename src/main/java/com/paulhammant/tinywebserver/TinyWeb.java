@@ -471,6 +471,9 @@ public class TinyWeb {
             responseHeaders.put(name, List.of(value));
         }
     }
+
+    public static class Response {
+
         private final HttpExchange exchange;
 
         public Response(HttpExchange exchange) {
