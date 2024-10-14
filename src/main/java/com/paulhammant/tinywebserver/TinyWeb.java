@@ -464,7 +464,6 @@ public class TinyWeb {
             } else {
                 super.write(content, statusCode);
             }
-
         }
 
         @Override
