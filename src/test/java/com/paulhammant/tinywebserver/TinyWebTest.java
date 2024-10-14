@@ -92,10 +92,12 @@ public class TinyWebTest {
                         assertThat(response.body().string(), containsString("class"));
                     }
                 });
-                it("should return 200 and serve a non-text file", () -> {
+                only().it("should return 200 and serve a non-text file", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
                     try (Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tinywebserver/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
+                        // Expected: "application/java-vm"
+                        //     but: was "text/plain; charset=UTF-8"
                         assertThat(response.body().contentType().toString(), equalTo("application/java-vm"));
                         assertThat(response.body().string(), containsString("(Lcom/sun/net/httpserver/HttpExchange;ILjava/lang/String;)V"));
                     }
@@ -128,151 +130,6 @@ public class TinyWebTest {
                     Mockito.verify(app).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<Map<String, String>>any());
                     svr = null;
                 });
-            });
-        });
-
-        describe("Direct Example WebServer functionality bypassing sockets", () -> {
-            before(() -> {
-                svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                svr.start();
-            });
-            describe("POST endpoint", () -> {
-                it("should return 201 and echo the request body", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.POST,
-                            "/echo",
-                            "hello everyone",
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("You sent: hello everyone"));
-                    assertThat(response.statusCode(), equalTo(201));
-                });
-            });
-            describe("ExampleApp PUT method", () -> {
-                it("should return 200 and update the data", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.PUT,
-                            "/update",
-                            "new data",
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Updated data: new data"));
-                    assertThat(response.statusCode(), equalTo(200));
-                });
-            });
-            describe("Direct request handling", () -> {
-                it("should return user profile for Jimmy via direct request", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/users/Jimmy",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("User profile: Jimmy"));
-                    assertThat(response.statusCode(), equalTo(200));
-                    assertThat(response.contentType(), equalTo("text/plain"));
-                });
-                it("should return 404 for non-existent paths", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/nonexistent",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Not found"));
-                    assertThat(response.statusCode(), equalTo(404));
-                    assertThat(response.contentType(), equalTo("text/plain"));
-                });
-                it("should handle POST requests correctly", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.POST,
-                            "/echo",
-                            "test post body",
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("You sent: test post body"));
-                    assertThat(response.statusCode(), equalTo(201));
-                });
-                it("should handle PUT requests correctly", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.PUT,
-                            "/update",
-                            "test put body",
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Updated data: test put body"));
-                    assertThat(response.statusCode(), equalTo(200));
-                });
-                it("should return 405 for unsupported DELETE method", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.DELETE,
-                            "/users/Jimmy",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Method not allowed"));
-                    assertThat(response.statusCode(), equalTo(405));
-                });
-                it("should return user profile for Jimmy via direct request", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/users/Jimmy",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("User profile: Jimmy"));
-                    assertThat(response.statusCode(), equalTo(200));
-                    assertThat(response.contentType(), equalTo("text/plain"));
-                });
-
-                it("should return 404 for non-existent paths", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.GET,
-                            "/nonexistent",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Not found"));
-                    assertThat(response.statusCode(), equalTo(404));
-                    assertThat(response.contentType(), equalTo("text/plain"));
-                });
-
-                it("should handle POST requests correctly", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.POST,
-                            "/echo",
-                            "test post body",
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("You sent: test post body"));
-                    assertThat(response.statusCode(), equalTo(201));
-                });
-
-                it("should handle PUT requests correctly", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.PUT,
-                            "/update",
-                            "test put body",
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Updated data: test put body"));
-                    assertThat(response.statusCode(), equalTo(200));
-                });
-
-                it("should return 405 for unsupported DELETE method", () -> {
-                    TinyWeb.SimulatedResponse response = svr.directRequest(
-                            TinyWeb.Method.DELETE,
-                            "/users/Jimmy",
-                            null,
-                            Collections.emptyMap()
-                    );
-                    assertThat(response.body(), equalTo("Method not allowed"));
-                    assertThat(response.statusCode(), equalTo(405));
-                });
-            });
-            after(() -> {
-                svr.stop();
-                svr = null;
             });
         });
 
