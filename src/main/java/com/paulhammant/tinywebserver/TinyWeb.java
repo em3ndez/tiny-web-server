@@ -92,10 +92,11 @@ public class TinyWeb {
 
             boolean routeMatched = false;
 
-            final StringBuilder responseBody = new StringBuilder();
-            final int[] responseCode = {200};
-            final String[] contentType = {"text/plain"};
-            final Map<String, List<String>> responseHeaders = new HashMap<>();
+            DirectHttpExchange exchange = new DirectHttpExchange(
+                method.name(),
+                URI.create(path),
+                headers
+            );
 
             for (var route : methodRoutes.entrySet()) {
                 Matcher matcher = route.getKey().matcher(path);
@@ -114,21 +115,8 @@ public class TinyWeb {
                     }
 
                     // Create pseudo request and response
-                    Request request = new Request(null) {
-                        @Override
-                        public Map<String, List<String>> getHeaders() { return headers; }
-                        @Override
-                        public String getBody() { return body; }
-                        @Override
-                        public String getPath() { return path; }
-                        @Override
-                        public Map<String, String> getQueryParams() {
-                            return parseQueryParams(path.contains("?") ? path.split("\\?")[1] : null);
-                        }
-                    };
-
-                    // We need a subclass of Response for direct requests that doesn't attempt to utilize exchange
-                    Response response = new DirectResponse(responseBody, responseCode, responseHeaders);
+                    Request request = new Request(exchange);
+                    Response response = new Response(exchange);
 
                     // Apply filters
                     List<FilterEntry> methodFilters = filters.get(method);
@@ -142,7 +130,12 @@ public class TinyWeb {
                                 }
                                 boolean proceed = filterEntry.filter.filter(request, response, filterParams);
                                 if (!proceed) {
-                                    return new SimulatedResponse(responseBody.toString(), responseCode[0], contentType[0], responseHeaders);
+                                    return new SimulatedResponse(
+                                        new String(exchange.getResponseBody().toByteArray()),
+                                        exchange.getResponseCode(),
+                                        exchange.getResponseHeaders().getFirst("Content-Type"),
+                                        exchange.getResponseHeaders()
+                                    );
                                 }
                             }
                         }
