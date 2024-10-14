@@ -455,7 +455,6 @@ public class TinyWeb {
         }
 
         @Override
-        @Override
         public void setHeader(String name, String value) {
             responseHeaders.put(name, List.of(value));
         }
