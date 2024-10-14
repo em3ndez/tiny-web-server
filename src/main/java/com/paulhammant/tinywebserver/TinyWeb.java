@@ -458,8 +458,13 @@ public class TinyWeb {
 
         @Override
         public void write(String content, int statusCode) {
-            responseBody.append(content);
-            responseCode[0] = statusCode;
+            if (exchange == null) {
+                responseBody.append(content);
+                responseCode[0] = statusCode;
+            } else {
+                super.write(content, statusCode);
+            }
+
         }
 
         @Override
@@ -474,7 +479,7 @@ public class TinyWeb {
 
     public static class Response {
 
-        private final HttpExchange exchange;
+        protected final HttpExchange exchange;
 
         public Response(HttpExchange exchange) {
             this.exchange = exchange;
