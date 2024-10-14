@@ -1,7 +1,6 @@
 package com.paulhammant.tinywebserver;
 
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -112,7 +111,12 @@ public class DirectHttpExchange extends HttpExchange {
     }
 
     @Override
-    public Map<String, Object> getAttributes() {
-        return new HashMap<>(); // No attributes in direct mode
+    public HttpPrincipal getPrincipal() {
+        //TODO implement correctly
+    }
+
+    @Override
+    public Request with(String headerName, List<String> headerValues) {
+        //TODO implement correctly
     }
 }
