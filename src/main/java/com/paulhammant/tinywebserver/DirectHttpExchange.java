@@ -112,11 +112,12 @@ public class DirectHttpExchange extends HttpExchange {
 
     @Override
     public HttpPrincipal getPrincipal() {
-        //TODO implement correctly
+        return new HttpPrincipal("user", "realm");
     }
 
     @Override
-    public Request with(String headerName, List<String> headerValues) {
-        //TODO implement correctly
+    public DirectHttpExchange with(String headerName, List<String> headerValues) {
+        this.requestHeaders.put(headerName, headerValues);
+        return this;
     }
 }
