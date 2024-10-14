@@ -202,11 +202,9 @@ public class TinyWeb {
                 if (Files.exists(path) && !Files.isDirectory(path)) {
                     try {
                         String contentType = Files.probeContentType(path);
-                        res.exchange.getResponseHeaders().set("Content-Type", contentType != null ? contentType : "application/octet-stream");
+                        res.setHeader("Content-Type", contentType != null ? contentType : "application/octet-stream");
                         byte[] fileBytes = Files.readAllBytes(path);
-                        res.exchange.sendResponseHeaders(200, fileBytes.length);
-                        res.exchange.getResponseBody().write(fileBytes);
-                        res.exchange.getResponseBody().close();
+                        res.write(new String(fileBytes), 200);
                     } catch (IOException e) {
                         throw new ServerException("Internal Static File Serving error for " + path, e);
                     }
@@ -457,22 +455,15 @@ public class TinyWeb {
         }
 
         @Override
-        public void write(String content, int statusCode) {
-            if (exchange == null) {
-                responseBody.append(content);
-                responseCode[0] = statusCode;
-            } else {
-                super.write(content, statusCode);
-            }
+        @Override
+        public void setHeader(String name, String value) {
+            responseHeaders.put(name, List.of(value));
         }
 
         @Override
-        public void write(String content) {
-            write(content, 200);
-        }
-
-        public void setHeader(String name, String value) {
-            responseHeaders.put(name, List.of(value));
+        protected void sendResponse(String content, int statusCode) {
+            responseBody.append(content);
+            responseCode[0] = statusCode;
         }
     }
 
@@ -489,10 +480,14 @@ public class TinyWeb {
         }
 
         public void write(String content, int statusCode) {
-            sendResponse(content, statusCode, exchange);
+            sendResponse(content, statusCode);
         }
 
-        private static void sendResponse(String content, int statusCode, HttpExchange exchange) {
+        public void setHeader(String name, String value) {
+            exchange.getResponseHeaders().set(name, value);
+        }
+
+        protected void sendResponse(String content, int statusCode) {
             exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
             byte[] bytes = content.getBytes();
             try {
