@@ -198,11 +198,7 @@ public class TinyWeb {
                     try {
                         String contentType = Files.probeContentType(path);
                         if (contentType == null) {
-                            if (filePath.endsWith(".class")) {
-                                contentType = "application/java-vm";
-                            } else {
-                                contentType = "application/octet-stream";
-                            }
+                            contentType = "application/octet-stream";
                         }
                         res.setHeader("Content-Type", contentType);
                         byte[] fileBytes = Files.readAllBytes(path);
