@@ -197,7 +197,14 @@ public class TinyWeb {
                 if (Files.exists(path) && !Files.isDirectory(path)) {
                     try {
                         String contentType = Files.probeContentType(path);
-                        res.setHeader("Content-Type", contentType != null ? contentType : "application/octet-stream");
+                        if (contentType == null) {
+                            if (filePath.endsWith(".class")) {
+                                contentType = "application/java-vm";
+                            } else {
+                                contentType = "application/octet-stream";
+                            }
+                        }
+                        res.setHeader("Content-Type", contentType);
                         byte[] fileBytes = Files.readAllBytes(path);
                         res.write(new String(fileBytes), 200);
                     } catch (IOException e) {
