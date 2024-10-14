@@ -132,7 +132,7 @@ public class TinyWeb {
                                 boolean proceed = filterEntry.filter.filter(request, response, filterParams);
                                 if (!proceed) {
                                     return new SimulatedResponse(
-                                        new String(exchange.getResponseBody().toByteArray()),
+                                        new String(((ByteArrayOutputStream) exchange.getResponseBody()).toByteArray()),
                                         exchange.getResponseCode(),
                                         exchange.getResponseHeaders().getFirst("Content-Type"),
                                         exchange.getResponseHeaders()
@@ -144,7 +144,12 @@ public class TinyWeb {
 
                     // Handle the request
                     route.getValue().handle(request, response, params);
-                    return new SimulatedResponse(responseBody.toString(), responseCode[0], contentType[0], responseHeaders);
+                    return new SimulatedResponse(
+                        new String(((ByteArrayOutputStream) exchange.getResponseBody()).toByteArray()),
+                        exchange.getResponseCode(),
+                        exchange.getResponseHeaders().getFirst("Content-Type"),
+                        exchange.getResponseHeaders()
+                    );
                 }
             }
             // Check if the path exists for a different method
@@ -169,7 +174,7 @@ public class TinyWeb {
         }
 
         protected void sendError(HttpExchange exchange, int code, String message) {
-                Response.sendResponse(message, code, exchange);
+                new Response(exchange).write(message, code);
         }
 
         public Context endPoint(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
