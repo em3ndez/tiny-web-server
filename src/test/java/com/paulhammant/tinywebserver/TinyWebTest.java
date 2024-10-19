@@ -256,6 +256,41 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
+            describe("Exception handling in filter", () -> {
+                final StringBuilder se = new StringBuilder();
+                before(() -> {
+                    svr = new TinyWeb.Server(8080) {{
+                        path("/api", () -> {
+                            filter(TinyWeb.Method.GET, "/error", (req, res, params) -> {
+                                throw new RuntimeException("Deliberate exception in filter");
+                            });
+                            endPoint(TinyWeb.Method.GET, "/error", (req, res, params) -> {
+                                res.write("This should not be reached");
+                            });
+                        });
+                    }
+
+                        @Override
+                        protected void appHandlingException(Exception e) {
+                            se.append("appHandlingException exception: " + e.getMessage());
+                        }
+                    }.start();
+                });
+
+                it("should return 500 and error message for runtime exception in filter", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/error")) {
+                        assertThat(response.code(), equalTo(500));
+                        assertThat(response.body().string(), containsString("Server Error"));
+                        assertThat(se.toString(), containsString("appHandlingException exception: Deliberate exception in filter"));
+                    }
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+
             describe("Static file serving tests", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080) {{
