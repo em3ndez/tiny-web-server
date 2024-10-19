@@ -3,11 +3,9 @@ package com.paulhammant.tinywebserver;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,12 +20,12 @@ public class TinyWeb {
 
     public static class Context {
 
-        protected Map<Method, Map<Pattern, Handler>> routes = new HashMap<>();
+        protected Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
         protected Map<Method, List<FilterEntry>> filters = new HashMap<>();
 
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
-            Map<Method, Map<Pattern, Handler>> previousRoutes = this.routes;
+            Map<Method, Map<Pattern, EndPoint>> previousRoutes = this.routes;
             Map<Method, List<FilterEntry>> previousFilters = this.filters;
 
             // Create new maps to collect routes and filters within this path
@@ -45,14 +43,14 @@ public class TinyWeb {
 
             // Prefix basePath to routes
             for (Method method : Method.values()) {
-                Map<Pattern, Handler> methodRoutes = this.routes.get(method);
+                Map<Pattern, EndPoint> methodRoutes = this.routes.get(method);
                 if (methodRoutes != null && !methodRoutes.isEmpty()) {
-                    Map<Pattern, Handler> prefixedRoutes = new HashMap<>();
-                    for (Map.Entry<Pattern, Handler> entry : methodRoutes.entrySet()) {
+                    Map<Pattern, EndPoint> prefixedRoutes = new HashMap<>();
+                    for (Map.Entry<Pattern, EndPoint> entry : methodRoutes.entrySet()) {
                         Pattern pattern = entry.getKey();
-                        Handler handler = entry.getValue();
+                        EndPoint endPoint = entry.getValue();
                         Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
-                        prefixedRoutes.put(newPattern, handler);
+                        prefixedRoutes.put(newPattern, endPoint);
                     }
                     previousRoutes.get(method).putAll(prefixedRoutes);
                 }
@@ -90,9 +88,9 @@ public class TinyWeb {
                 new Response(exchange).write(message, code);
         }
 
-        public Context endPoint(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
+        public Context endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
             routes.computeIfAbsent(method, k -> new HashMap<>())
-                    .put(Pattern.compile("^" + path + "$"), handler);
+                    .put(Pattern.compile("^" + path + "$"), endPoint);
             return this;
         }
 
@@ -137,10 +135,10 @@ public class TinyWeb {
         }
 
         @Override
-        public PathContext endPoint(TinyWeb.Method method, String path, TinyWeb.Handler handler) {
+        public PathContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
             String fullPath = basePath + path;
             parentContext.routes.computeIfAbsent(method, k -> new HashMap<>())
-                    .put(Pattern.compile("^" + fullPath + "$"), handler);
+                    .put(Pattern.compile("^" + fullPath + "$"), endPoint);
             return this;
         }
 
@@ -180,7 +178,7 @@ public class TinyWeb {
                 String path = exchange.getRequestURI().getPath();
                 Method method = Method.valueOf(exchange.getRequestMethod());
 
-                Map<Pattern, Handler> methodRoutes = routes.get(method);
+                Map<Pattern, EndPoint> methodRoutes = routes.get(method);
                 if (methodRoutes == null) {
                     sendError(exchange, 405, "Method not allowed");
                     return;
@@ -188,7 +186,7 @@ public class TinyWeb {
 
                 boolean routeMatched = false;
 
-                for (Map.Entry<Pattern, Handler> route : methodRoutes.entrySet()) {
+                for (Map.Entry<Pattern, EndPoint> route : methodRoutes.entrySet()) {
                     Matcher matcher = route.getKey().matcher(path);
                     if (matcher.matches()) {
                         routeMatched = true;
@@ -270,7 +268,7 @@ public class TinyWeb {
 
 
     @FunctionalInterface
-    public interface Handler {
+    public interface EndPoint {
         void handle(Request request, Response response, Map<String, String> pathParams);
     }
 
