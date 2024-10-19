@@ -225,7 +225,29 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
-            describe("Static file serving tests", () -> {
+            describe("Exception handling in endpoint", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080) {{
+                        path("/api", () -> {
+                            endPoint(TinyWeb.Method.GET, "/error", (req, res, params) -> {
+                                throw new RuntimeException("Deliberate exception");
+                            });
+                        });
+                    }}.start();
+                });
+
+                it("should return 500 and error message for runtime exception", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/error")) {
+                        assertThat(response.code(), equalTo(500));
+                        assertThat(response.body().string(), containsString("Internal server error: Deliberate exception"));
+                    }
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
 
                 before(() -> {
                     svr = new TinyWeb.Server(8080) {{
