@@ -423,7 +423,7 @@ public class TinyWeb {
         }
 
         public static TinyWeb.Server exampleComposition(String[] args, ExampleApp app) {
-            return new TinyWeb.Server(8080) {{
+            TinyWeb.Server server = new TinyWeb.Server(8080) {{
 
                 path("/foo", () -> {
                     filter(Method.GET, "/.*", (req, res, params) -> {
@@ -440,7 +440,6 @@ public class TinyWeb {
                 });
 
                 serveStaticFiles("/static", new File(".").getAbsolutePath());
-
 
                 endPoint(Method.GET, "/users/(\\w+)", (req, res, params) -> {
                     res.write("User profile: " + params.get("1"));
@@ -463,6 +462,16 @@ public class TinyWeb {
                 });
 
             }};
+
+            // Initialize WebSocket server
+            try {
+                ServerContainer serverContainer = (ServerContainer) server.getServer().getAttribute(ServerContainer.class.getName());
+                serverContainer.addEndpoint(WebSocketHandler.class);
+            } catch (DeploymentException e) {
+                throw new RuntimeException("Failed to deploy WebSocket endpoint", e);
+            }
+
+            return server;
         }
     }
 
