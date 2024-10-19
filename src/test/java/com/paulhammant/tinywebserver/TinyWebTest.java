@@ -45,6 +45,39 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
+
+            describe("Nested path with parameterized parts", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080) {{
+                        path("/api", () -> {
+                            path("/v1", () -> {
+                                endPoint(TinyWeb.Method.GET, "/items/(\\w+)/details/(\\w+)", (req, res, params) -> {
+                                    res.write("Item: " + params.get("1") + ", Detail: " + params.get("2"));
+                                });
+                            });
+                        });
+                    }}.start();
+                });
+
+                it("should extract parameters correctly from nested path", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/v1/items/123/details/456")) {
+                        assertThat(response.body().string(), equalTo("Item: 123, Detail: 456"));
+                        assertThat(response.code(), equalTo(200));
+                    }
+                });
+
+                it("should return 404 for incorrect nested path", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/v1/items/123/456")) {
+                        assertThat(response.body().string(), equalTo("Not found"));
+                        assertThat(response.code(), equalTo(404));
+                    }
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
             describe("Filtering", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
