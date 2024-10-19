@@ -49,10 +49,14 @@ public class TinyWebTest {
             describe("Nested path with parameterized parts", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080) {{
+                        final StringBuilder sb = new StringBuilder();  // don't do this - one sv instance for all incoming connections
                         path("/api", () -> {
+                            sb.append("/api->"); // called once only while composing webapp
                             path("/v1", () -> {
+                                sb.append("/v1->"); // called once only while composing webapp
                                 endPoint(TinyWeb.Method.GET, "/items/(\\w+)/details/(\\w+)", (req, res, params) -> {
-                                    res.write("Item: " + params.get("1") + ", Detail: " + params.get("2"));
+                                    sb.append("itemz."); // called while handling request
+                                    res.write("Item: " + params.get("1") + ", Detail: " + params.get("2") + "\n" + sb);
                                 });
                             });
                         });
@@ -61,7 +65,11 @@ public class TinyWebTest {
 
                 it("should extract parameters correctly from nested path", () -> {
                     try (Response response = httpGet("http://localhost:8080/api/v1/items/123/details/456")) {
-                        assertThat(response.body().string(), equalTo("Item: 123, Detail: 456"));
+                        assertThat(response.body().string(), equalTo("Item: 123, Detail: 456\n/api->/v1->itemz."));
+                        assertThat(response.code(), equalTo(200));
+                    }
+                    try (Response response = httpGet("http://localhost:8080/api/v1/items/abc/details/def")) {
+                        assertThat(response.body().string(), equalTo("Item: abc, Detail: def\n/api->/v1->itemz.itemz."));
                         assertThat(response.code(), equalTo(200));
                     }
                 });
@@ -265,23 +273,6 @@ public class TinyWebTest {
         return new OkHttpClient().newCall(new Builder()
                 .url(url).addHeader(hdrKey, hdrVal)
                 .get().build()).execute();
-    }
-
-    public static void waitForPortToBeClosed(String host, int port) {
-        boolean portOpen = true;
-
-        while (portOpen) {
-            try (Socket socket = new Socket(host, port)) {
-                // Port is still open, wait and try again
-                System.out.println("Port " + port + " is still open. Waiting...");
-                Thread.sleep(2000); // Wait 2 seconds before trying again
-            } catch (IOException e) {
-                // Exception indicates that the port is not open
-                portOpen = false;
-                System.out.println("Port " + port + " is closed.");
-            } catch (InterruptedException e) {
-            }
-        }
     }
 
     public static void main(String[] args) {
