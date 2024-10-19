@@ -212,11 +212,16 @@ public class TinyWeb {
                                         filterParams.put(String.valueOf(i), filterMatcher.group(i));
                                     }
                                     try {
-                                        boolean proceed = filterEntry.filter.filter(
-                                                new Request(exchange),
-                                                new Response(exchange),
-                                                filterParams
-                                        );
+                                        Request request = new Request(exchange);
+                                        Response response = new Response(exchange);
+                                        boolean proceed = false;
+                                        try {
+                                            proceed = filterEntry.filter.filter(request, response, filterParams);
+                                        } catch (Exception e) {
+                                            appHandlingException(e);
+                                            sendError(exchange, 500, "Server Error");
+                                            return;
+                                        }
                                         if (!proceed) {
                                             return; // Stop processing if filter returns false
                                         }
@@ -230,14 +235,19 @@ public class TinyWeb {
                         }
 
                         try {
-                            route.getValue().handle(
-                                    new Request(exchange),
-                                    new Response(exchange),
-                                    params
-                            );
+                            Request request = new Request(exchange);
+                            Response response = new Response(exchange);
+                            try {
+                                route.getValue().handle(request, response, params);
+                            } catch (Exception e) {
+                                appHandlingException(e);
+                                sendError(exchange, 500, "Server error");
+                                return;
+                            }
                         } catch (ServerException e) {
                             serverException(e);
-                            sendError(exchange, 500, "Internal server error: " + e.getMessage());
+                            sendError(exchange, 500,"Internal server error: " + e.getMessage());
+                            return;
                         }
                         return;
                     }
@@ -250,6 +260,14 @@ public class TinyWeb {
         }
 
         protected void serverException(ServerException e) {
+            System.out.println(e.getMessage() + "\nStack Trace:");
+            e.printStackTrace(System.out);
+        }
+
+        /**
+         * Most likely a RuntimeException or Error in a endPoint() or filter() code block
+         */
+        protected void appHandlingException(Exception e) {
             System.out.println(e.getMessage() + "\nStack Trace:");
             e.printStackTrace(System.out);
         }
