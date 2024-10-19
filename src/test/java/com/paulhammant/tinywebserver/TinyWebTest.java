@@ -3,6 +3,11 @@ package com.paulhammant.tinywebserver;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import org.mockito.Mockito;
+import javax.websocket.*;
+import java.net.URI;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import static org.junit.Assert.assertEquals;
 import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.reporters.DefaultReporter;
@@ -109,6 +114,44 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
+            describe("WebSocket functionality", () -> {
+                before(() -> {
+                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                    svr.start();
+                });
+
+                it("should echo messages sent to the WebSocket", () -> {
+                    final CountDownLatch messageLatch = new CountDownLatch(1);
+                    final String messageToSend = "Hello WebSocket";
+                    final StringBuilder receivedMessage = new StringBuilder();
+
+                    WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+                    Session session = container.connectToServer(new Endpoint() {
+                        @Override
+                        public void onOpen(Session session, EndpointConfig config) {
+                            try {
+                                session.addMessageHandler((MessageHandler.Whole<String>) message -> {
+                                    receivedMessage.append(message);
+                                    messageLatch.countDown();
+                                });
+                                session.getBasicRemote().sendText(messageToSend);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }, URI.create("ws://localhost:8080/websocket"));
+
+                    messageLatch.await(5, TimeUnit.SECONDS);
+                    assertEquals(messageToSend, receivedMessage.toString());
+                    session.close();
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+
             describe("Static file serving functionality", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
