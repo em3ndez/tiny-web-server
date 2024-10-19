@@ -256,6 +256,30 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
+            describe("Query parameter parsing", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080) {{
+                        path("/api", () -> {
+                            endPoint(TinyWeb.Method.GET, "/query", (req, res, params) -> {
+                                res.write("Query Params: " + req.getQueryParams());
+                            });
+                        });
+                    }}.start();
+                });
+
+                it("should parse query parameters correctly", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/query?name=John&age=30")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().string(), equalTo("Query Params: {name=John, age=30}"));
+                    }
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+
             describe("Exception handling in filter", () -> {
                 final StringBuilder se = new StringBuilder();
                 before(() -> {
