@@ -280,6 +280,32 @@ public class TinyWebTest {
                 });
             });
 
+            describe("Response header setting", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080) {{
+                        path("/api", () -> {
+                            endPoint(TinyWeb.Method.GET, "/header-test", (req, res, params) -> {
+                                res.setHeader("X-Custom-Header", "HeaderValue");
+                                res.write("Header set");
+                            });
+                        });
+                    }}.start();
+                });
+
+                it("should set custom header correctly", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/header-test")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.header("X-Custom-Header"), equalTo("HeaderValue"));
+                        assertThat(response.body().string(), equalTo("Header set"));
+                    }
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+
             describe("Exception handling in filter", () -> {
                 final StringBuilder se = new StringBuilder();
                 before(() -> {
