@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -15,10 +14,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SimpleWebSocketServer {
-
     private final int port;
-
     private ServerSocket server;
+    private static final int SOCKET_TIMEOUT = 30000; // 30 seconds timeout
 
     public SimpleWebSocketServer(int port) {
         this.port = port;
@@ -29,118 +27,125 @@ public class SimpleWebSocketServer {
             server = new ServerSocket(port);
             System.out.println("WebSocket server started on port " + port);
 
-            while (true) {
-                System.out.println("Waiting for a client to connect...");
-                Socket client = server.accept();
-                System.out.println("A client connected.");
-                System.out.println("A client connected.");
-
-                System.out.println("Setting up input and output streams...");
-                InputStream in = client.getInputStream();
-                OutputStream out = client.getOutputStream();
-                Scanner s = new Scanner(in, "UTF-8");
-
+            while (!server.isClosed()) {
                 try {
-                    System.out.println("Reading client handshake...");
-                    String data = s.useDelimiter("\\r\\n\\r\\n").next();
-                    System.out.println("Client handshake data: " + data);
-                    System.out.println("Checking if the request is a GET request...");
-                    Matcher get = Pattern.compile("^GET").matcher(data);
-                    System.out.println("GET request found: " + get.find());
+                    Socket client = server.accept();
+                    client.setSoTimeout(SOCKET_TIMEOUT); // Add timeout to prevent infinite waiting
+                    System.out.println("A client connected.");
 
-                    if (get.find()) {
-                        System.out.println("Looking for Sec-WebSocket-Key...");
-                        Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
-                        boolean keyFound = match.find();
-                        System.out.println("Sec-WebSocket-Key found: " + keyFound);
-                        if (!keyFound) {
-                            System.out.println("Sec-WebSocket-Key not found, closing connection.");
-                            client.close();
-                            continue;
-                        }
-                        System.out.println("Sec-WebSocket-Key value: " + match.group(1));
-                        System.out.println("Preparing handshake response...");
-                        String acceptKey = Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-1")
-                                .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes("UTF-8")));
-                        System.out.println("Sec-WebSocket-Accept: " + acceptKey);
-                        byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n"
-                                + "Connection: Upgrade\r\n"
-                                + "Upgrade: websocket\r\n"
-                                + "Sec-WebSocket-Accept: "
-                                + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-1")
-                                .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes("UTF-8")))
-                                + "\r\n\r\n").getBytes("UTF-8");
-                        System.out.println("Sending handshake response...");
-                        System.out.println("Writing handshake response to output stream...");
-                        out.write(response, 0, response.length);
-                        out.flush();
-                        System.out.println("Handshake response sent.");
+                    InputStream in = client.getInputStream();
+                    OutputStream out = client.getOutputStream();
+                    Scanner s = new Scanner(in, "UTF-8");
 
-                        // Handle messages
-                        while (true) {
-                            System.out.println("Waiting to read first byte of message...");
-                            int firstByte = in.read();
-                            System.out.println("First byte read: " + firstByte);
-                            if (firstByte == -1) break; // End of stream
+                    try {
+                        String data = s.useDelimiter("\\r\\n\\r\\n").next();
+                        Matcher get = Pattern.compile("^GET").matcher(data);
 
-                            System.out.println("Waiting to read second byte of message...");
-                            int secondByte = in.read();
-                            System.out.println("Second byte read: " + secondByte);
-                            int payloadLength = secondByte & 0x7F;
-
-                            if (payloadLength == 126) {
-                                payloadLength = in.read() << 8 | in.read();
-                            } else if (payloadLength == 127) {
-                                payloadLength = (int) (in.read() << 56 | in.read() << 48 | in.read() << 40 | in.read() << 32 |
-                                        in.read() << 24 | in.read() << 16 | in.read() << 8 | in.read());
+                        if (get.find()) {
+                            Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
+                            if (!match.find()) {
+                                client.close();
+                                continue;
                             }
 
-                            System.out.println("Payload length: " + payloadLength);
-                            byte[] key = new byte[4];
-                            System.out.println("Reading masking key...");
-                            in.read(key, 0, key.length);
+                            // Handle handshake
+                            String acceptKey = Base64.getEncoder().encodeToString(
+                                    MessageDigest.getInstance("SHA-1")
+                                            .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+                                                    .getBytes("UTF-8")));
 
-                            System.out.println("Masking key read: " + Arrays.toString(key));
-                            byte[] encoded = new byte[payloadLength];
-                            System.out.println("Reading encoded message...");
-                            in.read(encoded, 0, encoded.length);
+                            byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n"
+                                    + "Connection: Upgrade\r\n"
+                                    + "Upgrade: websocket\r\n"
+                                    + "Sec-WebSocket-Accept: " + acceptKey
+                                    + "\r\n\r\n").getBytes("UTF-8");
 
-                            System.out.println("Encoded message read: " + Arrays.toString(encoded));
-                            byte[] decoded = new byte[payloadLength];
-                            System.out.println("Decoding message...");
-                            for (int i = 0; i < encoded.length; i++) {
-                                decoded[i] = (byte) (encoded[i] ^ key[i & 0x3]);
-                            }
-
-                            System.out.println("Decoded message: " + new String(decoded));
-                            System.out.println("Echoing message back to client...");
-
-                            // Echo the message back
-                            out.write(0x81); // 0x81 indicates a text frame
-                            if (payloadLength < 126) {
-                                out.write(payloadLength);
-                            } else if (payloadLength <= 65535) {
-                                out.write(126);
-                                out.write((payloadLength >> 8) & 0xFF);
-                                out.write(payloadLength & 0xFF);
-                            } else {
-                                out.write(127);
-                                for (int i = 7; i >= 0; i--) {
-                                    out.write((payloadLength >> (8 * i)) & 0xFF);
-                                }
-                            }
-                            out.write(decoded); // Send the decoded message back
+                            out.write(response);
                             out.flush();
+
+                            // Handle messages with proper buffer reading
+                            byte[] buffer = new byte[8192]; // Use a buffer for reading
+                            while (!client.isClosed()) {
+                                // Read the header bytes into the buffer
+                                int headerBytes = readFully(in, buffer, 0, 2);
+                                if (headerBytes < 2) break; // Connection closed or error
+
+                                int payloadLength = buffer[1] & 0x7F;
+                                int totalLength = 2; // Start with 2 header bytes
+
+                                // Handle extended payload length
+                                if (payloadLength == 126) {
+                                    headerBytes = readFully(in, buffer, totalLength, 2);
+                                    if (headerBytes < 2) break;
+                                    payloadLength = ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
+                                    totalLength += 2;
+                                } else if (payloadLength == 127) {
+                                    headerBytes = readFully(in, buffer, totalLength, 8);
+                                    if (headerBytes < 8) break;
+                                    payloadLength = 0;
+                                    for (int i = 0; i < 8; i++) {
+                                        payloadLength |= (buffer[totalLength + i] & 0xFF) << ((7 - i) * 8);
+                                    }
+                                    totalLength += 8;
+                                }
+
+                                // Read masking key
+                                headerBytes = readFully(in, buffer, totalLength, 4);
+                                if (headerBytes < 4) break;
+                                byte[] maskingKey = Arrays.copyOfRange(buffer, totalLength, totalLength + 4);
+                                totalLength += 4;
+
+                                // Read payload
+                                byte[] payload = new byte[payloadLength];
+                                int bytesRead = readFully(in, payload, 0, payloadLength);
+                                if (bytesRead < payloadLength) break;
+
+                                // Unmask the payload
+                                for (int i = 0; i < payloadLength; i++) {
+                                    payload[i] = (byte) (payload[i] ^ maskingKey[i & 0x3]);
+                                }
+
+                                // Echo back
+                                out.write(0x81); // Text frame
+                                if (payloadLength < 126) {
+                                    out.write(payloadLength);
+                                } else if (payloadLength <= 65535) {
+                                    out.write(126);
+                                    out.write((payloadLength >> 8) & 0xFF);
+                                    out.write(payloadLength & 0xFF);
+                                } else {
+                                    out.write(127);
+                                    for (int i = 7; i >= 0; i--) {
+                                        out.write((payloadLength >> (8 * i)) & 0xFF);
+                                    }
+                                }
+                                out.write(payload);
+                                out.flush();
+                            }
                         }
+                    } finally {
+                        s.close();
+                        client.close();
                     }
-                } finally {
-                    s.close();
-                    client.close();
+                } catch (IOException e) {
+                    System.err.println("Error handling client: " + e.getMessage());
+                    // Continue serving other clients
                 }
             }
         } catch (IOException | NoSuchAlgorithmException e) {
             throw new TinyWeb.ServerException("Can't start WebSocket Server", e);
         }
+    }
+
+    // Helper method to ensure we read the exact number of bytes needed
+    private int readFully(InputStream in, byte[] buffer, int offset, int length) throws IOException {
+        int totalBytesRead = 0;
+        while (totalBytesRead < length) {
+            int bytesRead = in.read(buffer, offset + totalBytesRead, length - totalBytesRead);
+            if (bytesRead == -1) break; // Stream ended
+            totalBytesRead += bytesRead;
+        }
+        return totalBytesRead;
     }
 
     public void stop() {
