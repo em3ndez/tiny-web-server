@@ -137,7 +137,7 @@ public class TinyWebTest {
                                 e.printStackTrace();
                             }
                         }
-                    }, URI.create("ws://localhost:8080/websocket"));
+                    }, URI.create("ws://localhost:8081/websocket"));
 
                     messageLatch.await(5, TimeUnit.SECONDS);
                     assertThat(messageToSend, equalTo(receivedMessage.toString()));

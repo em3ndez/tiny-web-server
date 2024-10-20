@@ -6,7 +6,7 @@ import jakarta.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-@ServerEndpoint("/websocket")
+@ServerEndpoint(value = "/websocket", configurator = WebSocketConfigurator.class)
 public class WebSocketHandler {
 
     private static final CopyOnWriteArraySet<Session> sessions = new CopyOnWriteArraySet<>();
