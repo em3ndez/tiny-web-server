@@ -28,7 +28,17 @@ public class TinyWebTest {
     {
         describe("ExampleApp.exampleComposition() server tested via sockets", () -> {
             describe("Echoing GET endpoint respond with..", () -> {
+                SimpleWebSocketServer webSocketServer;
+                
                 before(() -> {
+                    webSocketServer = new SimpleWebSocketServer(8081);
+                    new Thread(() -> {
+                        try {
+                            webSocketServer.start();
+                        } catch (IOException | NoSuchAlgorithmException e) {
+                            e.printStackTrace();
+                        }
+                    }).start();
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
                     svr.start();
                 });
