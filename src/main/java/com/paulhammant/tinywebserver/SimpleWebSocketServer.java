@@ -54,10 +54,14 @@ public class SimpleWebSocketServer {
 
                         // Handle messages
                         while (true) {
+                            System.out.println("Waiting to read first byte of message...");
                             int firstByte = in.read();
+                            System.out.println("First byte read: " + firstByte);
                             if (firstByte == -1) break; // End of stream
 
+                            System.out.println("Waiting to read second byte of message...");
                             int secondByte = in.read();
+                            System.out.println("Second byte read: " + secondByte);
                             int payloadLength = secondByte & 0x7F;
 
                             if (payloadLength == 126) {
@@ -67,18 +71,25 @@ public class SimpleWebSocketServer {
                                         in.read() << 24 | in.read() << 16 | in.read() << 8 | in.read());
                             }
 
+                            System.out.println("Payload length: " + payloadLength);
                             byte[] key = new byte[4];
+                            System.out.println("Reading masking key...");
                             in.read(key, 0, key.length);
 
+                            System.out.println("Masking key read: " + Arrays.toString(key));
                             byte[] encoded = new byte[payloadLength];
+                            System.out.println("Reading encoded message...");
                             in.read(encoded, 0, encoded.length);
 
+                            System.out.println("Encoded message read: " + Arrays.toString(encoded));
                             byte[] decoded = new byte[payloadLength];
+                            System.out.println("Decoding message...");
                             for (int i = 0; i < encoded.length; i++) {
                                 decoded[i] = (byte) (encoded[i] ^ key[i & 0x3]);
                             }
 
                             System.out.println("Decoded message: " + new String(decoded));
+                            System.out.println("Echoing message back to client...");
 
                             // Echo the message back
                             out.write(0x81); // 0x81 indicates a text frame
