@@ -74,13 +74,9 @@ public class SimpleWebSocketServer {
     }
 
     public void stop() {
-    }
-
-    public void stop() {
         try {
             if (server != null && !server.isClosed()) {
                 server.close();
-                System.out.println("WebSocket server stopped.");
             }
         } catch (IOException e) {
             throw new TinyWeb.ServerException("Can't stop WebSocket Server", e);
