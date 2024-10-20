@@ -1,6 +1,7 @@
 package com.paulhammant.tinywebserver;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -16,13 +17,15 @@ public class SimpleWebSocketServer {
 
     private final int port;
 
+    private ServerSocket server;
+
     public SimpleWebSocketServer(int port) {
         this.port = port;
     }
 
     public void start() {
         try {
-            ServerSocket server = new ServerSocket(port);
+            server = new ServerSocket(port);
             System.out.println("WebSocket server started on port " + port);
 
             while (true) {
@@ -71,6 +74,16 @@ public class SimpleWebSocketServer {
     }
 
     public void stop() {
+    }
 
+    public void stop() {
+        try {
+            if (server != null && !server.isClosed()) {
+                server.close();
+                System.out.println("WebSocket server stopped.");
+            }
+        } catch (IOException e) {
+            throw new TinyWeb.ServerException("Can't stop WebSocket Server", e);
+        }
     }
 }
