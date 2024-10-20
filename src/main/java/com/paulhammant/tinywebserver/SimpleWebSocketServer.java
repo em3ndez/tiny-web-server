@@ -42,6 +42,7 @@ public class SimpleWebSocketServer {
                         Matcher get = Pattern.compile("^GET").matcher(data);
 
                         if (get.find()) {
+                            System.out.println("Received handshake data: " + data);
                             Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
                             if (!match.find()) {
                                 client.close();
@@ -54,12 +55,20 @@ public class SimpleWebSocketServer {
                                             .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
                                                     .getBytes("UTF-8")));
 
+                            System.out.println("Sec-WebSocket-Key found: " + match.group(1));
+                            String acceptKey = Base64.getEncoder().encodeToString(
+                                    MessageDigest.getInstance("SHA-1")
+                                            .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+                                                    .getBytes("UTF-8")));
+                            System.out.println("Computed Sec-WebSocket-Accept: " + acceptKey);
+
                             byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n"
                                     + "Connection: Upgrade\r\n"
                                     + "Upgrade: websocket\r\n"
                                     + "Sec-WebSocket-Accept: " + acceptKey
                                     + "\r\n\r\n").getBytes("UTF-8");
 
+                            System.out.println("Sending handshake response: " + new String(response, "UTF-8"));
                             out.write(response);
                             out.flush();
 
