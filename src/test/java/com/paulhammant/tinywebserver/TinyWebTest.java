@@ -421,7 +421,7 @@ public class TinyWebTest {
                     }
                 }
 
-                assertThat(messageToSend, equalTo(receivedMessage.toString()));
+                assertThat(receivedMessage.toString(), equalTo(messageToSend));
             });
 
             after(() -> {

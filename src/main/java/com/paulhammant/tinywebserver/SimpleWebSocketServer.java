@@ -1,6 +1,7 @@
 package com.paulhammant.tinywebserver;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -171,6 +172,8 @@ public class SimpleWebSocketServer {
         SimpleWebSocketServer server = new SimpleWebSocketServer(8081);
         new Thread(server::start).start();
 
+        long start = System.currentTimeMillis();
+
         try (Socket socket = new Socket("localhost", 8081)) {
             OutputStream out = socket.getOutputStream();
             InputStream in = socket.getInputStream();
@@ -201,7 +204,57 @@ public class SimpleWebSocketServer {
             // Read the echoed message
             byte[] buffer = new byte[1024];
             int bytesRead = in.read(buffer);
-            String receivedMessage = new String(buffer, 0, bytesRead, "UTF-8");
+            String receivedMessage = null;
+            try {
+                receivedMessage = new String(buffer, 0, bytesRead, "UTF-8");
+            } catch (Exception e) {
+                System.out.println("1. Exception " +(System.currentTimeMillis() - start) + " millis later" + e.getMessage());
+
+
+//                Error encountered
+//                ==========================
+//
+//                WebSocket server started on port 8081
+//                A client connected.
+//                        Received handshake data: GET / HTTP/1.1
+//                Host: localhost:8081
+//                Upgrade: websocket
+//                Connection: Upgrade
+//                Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+//                        Sec-WebSocket-Version: 13
+//                Sec-WebSocket-Key found: dGhlIHNhbXBsZSBub25jZQ==
+//                        Computed Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+//                        Sending handshake response: HTTP/1.1 101 Switching Protocols
+//                Connection: Upgrade
+//                Upgrade: websocket
+//                Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+//
+//
+//                        Handshake response: HTTP/1.1 101 Switching Protocols
+//                Connection: Upgrade
+//                Upgrade: websocket
+//                Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+//
+//
+//                        Error handling client: Read timed out
+//                java.lang.RuntimeException: java.lang.StringIndexOutOfBoundsException: Range [0, 0 + -1) out of bounds for length 1024
+//                at com.paulhammant.tinywebserver.SimpleWebSocketServer.main(SimpleWebSocketServer.java:212)
+//                Caused by: java.lang.StringIndexOutOfBoundsException: Range [0, 0 + -1) out of bounds for length 1024
+//                at java.base/jdk.internal.util.Preconditions$1.apply(Preconditions.java:55)
+//                at java.base/jdk.internal.util.Preconditions$1.apply(Preconditions.java:52)
+//                at java.base/jdk.internal.util.Preconditions$4.apply(Preconditions.java:213)
+//                at java.base/jdk.internal.util.Preconditions$4.apply(Preconditions.java:210)
+//                at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:98)
+//                at java.base/jdk.internal.util.Preconditions.outOfBoundsCheckFromIndexSize(Preconditions.java:118)
+//                at java.base/jdk.internal.util.Preconditions.checkFromIndexSize(Preconditions.java:397)
+//                at java.base/java.lang.String.checkBoundsOffCount(String.java:4853)
+//                at java.base/java.lang.String.<init>(String.java:488)
+//                at com.paulhammant.tinywebserver.SimpleWebSocketServer.main(SimpleWebSocketServer.java:209)
+//                Error handling client: Socket closed
+//                1. Exception 30089 millis laterRange [0, 0 + -1) out of bounds for length 1024
+//                2. Exception 30092 millis later - java.lang.StringIndexOutOfBoundsException: Range [0, 0 + -1) out of bounds for length 1024
+//
+            }
 
             // Assert the echoed message is correct
             if (!receivedMessage.contains(messageToSend)) {
@@ -209,7 +262,8 @@ public class SimpleWebSocketServer {
             } else {
                 System.out.println("Test passed: Echoed message is correct.");
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
+            System.out.println("2. Exception " +(System.currentTimeMillis() - start) + " millis later - " + e.getMessage());
             e.printStackTrace();
         } finally {
             server.stop();
