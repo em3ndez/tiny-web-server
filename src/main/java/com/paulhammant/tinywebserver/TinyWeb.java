@@ -2,8 +2,6 @@ package com.paulhammant.tinywebserver;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import jakarta.websocket.DeploymentException;
-import org.glassfish.tyrus.server.Server;
 
 import java.io.File;
 import java.io.IOException;
@@ -161,13 +159,13 @@ public class TinyWeb {
     public static class Server extends Context {
 
         private final HttpServer httpServer;
-        private Server webSocketServer;
+        private org.glassfish.tyrus.server.Server webSocketServer;
 
 
         public Server(int port) {
             try {
                 httpServer = HttpServer.create(new InetSocketAddress(port), 0);
-                webSocketServer = new Server("localhost", 8081, "/websocket", WebSocketHandler.class);
+                webSocketServer = new org.glassfish.tyrus.server.Server("localhost", 8081, "/websocket", WebSocketHandler.class);
             } catch (IOException e) {
                 throw new ServerException("Can't listen on port " + port, e);
             }
@@ -278,11 +276,7 @@ public class TinyWeb {
 
         public TinyWeb.Server start() {
             httpServer.start();
-            try {
-                webSocketServer.start();
-            } catch (DeploymentException e) {
-                throw new ServerException("Failed to start WebSocket server", e);
-            }
+            webSocketServer.start();
             return this;
         }
 
