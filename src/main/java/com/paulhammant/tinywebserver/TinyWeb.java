@@ -3,7 +3,7 @@ package com.paulhammant.tinywebserver;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import jakarta.websocket.DeploymentException;
-import org.glassfish.tyrus.spi.ServerContainer;
+import org.glassfish.tyrus.server.Server;
 
 import java.io.File;
 import java.io.IOException;
@@ -160,23 +160,25 @@ public class TinyWeb {
     }
     public static class Server extends Context {
 
-        private final HttpServer server;
+        private final HttpServer httpServer;
+        private Server webSocketServer;
 
 
         public Server(int port) {
             try {
-                server = HttpServer.create(new InetSocketAddress(port), 0);
+                httpServer = HttpServer.create(new InetSocketAddress(port), 0);
+                webSocketServer = new Server("localhost", 8081, "/websocket", WebSocketHandler.class);
             } catch (IOException e) {
                 throw new ServerException("Can't listen on port " + port, e);
             }
-            server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+            httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
             for (Method method : Method.values()) {
                 routes.put(method, new HashMap<>());
                 filters.put(method, new ArrayList<>());
             }
 
-            server.createContext("/", exchange -> {
+            httpServer.createContext("/", exchange -> {
                 String path = exchange.getRequestURI().getPath();
                 Method method = Method.valueOf(exchange.getRequestMethod());
 
@@ -275,12 +277,18 @@ public class TinyWeb {
         }
 
         public TinyWeb.Server start() {
-            server.start();
+            httpServer.start();
+            try {
+                webSocketServer.start();
+            } catch (DeploymentException e) {
+                throw new ServerException("Failed to start WebSocket server", e);
+            }
             return this;
         }
 
         public TinyWeb.Server stop() {
-            server.stop(0);
+            httpServer.stop(0);
+            webSocketServer.stop();
             return this;
         }
 
