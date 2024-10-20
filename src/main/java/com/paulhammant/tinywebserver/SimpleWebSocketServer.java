@@ -167,4 +167,52 @@ public class SimpleWebSocketServer {
             throw new TinyWeb.ServerException("Can't stop WebSocket Server", e);
         }
     }
+    public static void main(String[] args) {
+        SimpleWebSocketServer server = new SimpleWebSocketServer(8081);
+        new Thread(server::start).start();
+
+        try (Socket socket = new Socket("localhost", 8081)) {
+            OutputStream out = socket.getOutputStream();
+            InputStream in = socket.getInputStream();
+
+            // Perform WebSocket handshake
+            String handshakeRequest = "GET / HTTP/1.1\r\n"
+                    + "Host: localhost:8081\r\n"
+                    + "Upgrade: websocket\r\n"
+                    + "Connection: Upgrade\r\n"
+                    + "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                    + "Sec-WebSocket-Version: 13\r\n\r\n";
+            out.write(handshakeRequest.getBytes("UTF-8"));
+            out.flush();
+
+            // Read handshake response
+            byte[] responseBuffer = new byte[1024];
+            int responseBytes = in.read(responseBuffer);
+            String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
+            System.out.println("Handshake response: " + response);
+
+            // Send a WebSocket text frame
+            String messageToSend = "Hello WebSocket";
+            out.write(0x81); // FIN bit set and text frame
+            out.write(messageToSend.length());
+            out.write(messageToSend.getBytes("UTF-8"));
+            out.flush();
+
+            // Read the echoed message
+            byte[] buffer = new byte[1024];
+            int bytesRead = in.read(buffer);
+            String receivedMessage = new String(buffer, 0, bytesRead, "UTF-8");
+
+            // Assert the echoed message is correct
+            if (!receivedMessage.contains(messageToSend)) {
+                throw new AssertionError("Expected: " + messageToSend + " but was: " + receivedMessage);
+            } else {
+                System.out.println("Test passed: Echoed message is correct.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            server.stop();
+        }
+    }
 }
