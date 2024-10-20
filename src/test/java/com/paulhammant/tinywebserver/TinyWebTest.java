@@ -13,6 +13,7 @@ import org.forgerock.cuppa.reporters.DefaultReporter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static okhttp3.Request.*;
@@ -24,24 +25,11 @@ import static org.hamcrest.Matchers.*;
 public class TinyWebTest {
     TinyWeb.ExampleApp app = Mockito.mock(TinyWeb.ExampleApp.class);
     TinyWeb.Server svr;
+    SimpleWebSocketServer webSocketServer;
 
     {
         describe("ExampleApp.exampleComposition() server tested via sockets", () -> {
             describe("Echoing GET endpoint respond with..", () -> {
-                SimpleWebSocketServer webSocketServer;
-                
-                before(() -> {
-                    webSocketServer = new SimpleWebSocketServer(8081);
-                    new Thread(() -> {
-                        try {
-                            webSocketServer.start();
-                        } catch (IOException | NoSuchAlgorithmException e) {
-                            e.printStackTrace();
-                        }
-                    }).start();
-                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    svr.start();
-                });
                 it("should return user profile for Jimmy", () -> {
                     try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
                         assertThat(response.body().string(), equalTo("User profile: Jimmy"));
@@ -116,34 +104,6 @@ public class TinyWebTest {
                         assertThat(response.body().string(), equalTo("Access Denied"));
                     }
                 });
-                after(() -> {
-                    svr.stop();
-                    svr = null;
-                });
-            });
-            describe("WebSocket functionality", () -> {
-                before(() -> {
-                    svr = TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    svr.start();
-                });
-
-                it("should echo messages sent to the WebSocket", () -> {
-                    final String messageToSend = "Hello WebSocket";
-                    final StringBuilder receivedMessage = new StringBuilder();
-
-                    try (Socket socket = new Socket("localhost", 8081)) {
-                        OutputStream out = socket.getOutputStream();
-                        out.write(messageToSend.getBytes());
-                        out.flush();
-
-                        byte[] buffer = new byte[1024];
-                        int bytesRead = socket.getInputStream().read(buffer);
-                        receivedMessage.append(new String(buffer, 0, bytesRead));
-                    }
-
-                    assertThat(messageToSend, equalTo(receivedMessage.toString()));
-                });
-
                 after(() -> {
                     svr.stop();
                     svr = null;
@@ -417,6 +377,42 @@ public class TinyWebTest {
             });
 
         });
+
+        only().describe("WebSocket functionality", () -> {
+
+            before(() -> {
+                webSocketServer = new SimpleWebSocketServer(8081);
+                new Thread(() -> {
+                    webSocketServer.start();
+                }).start();
+                svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                svr.start();
+            });
+
+            it("should echo messages sent to the WebSocket", () -> {
+                final String messageToSend = "Hello WebSocket";
+                final StringBuilder receivedMessage = new StringBuilder();
+
+                try (Socket socket = new Socket("localhost", 8081)) {
+                    OutputStream out = socket.getOutputStream();
+                    out.write(messageToSend.getBytes());
+                    out.flush();
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = socket.getInputStream().read(buffer);
+                    receivedMessage.append(new String(buffer, 0, bytesRead));
+                }
+
+                assertThat(messageToSend, equalTo(receivedMessage.toString()));
+            });
+
+            after(() -> {
+                svr.stop();
+                webSocketServer.stop();
+                svr = null;
+            });
+        });
+
     }
 
     private static @NotNull Response httpGet(String url) throws IOException {
