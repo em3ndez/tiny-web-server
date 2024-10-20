@@ -2,6 +2,7 @@ package com.paulhammant.tinywebserver;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import jakarta.websocket.DeploymentException;
 
 import java.io.File;
 import java.io.IOException;
@@ -276,7 +277,11 @@ public class TinyWeb {
 
         public TinyWeb.Server start() {
             httpServer.start();
-            webSocketServer.start();
+            try {
+                webSocketServer.start();
+            } catch (DeploymentException e) {
+                throw new ServerException("Failed to start WebSocket server", e);
+            }
             return this;
         }
 
