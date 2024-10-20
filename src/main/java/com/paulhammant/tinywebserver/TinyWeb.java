@@ -465,12 +465,6 @@ public class TinyWeb {
 
             }};
 
-            // Initialize WebSocket server
-            try {
-                serverContainer.addEndpoint(WebSocketHandler.class);
-            } catch (DeploymentException e) {
-                throw new RuntimeException("Failed to deploy WebSocket endpoint", e);
-            }
 
             return server;
         }
