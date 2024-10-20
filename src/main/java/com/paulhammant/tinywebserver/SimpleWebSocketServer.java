@@ -50,11 +50,6 @@ public class SimpleWebSocketServer {
                             }
 
                             // Handle handshake
-                            String acceptKey = Base64.getEncoder().encodeToString(
-                                    MessageDigest.getInstance("SHA-1")
-                                            .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
-                                                    .getBytes("UTF-8")));
-
                             System.out.println("Sec-WebSocket-Key found: " + match.group(1));
                             String acceptKey = Base64.getEncoder().encodeToString(
                                     MessageDigest.getInstance("SHA-1")
