@@ -44,10 +44,20 @@ public class SimpleWebSocketServer {
                     System.out.println("Reading client handshake...");
                     String data = s.useDelimiter("\\r\\n\\r\\n").next();
                     System.out.println("Client handshake data: " + data);
+                    System.out.println("Checking if the request is a GET request...");
                     Matcher get = Pattern.compile("^GET").matcher(data);
+                    System.out.println("GET request found: " + get.find());
 
                     if (get.find()) {
+                        System.out.println("Looking for Sec-WebSocket-Key...");
                         Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
+                        boolean keyFound = match.find();
+                        System.out.println("Sec-WebSocket-Key found: " + keyFound);
+                        if (!keyFound) {
+                            System.out.println("Sec-WebSocket-Key not found, closing connection.");
+                            client.close();
+                            continue;
+                        }
                         match.find();
                         byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n"
                                 + "Connection: Upgrade\r\n"
