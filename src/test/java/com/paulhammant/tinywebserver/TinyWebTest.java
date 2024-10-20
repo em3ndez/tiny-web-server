@@ -396,8 +396,19 @@ public class TinyWebTest {
                 try (Socket socket = new Socket("localhost", 8081)) {
                     OutputStream out = socket.getOutputStream();
                     // Send a WebSocket text frame
-                    out.write(0x81); // 0x81 indicates a text frame
-                    out.write(messageToSend.length());
+                    out.write(0x81); // FIN bit set and text frame
+                    if (messageToSend.length() <= 125) {
+                        out.write(messageToSend.length());
+                    } else if (messageToSend.length() <= 65535) {
+                        out.write(126);
+                        out.write((messageToSend.length() >> 8) & 0xFF);
+                        out.write(messageToSend.length() & 0xFF);
+                    } else {
+                        out.write(127);
+                        for (int i = 7; i >= 0; i--) {
+                            out.write((messageToSend.length() >> (8 * i)) & 0xFF);
+                        }
+                    }
                     out.write(messageToSend.getBytes());
                     out.flush();
 
