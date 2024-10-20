@@ -60,6 +60,13 @@ public class SimpleWebSocketServer {
                             int secondByte = in.read();
                             int payloadLength = secondByte & 0x7F;
 
+                            if (payloadLength == 126) {
+                                payloadLength = in.read() << 8 | in.read();
+                            } else if (payloadLength == 127) {
+                                payloadLength = (int) (in.read() << 56 | in.read() << 48 | in.read() << 40 | in.read() << 32 |
+                                        in.read() << 24 | in.read() << 16 | in.read() << 8 | in.read());
+                            }
+
                             byte[] key = new byte[4];
                             in.read(key, 0, key.length);
 
@@ -75,7 +82,18 @@ public class SimpleWebSocketServer {
 
                             // Echo the message back
                             out.write(0x81); // 0x81 indicates a text frame
-                            out.write(encoded.length); // assuming payload length is less than 126
+                            if (payloadLength < 126) {
+                                out.write(payloadLength);
+                            } else if (payloadLength <= 65535) {
+                                out.write(126);
+                                out.write((payloadLength >> 8) & 0xFF);
+                                out.write(payloadLength & 0xFF);
+                            } else {
+                                out.write(127);
+                                for (int i = 7; i >= 0; i--) {
+                                    out.write((payloadLength >> (8 * i)) & 0xFF);
+                                }
+                            }
                             out.write(encoded);
                             out.flush();
                         }
