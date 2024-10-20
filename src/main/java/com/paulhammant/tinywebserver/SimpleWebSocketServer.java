@@ -94,7 +94,7 @@ public class SimpleWebSocketServer {
                                     out.write((payloadLength >> (8 * i)) & 0xFF);
                                 }
                             }
-                            out.write(encoded);
+                            out.write(decoded); // Send the decoded message back
                             out.flush();
                         }
                     }
