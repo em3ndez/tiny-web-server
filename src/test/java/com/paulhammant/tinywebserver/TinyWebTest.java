@@ -4,9 +4,8 @@ package com.paulhammant.tinywebserver;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import org.mockito.Mockito;
-import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.io.OutputStream;
+import java.net.Socket;
 import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.reporters.DefaultReporter;
@@ -119,29 +118,20 @@ public class TinyWebTest {
                 });
 
                 it("should echo messages sent to the WebSocket", () -> {
-                    final CountDownLatch messageLatch = new CountDownLatch(1);
                     final String messageToSend = "Hello WebSocket";
                     final StringBuilder receivedMessage = new StringBuilder();
 
-                    WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-                    Session session = container.connectToServer(new Endpoint() {
-                        @Override
-                        public void onOpen(Session session, EndpointConfig config) {
-                            try {
-                                session.addMessageHandler((MessageHandler.Whole<String>) message -> {
-                                    receivedMessage.append(message);
-                                    messageLatch.countDown();
-                                });
-                                session.getBasicRemote().sendText(messageToSend);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }, URI.create("ws://localhost:8081/websocket"));
+                    try (Socket socket = new Socket("localhost", 8081)) {
+                        OutputStream out = socket.getOutputStream();
+                        out.write(messageToSend.getBytes());
+                        out.flush();
 
-                    messageLatch.await(5, TimeUnit.SECONDS);
+                        byte[] buffer = new byte[1024];
+                        int bytesRead = socket.getInputStream().read(buffer);
+                        receivedMessage.append(new String(buffer, 0, bytesRead));
+                    }
+
                     assertThat(messageToSend, equalTo(receivedMessage.toString()));
-                    session.close();
                 });
 
                 after(() -> {
