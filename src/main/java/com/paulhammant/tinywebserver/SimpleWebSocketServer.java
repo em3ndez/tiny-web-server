@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -13,11 +14,13 @@ import java.util.Base64;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.security.SecureRandom;
 
 public class SimpleWebSocketServer {
     private final int port;
     private ServerSocket server;
     private static final int SOCKET_TIMEOUT = 30000; // 30 seconds timeout
+    private static final SecureRandom random = new SecureRandom();
 
     public SimpleWebSocketServer(int port) {
         this.port = port;
@@ -31,129 +34,171 @@ public class SimpleWebSocketServer {
             while (!server.isClosed()) {
                 try {
                     Socket client = server.accept();
-                    client.setSoTimeout(SOCKET_TIMEOUT); // Add timeout to prevent infinite waiting
+                    client.setSoTimeout(SOCKET_TIMEOUT);
                     System.out.println("A client connected.");
 
-                    InputStream in = client.getInputStream();
-                    OutputStream out = client.getOutputStream();
-                    Scanner s = new Scanner(in, "UTF-8");
-
-                    try {
-                        String data = s.useDelimiter("\\r\\n\\r\\n").next();
-                        Matcher get = Pattern.compile("^GET").matcher(data);
-
-                        if (get.find()) {
-                            System.out.println("Received handshake data: " + data);
-                            Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
-                            if (!match.find()) {
-                                client.close();
-                                continue;
-                            }
-
-                            // Handle handshake
-                            System.out.println("Sec-WebSocket-Key found: " + match.group(1));
-                            String acceptKey = Base64.getEncoder().encodeToString(
-                                    MessageDigest.getInstance("SHA-1")
-                                            .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
-                                                    .getBytes("UTF-8")));
-                            System.out.println("Computed Sec-WebSocket-Accept: " + acceptKey);
-
-                            byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n"
-                                    + "Connection: Upgrade\r\n"
-                                    + "Upgrade: websocket\r\n"
-                                    + "Sec-WebSocket-Accept: " + acceptKey
-                                    + "\r\n\r\n").getBytes("UTF-8");
-
-                            System.out.println("Sending handshake response: " + new String(response, "UTF-8"));
-                            out.write(response);
-                            out.flush();
-
-                            // Handle messages with proper buffer reading
-                            byte[] buffer = new byte[8192]; // Use a buffer for reading
-                            while (!client.isClosed()) {
-                                // Read the header bytes into the buffer
-                                int headerBytes = readFully(in, buffer, 0, 2);
-                                if (headerBytes < 2) break; // Connection closed or error
-
-                                int payloadLength = buffer[1] & 0x7F;
-                                int totalLength = 2; // Start with 2 header bytes
-
-                                // Handle extended payload length
-                                if (payloadLength == 126) {
-                                    headerBytes = readFully(in, buffer, totalLength, 2);
-                                    if (headerBytes < 2) break;
-                                    payloadLength = ((buffer[2] & 0xFF) << 8) | (buffer[3] & 0xFF);
-                                    totalLength += 2;
-                                } else if (payloadLength == 127) {
-                                    headerBytes = readFully(in, buffer, totalLength, 8);
-                                    if (headerBytes < 8) break;
-                                    payloadLength = 0;
-                                    for (int i = 0; i < 8; i++) {
-                                        payloadLength |= (buffer[totalLength + i] & 0xFF) << ((7 - i) * 8);
-                                    }
-                                    totalLength += 8;
-                                }
-
-                                // Read masking key
-                                headerBytes = readFully(in, buffer, totalLength, 4);
-                                if (headerBytes < 4) break;
-                                byte[] maskingKey = Arrays.copyOfRange(buffer, totalLength, totalLength + 4);
-                                totalLength += 4;
-
-                                // Read payload
-                                byte[] payload = new byte[payloadLength];
-                                int bytesRead = readFully(in, payload, 0, payloadLength);
-                                if (bytesRead < payloadLength) {
-                                    System.out.println("Error: Expected " + payloadLength + " bytes, but read " + bytesRead);
-                                    break;
-                                }
-
-                                // Unmask the payload
-                                for (int i = 0; i < payloadLength; i++) {
-                                    payload[i] = (byte) (payload[i] ^ maskingKey[i & 0x3]);
-                                }
-
-                                // Echo back
-                                out.write(0x81); // Text frame
-                                if (payloadLength < 126) {
-                                    out.write(payloadLength);
-                                } else if (payloadLength <= 65535) {
-                                    out.write(126);
-                                    out.write((payloadLength >> 8) & 0xFF);
-                                    out.write(payloadLength & 0xFF);
-                                } else {
-                                    out.write(127);
-                                    for (int i = 7; i >= 0; i--) {
-                                        out.write((payloadLength >> (8 * i)) & 0xFF);
-                                    }
-                                }
-                                out.write(payload);
-                                out.flush();
-                            }
-                        }
-                    } finally {
-                        s.close();
-                        client.close();
+                    new Thread(() -> handleClient(client)).start();
+                } catch (SocketException e) {
+                    if (e.getMessage().equals("Socket closed")) {
+                        // likely just the server being shut down programmatically.
+                    } else {
+                        throw e;
                     }
                 } catch (IOException e) {
-                    System.err.println("Error handling client: " + e.getMessage());
-                    // Continue serving other clients
+                    e.printStackTrace();
+                    System.err.println("Error accepting client: " + e.getMessage());
                 }
             }
-        } catch (IOException | NoSuchAlgorithmException e) {
-            throw new TinyWeb.ServerException("Can't start WebSocket Server", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Can't start WebSocket Server", e);
         }
     }
 
-    // Helper method to ensure we read the exact number of bytes needed
-    private int readFully(InputStream in, byte[] buffer, int offset, int length) throws IOException {
+    private void handleClient(Socket client) {
+        try {
+            InputStream in = client.getInputStream();
+            OutputStream out = client.getOutputStream();
+            Scanner s = new Scanner(in, "UTF-8");
+
+            try {
+                String data = s.useDelimiter("\\r\\n\\r\\n").next();
+                Matcher get = Pattern.compile("^GET").matcher(data);
+
+                if (get.find()) {
+                    System.out.println("Received handshake data: " + data);
+                    Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
+                    if (!match.find()) {
+                        client.close();
+                        return;
+                    }
+
+                    // Handle handshake
+                    String acceptKey = generateAcceptKey(match.group(1));
+                    sendHandshakeResponse(out, acceptKey);
+
+                    // Handle WebSocket communication
+                    handleWebSocketCommunication(client, in, out);
+                }
+            } finally {
+                s.close();
+                client.close();
+            }
+        } catch (IOException e) {
+            System.err.println("Error handling client: " + e.getMessage());
+        }
+    }
+
+    private String generateAcceptKey(String webSocketKey) throws UnsupportedEncodingException {
+        try {
+            return Base64.getEncoder().encodeToString(
+                    MessageDigest.getInstance("SHA-1")
+                            .digest((webSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+                                    .getBytes("UTF-8")));
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void sendHandshakeResponse(OutputStream out, String acceptKey) throws IOException {
+        byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n" +
+                "Connection: Upgrade\r\n" +
+                "Upgrade: websocket\r\n" +
+                "Sec-WebSocket-Accept: " + acceptKey + "\r\n\r\n").getBytes("UTF-8");
+
+        out.write(response);
+        out.flush();
+    }
+
+    private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[8192];
+
+        while (!client.isClosed()) {
+            // Read frame header
+            int headerLength = readFully(in, buffer, 0, 2);
+            if (headerLength < 2) break;
+
+            boolean fin = (buffer[0] & 0x80) != 0;
+            int opcode = buffer[0] & 0x0F;
+            boolean masked = (buffer[1] & 0x80) != 0;
+            int payloadLength = buffer[1] & 0x7F;
+            int offset = 2;
+
+            // Handle extended payload length
+            if (payloadLength == 126) {
+                headerLength = readFully(in, buffer, offset, 2);
+                if (headerLength < 2) break;
+                payloadLength = ((buffer[offset] & 0xFF) << 8) | (buffer[offset + 1] & 0xFF);
+                offset += 2;
+            } else if (payloadLength == 127) {
+                headerLength = readFully(in, buffer, offset, 8);
+                if (headerLength < 8) break;
+                payloadLength = 0;
+                for (int i = 0; i < 8; i++) {
+                    payloadLength |= (buffer[offset + i] & 0xFF) << ((7 - i) * 8);
+                }
+                offset += 8;
+            }
+
+            // Read masking key if present
+            byte[] maskingKey = null;
+            if (masked) {
+                headerLength = readFully(in, buffer, offset, 4);
+                if (headerLength < 4) break;
+                maskingKey = Arrays.copyOfRange(buffer, offset, offset + 4);
+                offset += 4;
+            }
+
+            // Read payload
+            byte[] payload = new byte[payloadLength];
+            int bytesRead = readFully(in, payload, 0, payloadLength);
+            if (bytesRead < payloadLength) break;
+
+            // Unmask if necessary
+            if (masked) {
+                for (int i = 0; i < payloadLength; i++) {
+                    payload[i] = (byte) (payload[i] ^ maskingKey[i & 0x3]);
+                }
+            }
+
+            // Handle the frame
+            if (opcode == 8) { // Close frame
+                sendCloseFrame(out);
+                break;
+            } else if (opcode == 1) { // Text frame
+                // Echo the message back
+                sendTextFrame(out, payload);
+            }
+        }
+    }
+
+    private void sendTextFrame(OutputStream out, byte[] payload) throws IOException {
+        out.write(0x81); // FIN bit set, text frame
+        if (payload.length < 126) {
+            out.write(payload.length);
+        } else if (payload.length <= 65535) {
+            out.write(126);
+            out.write((payload.length >> 8) & 0xFF);
+            out.write(payload.length & 0xFF);
+        } else {
+            out.write(127);
+            for (int i = 7; i >= 0; i--) {
+                out.write((payload.length >> (8 * i)) & 0xFF);
+            }
+        }
+        out.write(payload);
+        out.flush();
+    }
+
+    private void sendCloseFrame(OutputStream out) throws IOException {
+        out.write(new byte[]{(byte) 0x88, 0x00}); // Close frame with empty payload
+        out.flush();
+    }
+
+    private static int readFully(InputStream in, byte[] buffer, int offset, int length) throws IOException {
         int totalBytesRead = 0;
         while (totalBytesRead < length) {
             int bytesRead = in.read(buffer, offset + totalBytesRead, length - totalBytesRead);
-            if (bytesRead == -1) {
-                System.out.println("Stream ended or connection closed unexpectedly.");
-                break;
-            }
+            if (bytesRead == -1) break;
             totalBytesRead += bytesRead;
         }
         return totalBytesRead;
@@ -165,26 +210,36 @@ public class SimpleWebSocketServer {
                 server.close();
             }
         } catch (IOException e) {
-            throw new TinyWeb.ServerException("Can't stop WebSocket Server", e);
+            throw new RuntimeException("Can't stop WebSocket Server", e);
         }
     }
+
     public static void main(String[] args) {
         SimpleWebSocketServer server = new SimpleWebSocketServer(8081);
-        new Thread(server::start).start();
+        Thread serverThread = new Thread(server::start);
+        serverThread.start();
 
-        long start = System.currentTimeMillis();
+        // Give the server a moment to start
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         try (Socket socket = new Socket("localhost", 8081)) {
+            socket.setSoTimeout(5000); // 5 second timeout
             OutputStream out = socket.getOutputStream();
             InputStream in = socket.getInputStream();
 
             // Perform WebSocket handshake
-            String handshakeRequest = "GET / HTTP/1.1\r\n"
-                    + "Host: localhost:8081\r\n"
-                    + "Upgrade: websocket\r\n"
-                    + "Connection: Upgrade\r\n"
-                    + "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                    + "Sec-WebSocket-Version: 13\r\n\r\n";
+            String handshakeRequest =
+                    "GET / HTTP/1.1\r\n" +
+                            "Host: localhost:8081\r\n" +
+                            "Upgrade: websocket\r\n" +
+                            "Connection: Upgrade\r\n" +
+                            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+                            "Sec-WebSocket-Version: 13\r\n\r\n";
+
             out.write(handshakeRequest.getBytes("UTF-8"));
             out.flush();
 
@@ -194,76 +249,50 @@ public class SimpleWebSocketServer {
             String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
             System.out.println("Handshake response: " + response);
 
-            // Send a WebSocket text frame
+            // Send a masked WebSocket text frame
             String messageToSend = "Hello WebSocket";
-            out.write(0x81); // FIN bit set and text frame
-            out.write(messageToSend.length());
-            out.write(messageToSend.getBytes("UTF-8"));
+            byte[] messageBytes = messageToSend.getBytes("UTF-8");
+
+            // Generate random mask
+            byte[] mask = new byte[4];
+            random.nextBytes(mask);
+
+            // Write frame header
+            out.write(0x81); // FIN bit set, text frame
+            out.write(0x80 | messageBytes.length); // Mask bit set, payload length
+            out.write(mask); // Write mask
+
+            // Write masked payload
+            for (int i = 0; i < messageBytes.length; i++) {
+                out.write(messageBytes[i] ^ mask[i % 4]);
+            }
             out.flush();
 
-            // Read the echoed message
-            byte[] buffer = new byte[1024];
-            int bytesRead = in.read(buffer);
-            String receivedMessage = null;
-            try {
-                receivedMessage = new String(buffer, 0, bytesRead, "UTF-8");
-            } catch (Exception e) {
-                System.out.println("1. Exception " +(System.currentTimeMillis() - start) + " millis later" + e.getMessage());
+            // Read response frame header
+            int byte1 = in.read(); // FIN and opcode
+            int byte2 = in.read(); // Mask and payload length
+            int payloadLength = byte2 & 0x7F;
 
+            // Read payload
+            byte[] payload = new byte[payloadLength];
+            int bytesRead = readFully(in, payload, 0, payloadLength);
+            String receivedMessage = new String(payload, 0, bytesRead, "UTF-8");
 
-//                Error encountered
-//                ==========================
-//
-//                WebSocket server started on port 8081
-//                A client connected.
-//                        Received handshake data: GET / HTTP/1.1
-//                Host: localhost:8081
-//                Upgrade: websocket
-//                Connection: Upgrade
-//                Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
-//                        Sec-WebSocket-Version: 13
-//                Sec-WebSocket-Key found: dGhlIHNhbXBsZSBub25jZQ==
-//                        Computed Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
-//                        Sending handshake response: HTTP/1.1 101 Switching Protocols
-//                Connection: Upgrade
-//                Upgrade: websocket
-//                Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
-//
-//
-//                        Handshake response: HTTP/1.1 101 Switching Protocols
-//                Connection: Upgrade
-//                Upgrade: websocket
-//                Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
-//
-//
-//                        Error handling client: Read timed out
-//                java.lang.RuntimeException: java.lang.StringIndexOutOfBoundsException: Range [0, 0 + -1) out of bounds for length 1024
-//                at com.paulhammant.tinywebserver.SimpleWebSocketServer.main(SimpleWebSocketServer.java:212)
-//                Caused by: java.lang.StringIndexOutOfBoundsException: Range [0, 0 + -1) out of bounds for length 1024
-//                at java.base/jdk.internal.util.Preconditions$1.apply(Preconditions.java:55)
-//                at java.base/jdk.internal.util.Preconditions$1.apply(Preconditions.java:52)
-//                at java.base/jdk.internal.util.Preconditions$4.apply(Preconditions.java:213)
-//                at java.base/jdk.internal.util.Preconditions$4.apply(Preconditions.java:210)
-//                at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:98)
-//                at java.base/jdk.internal.util.Preconditions.outOfBoundsCheckFromIndexSize(Preconditions.java:118)
-//                at java.base/jdk.internal.util.Preconditions.checkFromIndexSize(Preconditions.java:397)
-//                at java.base/java.lang.String.checkBoundsOffCount(String.java:4853)
-//                at java.base/java.lang.String.<init>(String.java:488)
-//                at com.paulhammant.tinywebserver.SimpleWebSocketServer.main(SimpleWebSocketServer.java:209)
-//                Error handling client: Socket closed
-//                1. Exception 30089 millis laterRange [0, 0 + -1) out of bounds for length 1024
-//                2. Exception 30092 millis later - java.lang.StringIndexOutOfBoundsException: Range [0, 0 + -1) out of bounds for length 1024
-//
-            }
+            System.out.println("Received message: " + receivedMessage);
 
             // Assert the echoed message is correct
-            if (!receivedMessage.contains(messageToSend)) {
+            if (!receivedMessage.equals(messageToSend)) {
                 throw new AssertionError("Expected: " + messageToSend + " but was: " + receivedMessage);
             } else {
                 System.out.println("Test passed: Echoed message is correct.");
             }
+
+            // Send close frame
+            out.write(new byte[]{(byte) 0x88, (byte) 0x80, mask[0], mask[1], mask[2], mask[3]});
+            out.flush();
+
         } catch (Exception e) {
-            System.out.println("2. Exception " +(System.currentTimeMillis() - start) + " millis later - " + e.getMessage());
+            System.err.println("Test failed with exception: " + e.getMessage());
             e.printStackTrace();
         } finally {
             server.stop();
