@@ -165,7 +165,7 @@ public class TinyWeb {
         public Server(int port) {
             try {
                 httpServer = HttpServer.create(new InetSocketAddress(port), 0);
-                webSocketServer = new org.glassfish.tyrus.server.Server("localhost", 8081, "/websocket", WebSocketHandler.class);
+                webSocketServer = new org.glassfish.tyrus.server.Server("localhost", 8081, "/websocket", null, WebSocketHandler.class);
             } catch (IOException e) {
                 throw new ServerException("Can't listen on port " + port, e);
             }
