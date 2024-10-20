@@ -74,9 +74,8 @@ public class SimpleWebSocketServer {
                             System.out.println("Decoded message: " + new String(decoded));
 
                             // Echo the message back
-                            out.write(firstByte);
-                            out.write(secondByte);
-                            out.write(key);
+                            out.write(0x81); // 0x81 indicates a text frame
+                            out.write(encoded.length); // assuming payload length is less than 126
                             out.write(encoded);
                             out.flush();
                         }
