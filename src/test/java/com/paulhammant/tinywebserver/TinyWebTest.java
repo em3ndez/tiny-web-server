@@ -395,6 +395,9 @@ public class TinyWebTest {
 
                 try (Socket socket = new Socket("localhost", 8081)) {
                     OutputStream out = socket.getOutputStream();
+                    // Send a WebSocket text frame
+                    out.write(0x81); // 0x81 indicates a text frame
+                    out.write(messageToSend.length());
                     out.write(messageToSend.getBytes());
                     out.flush();
 
