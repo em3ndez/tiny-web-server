@@ -165,8 +165,12 @@ public class SimpleWebSocketServer {
                 sendCloseFrame(out);
                 break;
             } else if (opcode == 1) { // Text frame
-                // Echo the message back
-                sendTextFrame(out, payload);
+                // Send three messages back at 100ms intervals
+                for (int i = 1; i <= 3; i++) {
+                    String responseMessage = new String(payload, "UTF-8") + "-" + i;
+                    sendTextFrame(out, responseMessage.getBytes("UTF-8"));
+                    Thread.sleep(100);
+                }
             }
         }
     }
@@ -268,23 +272,26 @@ public class SimpleWebSocketServer {
             }
             out.flush();
 
-            // Read response frame header
-            int byte1 = in.read(); // FIN and opcode
-            int byte2 = in.read(); // Mask and payload length
-            int payloadLength = byte2 & 0x7F;
+            for (int i = 1; i <= 3; i++) {
+                // Read response frame header
+                int byte1 = in.read(); // FIN and opcode
+                int byte2 = in.read(); // Mask and payload length
+                int payloadLength = byte2 & 0x7F;
 
-            // Read payload
-            byte[] payload = new byte[payloadLength];
-            int bytesRead = readFully(in, payload, 0, payloadLength);
-            String receivedMessage = new String(payload, 0, bytesRead, "UTF-8");
+                // Read payload
+                byte[] payload = new byte[payloadLength];
+                int bytesRead = readFully(in, payload, 0, payloadLength);
+                String receivedMessage = new String(payload, 0, bytesRead, "UTF-8");
 
-            System.out.println("Received message: " + receivedMessage);
+                System.out.println("Received message: " + receivedMessage);
 
-            // Assert the echoed message is correct
-            if (!receivedMessage.equals(messageToSend)) {
-                throw new AssertionError("Expected: " + messageToSend + " but was: " + receivedMessage);
-            } else {
-                System.out.println("Test passed: Echoed message is correct.");
+                // Assert the echoed message is correct
+                String expectedMessage = messageToSend + "-" + i;
+                if (!receivedMessage.equals(expectedMessage)) {
+                    throw new AssertionError("Expected: " + expectedMessage + " but was: " + receivedMessage);
+                } else {
+                    System.out.println("Test passed: Echoed message " + i + " is correct.");
+                }
             }
 
             // Send close frame
