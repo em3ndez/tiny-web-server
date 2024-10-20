@@ -59,6 +59,10 @@ public class SimpleWebSocketServer {
                             continue;
                         }
                         System.out.println("Sec-WebSocket-Key value: " + match.group(1));
+                        System.out.println("Preparing handshake response...");
+                        String acceptKey = Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-1")
+                                .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes("UTF-8")));
+                        System.out.println("Sec-WebSocket-Accept: " + acceptKey);
                         byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n"
                                 + "Connection: Upgrade\r\n"
                                 + "Upgrade: websocket\r\n"
@@ -67,7 +71,9 @@ public class SimpleWebSocketServer {
                                 .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes("UTF-8")))
                                 + "\r\n\r\n").getBytes("UTF-8");
                         System.out.println("Sending handshake response...");
+                        System.out.println("Writing handshake response to output stream...");
                         out.write(response, 0, response.length);
+                        out.flush();
                         System.out.println("Handshake response sent.");
 
                         // Handle messages
