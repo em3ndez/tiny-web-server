@@ -403,7 +403,11 @@ public class TinyWebTest {
 
                     byte[] buffer = new byte[1024];
                     int bytesRead = socket.getInputStream().read(buffer);
-                    receivedMessage.append(new String(buffer, 0, bytesRead));
+                    if (bytesRead > 0) {
+                        receivedMessage.append(new String(buffer, 0, bytesRead));
+                    } else {
+                        System.out.println("No bytes read or error occurred. bytesRead: " + bytesRead);
+                    }
                 }
 
                 assertThat(messageToSend, equalTo(receivedMessage.toString()));
