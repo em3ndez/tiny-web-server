@@ -2,7 +2,6 @@ package com.paulhammant.tinywebserver;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import jakarta.websocket.DeploymentException;
 
 import java.io.File;
 import java.io.IOException;
@@ -160,13 +159,11 @@ public class TinyWeb {
     public static class Server extends Context {
 
         private final HttpServer httpServer;
-        private SimpleWebSocketServer webSocketServer;
 
 
         public Server(int port) {
             try {
                 httpServer = HttpServer.create(new InetSocketAddress(port), 0);
-                webSocketServer = new SimpleWebSocketServer(8081);
             } catch (IOException e) {
                 throw new ServerException("Can't listen on port " + port, e);
             }
@@ -277,17 +274,11 @@ public class TinyWeb {
 
         public TinyWeb.Server start() {
             httpServer.start();
-            try {
-                webSocketServer.start();
-            } catch (IOException | NoSuchAlgorithmException e) {
-                throw new ServerException("Failed to start WebSocket server", e);
-            }
             return this;
         }
 
         public TinyWeb.Server stop() {
             httpServer.stop(0);
-            webSocketServer.stop();
             return this;
         }
 
