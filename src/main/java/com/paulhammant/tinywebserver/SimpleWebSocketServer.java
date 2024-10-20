@@ -166,11 +166,18 @@ public class SimpleWebSocketServer {
                 break;
             } else if (opcode == 1) { // Text frame
                 // Send three messages back at 100ms intervals
-                for (int i = 1; i <= 3; i++) {
-                    String responseMessage = new String(payload, "UTF-8") + "-" + i;
-                    sendTextFrame(out, responseMessage.getBytes("UTF-8"));
-                    Thread.sleep(100);
-                }
+                sendThreeMessagesBackAtIntervals(out, payload);
+            }
+        }
+    }
+
+    private void sendThreeMessagesBackAtIntervals(OutputStream out, byte[] messageIn) throws IOException {
+        for (int i = 1; i <= 3; i++) {
+            String responseMessage = new String(messageIn, "UTF-8") + "-" + i;
+            sendTextFrame(out, responseMessage.getBytes("UTF-8"));
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
             }
         }
     }
