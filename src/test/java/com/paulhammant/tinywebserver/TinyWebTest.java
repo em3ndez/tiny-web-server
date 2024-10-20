@@ -1,13 +1,12 @@
 package com.paulhammant.tinywebserver;
 
+import jakarta.websocket.*;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import org.mockito.Mockito;
-import javax.websocket.*;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import static org.junit.Assert.assertEquals;
 import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.reporters.DefaultReporter;
@@ -15,7 +14,6 @@ import org.forgerock.cuppa.reporters.DefaultReporter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.*;
 
 import static okhttp3.Request.*;
@@ -142,7 +140,7 @@ public class TinyWebTest {
                     }, URI.create("ws://localhost:8080/websocket"));
 
                     messageLatch.await(5, TimeUnit.SECONDS);
-                    assertEquals(messageToSend, receivedMessage.toString());
+                    assertThat(messageToSend, equalTo(receivedMessage.toString()));
                     session.close();
                 });
 
