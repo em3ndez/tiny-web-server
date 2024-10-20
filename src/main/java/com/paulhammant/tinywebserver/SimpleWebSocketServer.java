@@ -20,49 +20,57 @@ public class SimpleWebSocketServer {
         this.port = port;
     }
 
-    public void start() throws IOException, NoSuchAlgorithmException {
-        ServerSocket server = new ServerSocket(port);
-        System.out.println("WebSocket server started on port " + port);
+    public void start() {
+        try {
+            ServerSocket server = new ServerSocket(port);
+            System.out.println("WebSocket server started on port " + port);
 
-        while (true) {
-            Socket client = server.accept();
-            System.out.println("A client connected.");
+            while (true) {
+                Socket client = server.accept();
+                System.out.println("A client connected.");
 
-            InputStream in = client.getInputStream();
-            OutputStream out = client.getOutputStream();
-            Scanner s = new Scanner(in, "UTF-8");
+                InputStream in = client.getInputStream();
+                OutputStream out = client.getOutputStream();
+                Scanner s = new Scanner(in, "UTF-8");
 
-            try {
-                String data = s.useDelimiter("\\r\\n\\r\\n").next();
-                Matcher get = Pattern.compile("^GET").matcher(data);
+                try {
+                    String data = s.useDelimiter("\\r\\n\\r\\n").next();
+                    Matcher get = Pattern.compile("^GET").matcher(data);
 
-                if (get.find()) {
-                    Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
-                    match.find();
-                    byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n"
-                            + "Connection: Upgrade\r\n"
-                            + "Upgrade: websocket\r\n"
-                            + "Sec-WebSocket-Accept: "
-                            + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-1")
-                            .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes("UTF-8")))
-                            + "\r\n\r\n").getBytes("UTF-8");
-                    out.write(response, 0, response.length);
+                    if (get.find()) {
+                        Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
+                        match.find();
+                        byte[] response = ("HTTP/1.1 101 Switching Protocols\r\n"
+                                + "Connection: Upgrade\r\n"
+                                + "Upgrade: websocket\r\n"
+                                + "Sec-WebSocket-Accept: "
+                                + Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-1")
+                                .digest((match.group(1) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").getBytes("UTF-8")))
+                                + "\r\n\r\n").getBytes("UTF-8");
+                        out.write(response, 0, response.length);
 
-                    // Handle messages
-                    byte[] decoded = new byte[6];
-                    byte[] encoded = new byte[6];
-                    byte[] key = new byte[4];
-                    in.read(encoded, 0, encoded.length);
-                    in.read(key, 0, key.length);
-                    for (int i = 0; i < encoded.length; i++) {
-                        decoded[i] = (byte) (encoded[i] ^ key[i & 0x3]);
+                        // Handle messages
+                        byte[] decoded = new byte[6];
+                        byte[] encoded = new byte[6];
+                        byte[] key = new byte[4];
+                        in.read(encoded, 0, encoded.length);
+                        in.read(key, 0, key.length);
+                        for (int i = 0; i < encoded.length; i++) {
+                            decoded[i] = (byte) (encoded[i] ^ key[i & 0x3]);
+                        }
+                        System.out.println("Decoded message: " + new String(decoded));
                     }
-                    System.out.println("Decoded message: " + new String(decoded));
+                } finally {
+                    s.close();
+                    client.close();
                 }
-            } finally {
-                s.close();
-                client.close();
             }
+        } catch (IOException | NoSuchAlgorithmException e) {
+            throw new TinyWeb.ServerException("Can't start WebSocket Server", e);
         }
+    }
+
+    public void stop() {
+
     }
 }
