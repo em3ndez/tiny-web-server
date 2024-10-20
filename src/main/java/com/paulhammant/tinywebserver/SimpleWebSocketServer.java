@@ -30,15 +30,20 @@ public class SimpleWebSocketServer {
             System.out.println("WebSocket server started on port " + port);
 
             while (true) {
+                System.out.println("Waiting for a client to connect...");
                 Socket client = server.accept();
                 System.out.println("A client connected.");
+                System.out.println("A client connected.");
 
+                System.out.println("Setting up input and output streams...");
                 InputStream in = client.getInputStream();
                 OutputStream out = client.getOutputStream();
                 Scanner s = new Scanner(in, "UTF-8");
 
                 try {
+                    System.out.println("Reading client handshake...");
                     String data = s.useDelimiter("\\r\\n\\r\\n").next();
+                    System.out.println("Client handshake data: " + data);
                     Matcher get = Pattern.compile("^GET").matcher(data);
 
                     if (get.find()) {
