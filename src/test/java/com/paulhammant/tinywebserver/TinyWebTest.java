@@ -1,6 +1,6 @@
 package com.paulhammant.tinywebserver;
 
-import jakarta.websocket.*;
+//import jakarta.websocket.*;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import org.mockito.Mockito;
