@@ -53,15 +53,33 @@ public class SimpleWebSocketServer {
                         out.write(response, 0, response.length);
 
                         // Handle messages
-                        byte[] decoded = new byte[6];
-                        byte[] encoded = new byte[6];
-                        byte[] key = new byte[4];
-                        in.read(encoded, 0, encoded.length);
-                        in.read(key, 0, key.length);
-                        for (int i = 0; i < encoded.length; i++) {
-                            decoded[i] = (byte) (encoded[i] ^ key[i & 0x3]);
+                        while (true) {
+                            int firstByte = in.read();
+                            if (firstByte == -1) break; // End of stream
+
+                            int secondByte = in.read();
+                            int payloadLength = secondByte & 0x7F;
+
+                            byte[] key = new byte[4];
+                            in.read(key, 0, key.length);
+
+                            byte[] encoded = new byte[payloadLength];
+                            in.read(encoded, 0, encoded.length);
+
+                            byte[] decoded = new byte[payloadLength];
+                            for (int i = 0; i < encoded.length; i++) {
+                                decoded[i] = (byte) (encoded[i] ^ key[i & 0x3]);
+                            }
+
+                            System.out.println("Decoded message: " + new String(decoded));
+
+                            // Echo the message back
+                            out.write(firstByte);
+                            out.write(secondByte);
+                            out.write(key);
+                            out.write(encoded);
+                            out.flush();
                         }
-                        System.out.println("Decoded message: " + new String(decoded));
                     }
                 } finally {
                     s.close();
