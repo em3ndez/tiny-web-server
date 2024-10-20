@@ -160,13 +160,13 @@ public class TinyWeb {
     public static class Server extends Context {
 
         private final HttpServer httpServer;
-        private org.glassfish.tyrus.server.Server webSocketServer;
+        private SimpleWebSocketServer webSocketServer;
 
 
         public Server(int port) {
             try {
                 httpServer = HttpServer.create(new InetSocketAddress(port), 0);
-                webSocketServer = new org.glassfish.tyrus.server.Server("localhost", 8081, "/websocket", null, WebSocketHandler.class);
+                webSocketServer = new SimpleWebSocketServer(8081);
             } catch (IOException e) {
                 throw new ServerException("Can't listen on port " + port, e);
             }
@@ -279,7 +279,7 @@ public class TinyWeb {
             httpServer.start();
             try {
                 webSocketServer.start();
-            } catch (DeploymentException e) {
+            } catch (IOException | NoSuchAlgorithmException e) {
                 throw new ServerException("Failed to start WebSocket server", e);
             }
             return this;
