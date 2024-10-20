@@ -2,6 +2,8 @@ package com.paulhammant.tinywebserver;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import jakarta.websocket.DeploymentException;
+import org.glassfish.tyrus.spi.ServerContainer;
 
 import java.io.File;
 import java.io.IOException;
