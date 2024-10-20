@@ -102,7 +102,10 @@ public class SimpleWebSocketServer {
                                 // Read payload
                                 byte[] payload = new byte[payloadLength];
                                 int bytesRead = readFully(in, payload, 0, payloadLength);
-                                if (bytesRead < payloadLength) break;
+                                if (bytesRead < payloadLength) {
+                                    System.out.println("Error: Expected " + payloadLength + " bytes, but read " + bytesRead);
+                                    break;
+                                }
 
                                 // Unmask the payload
                                 for (int i = 0; i < payloadLength; i++) {
@@ -146,7 +149,10 @@ public class SimpleWebSocketServer {
         int totalBytesRead = 0;
         while (totalBytesRead < length) {
             int bytesRead = in.read(buffer, offset + totalBytesRead, length - totalBytesRead);
-            if (bytesRead == -1) break; // Stream ended
+            if (bytesRead == -1) {
+                System.out.println("Stream ended or connection closed unexpectedly.");
+                break;
+            }
             totalBytesRead += bytesRead;
         }
         return totalBytesRead;
