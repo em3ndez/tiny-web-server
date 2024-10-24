@@ -22,7 +22,7 @@ import static org.hamcrest.Matchers.*;
 public class TinyWebTest {
     TinyWeb.ExampleApp app = Mockito.mock(TinyWeb.ExampleApp.class);
     TinyWeb.Server svr;
-    SocketServer webSocketServer;
+    TinyWeb.SocketServer webSocketServer;
 
     {
         describe("ExampleApp.exampleComposition() server tested via sockets", () -> {
@@ -382,7 +382,7 @@ public class TinyWebTest {
         describe("SimpleWebSocketServer without TinyWeb", () -> {
 
             before(() -> {
-                webSocketServer = new SocketServer(8081) {{
+                webSocketServer = new TinyWeb.SocketServer(8081) {{
                     registerMessageHandler("/foo/baz", (message, sender) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
@@ -405,7 +405,7 @@ public class TinyWebTest {
                 }
 
                 // Example client usage
-                try (SocketServer.WebSocketClient client = new SocketServer.WebSocketClient("localhost", 8081)) {
+                try (TinyWeb.SocketServer.WebSocketClient client = new TinyWeb.SocketServer.WebSocketClient("localhost", 8081)) {
                     client.performHandshake();
                     client.sendMessage("/foo/baz", "Hello WebSocket");
 
@@ -467,7 +467,7 @@ public class TinyWebTest {
                 }
 
                 // Example client usage
-                try (SocketServer.WebSocketClient client = new SocketServer.WebSocketClient("localhost", 8081)) {
+                try (TinyWeb.SocketServer.WebSocketClient client = new TinyWeb.SocketServer.WebSocketClient("localhost", 8081)) {
                     client.performHandshake();
                     client.sendMessage("/foo/baz", "Hello WebSocket");
 
