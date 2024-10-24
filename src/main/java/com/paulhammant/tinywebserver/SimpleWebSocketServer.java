@@ -7,11 +7,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.security.SecureRandom;
@@ -52,14 +51,14 @@ public class SimpleWebSocketServer {
     private ServerSocket server;
     private static final int SOCKET_TIMEOUT = 30000; // 30 seconds timeout
     private static final SecureRandom random = new SecureRandom();
-    private WebSocketMessageHandler messageHandler;
+    private Map<String, WebSocketMessageHandler> messageHandlers = new HashMap<>();
 
     public SimpleWebSocketServer(int port) {
         this.port = port;
     }
 
-    public void registerMessageHandler(WebSocketMessageHandler handler) {
-        this.messageHandler = handler;
+    public void registerMessageHandler(String path, WebSocketMessageHandler handler) {
+        this.messageHandlers.put(path, handler);
     }
 
     public void start() {
@@ -202,7 +201,14 @@ public class SimpleWebSocketServer {
                 sendCloseFrame(out);
                 break;
             } else if (opcode == 1) { // Text frame
-                messageHandler.handleMessage(payload, sender);
+                String rrr = new String(payload, "UTF-8");
+                int pathLength = Byte.toUnsignedInt(payload[0]);
+                byte[] pathBytes = Arrays.copyOfRange(payload, 1, pathLength);
+                String path = new String(pathBytes, "UTF-8");
+                System.out.println("path: " + path);
+                System.out.println("pathBlen: " + pathBytes.length);
+                payload = Arrays.copyOfRange(payload, pathLength, payload.length);
+                messageHandlers.get(path).handleMessage(payload, sender);
             }
         }
     }
@@ -265,17 +271,22 @@ public class SimpleWebSocketServer {
             System.out.println("Handshake response: " + response);
         }
 
-        public void sendMessage(String message) throws IOException {
+        public void sendMessage(String path, String message) throws IOException {
+            byte[] pathBytes = path.getBytes(StandardCharsets.US_ASCII);
             byte[] messageBytes = message.getBytes("UTF-8");
             byte[] mask = new byte[4];
             random.nextBytes(mask);
 
             // Write frame header
             out.write(0x81); // FIN bit set, text frame
-            out.write(0x80 | messageBytes.length); // Mask bit set, payload length
+            out.write(0x80 | 1 + pathBytes.length + messageBytes.length); // Mask bit set, payload length
             out.write(mask); // Write mask
 
-            // Write masked payload
+            // Write masked websocket payload
+            out.write((byte)pathBytes.length);
+            for (int i = 0; i < pathBytes.length; i++) {
+                out.write(pathBytes[i] ^ mask[i % 4]);
+            }
             for (int i = 0; i < messageBytes.length; i++) {
                 out.write(messageBytes[i] ^ mask[i % 4]);
             }
@@ -331,7 +342,7 @@ public class SimpleWebSocketServer {
         SimpleWebSocketServer server = new SimpleWebSocketServer(8081);
 
         // Register echo handler that sends 3 responses
-        server.registerMessageHandler((message, sender) -> {
+        server.registerMessageHandler("foo", (message, sender) -> {
             for (int i = 1; i <= 3; i++) {
                 String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
                 sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
@@ -355,7 +366,7 @@ public class SimpleWebSocketServer {
             // Example client usage
             try (WebSocketClient client = new WebSocketClient("localhost", 8081)) {
                 client.performHandshake();
-                client.sendMessage("Hello WebSocket");
+                client.sendMessage("foo", "Hello WebSocket");
 
                 // Read all three response frames
                 for (int i = 0; i < 3; i++) {
