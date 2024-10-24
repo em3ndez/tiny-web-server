@@ -11,6 +11,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.security.SecureRandom;
@@ -49,6 +51,7 @@ public class SimpleWebSocketServer {
 
     private final int port;
     private ServerSocket server;
+    private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private static final int SOCKET_TIMEOUT = 30000; // 30 seconds timeout
     private static final SecureRandom random = new SecureRandom();
     private Map<String, WebSocketMessageHandler> messageHandlers = new HashMap<>();
@@ -72,7 +75,7 @@ public class SimpleWebSocketServer {
                     client.setSoTimeout(SOCKET_TIMEOUT);
                     System.out.println("A client connected.");
 
-                    new Thread(() -> handleClient(client)).start();
+                    executor.execute(() -> handleClient(client));
                 } catch (SocketException e) {
                     if (e.getMessage().equals("Socket closed")) {
                         // likely just the server being shut down programmatically.
@@ -159,7 +162,10 @@ public class SimpleWebSocketServer {
             int payloadLength = buffer[1] & 0x7F;
             int offset = 2;
 
-            // Handle extended payload length
+            System.out.println("Frame Header - FIN: " + fin + ", Opcode: " + opcode +
+                    ", Masked: " + masked + ", Initial PayloadLength: " + payloadLength);
+
+            // Handle extended payload length cases
             if (payloadLength == 126) {
                 headerLength = readFully(in, buffer, offset, 2);
                 if (headerLength < 2) break;
@@ -175,42 +181,78 @@ public class SimpleWebSocketServer {
                 offset += 8;
             }
 
-            // Read masking key if present
-            byte[] maskingKey = null;
-            if (masked) {
-                headerLength = readFully(in, buffer, offset, 4);
-                if (headerLength < 4) break;
-                maskingKey = Arrays.copyOfRange(buffer, offset, offset + 4);
-                offset += 4;
-            }
+            System.out.println("Final PayloadLength: " + payloadLength);
 
-            // Read payload
-            byte[] payload = new byte[payloadLength];
-            int bytesRead = readFully(in, payload, 0, payloadLength);
-            if (bytesRead < payloadLength) break;
-
-            // Unmask if necessary
-            if (masked) {
-                for (int i = 0; i < payloadLength; i++) {
-                    payload[i] = (byte) (payload[i] ^ maskingKey[i & 0x3]);
-                }
-            }
-
-            // Handle the frame
+            // Handle close frame immediately
             if (opcode == 8) { // Close frame
                 sendCloseFrame(out);
                 break;
-            } else if (opcode == 1) { // Text frame
-                String rrr = new String(payload, "UTF-8");
-                int pathLength = Byte.toUnsignedInt(payload[0]);
-                byte[] pathBytes = Arrays.copyOfRange(payload, 1, pathLength);
-                String path = new String(pathBytes, "UTF-8");
-                System.out.println("path: " + path);
-                System.out.println("pathBlen: " + pathBytes.length);
-                payload = Arrays.copyOfRange(payload, pathLength, payload.length);
-                messageHandlers.get(path).handleMessage(payload, sender);
             }
+
+            // Only process payload for data frames (text or binary)
+            if (opcode == 1 || opcode == 2) {
+                // Read masking key
+                byte[] maskingKey = null;
+                if (masked) {
+                    headerLength = readFully(in, buffer, offset, 4);
+                    if (headerLength < 4) break;
+                    maskingKey = Arrays.copyOfRange(buffer, offset, offset + 4);
+                    System.out.println("Masking Key: " + Arrays.toString(maskingKey));
+                    offset += 4;
+                }
+
+                // Skip processing if there's no payload
+                if (payloadLength == 0) continue;
+
+                // Read and unmask the entire payload at once
+                byte[] payload = new byte[payloadLength];
+                int bytesRead = readFully(in, payload, 0, payloadLength);
+                if (bytesRead < payloadLength) break;
+
+                System.out.println("Raw payload (first few bytes): " +
+                        Arrays.toString(Arrays.copyOfRange(payload, 0, Math.min(10, payload.length))));
+
+                // Unmask the entire payload
+                if (masked) {
+                    for (int i = 0; i < payload.length; i++) {
+                        payload[i] = (byte) (payload[i] ^ maskingKey[i & 0x3]);
+                    }
+                }
+
+                // Now work with the unmasked payload
+                if (payload.length > 0) {
+                    int pathLength = payload[0] & 0xFF;
+                    System.out.println("Decoded path length: " + pathLength);
+
+                    if (pathLength > payload.length - 1) {
+                        System.err.println("Invalid path length: " + pathLength +
+                                " (payload length: " + payload.length + ")");
+                        break;
+                    }
+
+                    // Extract path
+                    byte[] pathBytes = Arrays.copyOfRange(payload, 1, pathLength + 1);
+                    String path = new String(pathBytes, StandardCharsets.US_ASCII);
+                    System.out.println("Decoded path: " + path);
+
+                    // Extract message
+                    byte[] messagePayload = Arrays.copyOfRange(payload, pathLength + 1, payload.length);
+                    System.out.println("Message payload length: " + messagePayload.length);
+
+                    WebSocketMessageHandler handler = getHandler(path);
+                    if (handler != null) {
+                        handler.handleMessage(messagePayload, sender);
+                    } else {
+                        System.err.println("No handler found for path: " + path + " keys:" + messageHandlers.keySet());
+                    }
+                }
+            }
+            // Other control frames (ping/pong) could be handled here
         }
+    }
+
+    protected WebSocketMessageHandler getHandler(String path) {
+        return messageHandlers.get(path);
     }
 
     private void sendCloseFrame(OutputStream out) throws IOException {
@@ -273,23 +315,35 @@ public class SimpleWebSocketServer {
 
         public void sendMessage(String path, String message) throws IOException {
             byte[] pathBytes = path.getBytes(StandardCharsets.US_ASCII);
-            byte[] messageBytes = message.getBytes("UTF-8");
+            byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
             byte[] mask = new byte[4];
             random.nextBytes(mask);
 
+            // Calculate total payload length (1 byte for path length + path + message)
+            int totalLength = 1 + pathBytes.length + messageBytes.length;
+
+            System.out.println("Sending - Path: " + path + ", Path length: " + pathBytes.length);
+            System.out.println("Total payload length: " + totalLength);
+            System.out.println("Mask: " + Arrays.toString(mask));
+
             // Write frame header
             out.write(0x81); // FIN bit set, text frame
-            out.write(0x80 | 1 + pathBytes.length + messageBytes.length); // Mask bit set, payload length
-            out.write(mask); // Write mask
+            out.write(0x80 | totalLength); // Mask bit set, payload length
 
-            // Write masked websocket payload
-            out.write((byte)pathBytes.length);
-            for (int i = 0; i < pathBytes.length; i++) {
-                out.write(pathBytes[i] ^ mask[i % 4]);
+            // Write mask
+            out.write(mask);
+
+            // Create complete payload first
+            byte[] fullPayload = new byte[totalLength];
+            fullPayload[0] = (byte) pathBytes.length;
+            System.arraycopy(pathBytes, 0, fullPayload, 1, pathBytes.length);
+            System.arraycopy(messageBytes, 0, fullPayload, 1 + pathBytes.length, messageBytes.length);
+
+            // Mask the entire payload
+            for (int i = 0; i < fullPayload.length; i++) {
+                out.write(fullPayload[i] ^ mask[i & 0x3]);
             }
-            for (int i = 0; i < messageBytes.length; i++) {
-                out.write(messageBytes[i] ^ mask[i % 4]);
-            }
+
             out.flush();
         }
 

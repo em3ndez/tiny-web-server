@@ -21,15 +21,18 @@ public class TinyWeb {
     public static class Context {
 
         protected Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
+        protected Map<Pattern, SimpleWebSocketServer.WebSocketMessageHandler> wsRoutes = new HashMap<>();
         protected Map<Method, List<FilterEntry>> filters = new HashMap<>();
 
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
             Map<Method, Map<Pattern, EndPoint>> previousRoutes = this.routes;
+            Map<Pattern, SimpleWebSocketServer.WebSocketMessageHandler> previousWsRoutes = this.wsRoutes;
             Map<Method, List<FilterEntry>> previousFilters = this.filters;
 
             // Create new maps to collect routes and filters within this path
             this.routes = new HashMap<>();
+            this.wsRoutes = new HashMap<>();
             this.filters = new HashMap<>();
 
             // Initialize empty maps for all methods
@@ -37,6 +40,7 @@ public class TinyWeb {
                 this.routes.put(method, new HashMap<>());
                 this.filters.put(method, new ArrayList<>());
             }
+
 
             // Run the routes Runnable, which will populate this.routes and this.filters
             routes.run();
@@ -54,6 +58,14 @@ public class TinyWeb {
                     }
                     previousRoutes.get(method).putAll(prefixedRoutes);
                 }
+            }
+
+            // Prefix basePath to WebSocket handlers
+            for (Map.Entry<Pattern, SimpleWebSocketServer.WebSocketMessageHandler> entry : this.wsRoutes.entrySet()) {
+                Pattern pattern = entry.getKey();
+                SimpleWebSocketServer.WebSocketMessageHandler wsHandler = entry.getValue();
+                Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
+                previousWsRoutes.put(newPattern, wsHandler);
             }
 
             // Prefix basePath to filters
@@ -79,6 +91,7 @@ public class TinyWeb {
 
             // Restore routes and filters
             this.routes = previousRoutes;
+            this.wsRoutes = previousWsRoutes;
             this.filters = previousFilters;
 
             return new PathContext(basePath, this);
@@ -93,6 +106,12 @@ public class TinyWeb {
                     .put(Pattern.compile("^" + path + "$"), endPoint);
             return this;
         }
+
+        public Context webSocket(String path, SimpleWebSocketServer.WebSocketMessageHandler wsHandler) {
+            wsRoutes.put(Pattern.compile("^" + path + "$"), wsHandler);
+            return this;
+        }
+
 
         public Context filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
             filters.computeIfAbsent(method, k -> new ArrayList<>())
@@ -156,18 +175,44 @@ public class TinyWeb {
             super(message, cause);
         }
     }
+
     public static class Server extends Context {
 
         private final HttpServer httpServer;
+        private final SimpleWebSocketServer simpleWebSocketServer;
+        private Thread simpleWebSocketServerThread = null;
 
-
-        public Server(int port) {
+        public Server(int httpPort, int webSocketPort) {
             try {
-                httpServer = HttpServer.create(new InetSocketAddress(port), 0);
+                httpServer = HttpServer.create(new InetSocketAddress(httpPort), 0);
             } catch (IOException e) {
-                throw new ServerException("Can't listen on port " + port, e);
+                throw new ServerException("Can't listen on port " + httpPort, e);
             }
             httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+
+            if (webSocketPort != -1) {
+                simpleWebSocketServer = new SimpleWebSocketServer(webSocketPort) {
+                    @Override
+                    protected WebSocketMessageHandler getHandler(String path) {
+                        for (Map.Entry<Pattern, WebSocketMessageHandler> patternWebSocketMessageHandlerEntry : wsRoutes.entrySet()) {
+                            Pattern key = patternWebSocketMessageHandlerEntry.getKey();
+                            WebSocketMessageHandler value = patternWebSocketMessageHandlerEntry.getValue();
+                            if (key.matcher(path).matches()) {
+                                return value;
+                            }
+                        }
+                        return new WebSocketMessageHandler() {
+                            @Override
+                            public void handleMessage(byte[] message, MessageSender sender) throws IOException {
+                                sender.sendTextFrame("no matching path on the server side".getBytes("UTF-8"));
+                            }
+                        };
+                    }
+                };
+            } else {
+
+                simpleWebSocketServer = null;
+            }
 
             for (Method method : Method.values()) {
                 routes.put(method, new HashMap<>());
@@ -274,14 +319,21 @@ public class TinyWeb {
 
         public TinyWeb.Server start() {
             httpServer.start();
+            if (simpleWebSocketServer != null) {
+                simpleWebSocketServerThread = new Thread(simpleWebSocketServer::start);
+                simpleWebSocketServerThread.start();
+            }
             return this;
         }
 
         public TinyWeb.Server stop() {
             httpServer.stop(0);
+            if (simpleWebSocketServerThread != null) {
+                simpleWebSocketServer.stop();
+                simpleWebSocketServerThread.interrupt();
+            }
             return this;
         }
-
     }
 
 
@@ -423,7 +475,7 @@ public class TinyWeb {
         }
 
         public static TinyWeb.Server exampleComposition(String[] args, ExampleApp app) {
-            TinyWeb.Server server = new TinyWeb.Server(8080) {{
+            TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
 
                 path("/foo", () -> {
                     filter(Method.GET, "/.*", (req, res, params) -> {
@@ -436,6 +488,16 @@ public class TinyWeb {
                     endPoint(Method.GET, "/bar", (req, res, params) -> {
                         res.write("Hello, World!");
                         // This endpoint is /foo/bar if that wasn't obvious
+                    });
+                    webSocket("/eee", (message, sender) -> {
+                        for (int i = 1; i <= 3; i++) {
+                            String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                            }
+                        }
                     });
                 });
 

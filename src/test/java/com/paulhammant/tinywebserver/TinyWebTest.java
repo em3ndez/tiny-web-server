@@ -30,6 +30,10 @@ public class TinyWebTest {
     {
         describe("ExampleApp.exampleComposition() server tested via sockets", () -> {
             describe("Echoing GET endpoint respond with..", () -> {
+                before(() -> {
+                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
+                    svr.start();
+                });
                 it("should return user profile for Jimmy", () -> {
                     try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
                         assertThat(response.body().string(), equalTo("User profile: Jimmy"));
@@ -48,7 +52,7 @@ public class TinyWebTest {
 
             describe("Nested path with parameterized parts", () -> {
                 before(() -> {
-                    svr = new TinyWeb.Server(8080) {{
+                    svr = new TinyWeb.Server(8080, 8081) {{
                         final StringBuilder sb = new StringBuilder();  // don't do this - one sv instance for all incoming connections
                         path("/api", () -> {
                             sb.append("/api->"); // called once only while composing webapp
@@ -89,7 +93,7 @@ public class TinyWebTest {
             describe("Filtering", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    //waitForPortToBeClosed("localhost",8080);
+                    //waitForPortToBeClosed("localhost",8080, 8081);
                     svr.start();
                 });
                 it("should allow access when header 'sucks' is absent", () -> {
@@ -157,7 +161,7 @@ public class TinyWebTest {
             describe("Greeting GET endpoint", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                    //waitForPortToBeClosed("localhost",8080);
+                    //waitForPortToBeClosed("localhost",8080, 8081);
                     svr.start();
                     Mockito.doAnswer(invocation -> {
                         invocation.<TinyWeb.Response>getArgument(1).write("invoked");
@@ -180,7 +184,7 @@ public class TinyWebTest {
         describe("Inline application tests", () -> {
             describe("Can extract parameters", () -> {
                 before(() -> {
-                    svr = new TinyWeb.Server(8080) {{
+                    svr = new TinyWeb.Server(8080, 8081) {{
                             path("/api", () -> {
                                 endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
                                     res.write("Parameter: " + params.get("1"));
@@ -207,7 +211,7 @@ public class TinyWebTest {
             });
             describe("Can extract query Parameters", () -> {
                 before(() -> {
-                    svr = new TinyWeb.Server(8080) {{
+                    svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api2", () -> {
                             endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
                                 res.write("Parameter: " + params + " " + req.getQueryParams());
@@ -229,7 +233,7 @@ public class TinyWebTest {
             describe("Exception handling in endpoint", () -> {
                 final StringBuilder se = new StringBuilder();
                 before(() -> {
-                    svr = new TinyWeb.Server(8080) {{
+                    svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
                             endPoint(TinyWeb.Method.GET, "/error", (req, res, params) -> {
                                 throw new RuntimeException("Deliberate exception");
@@ -259,7 +263,7 @@ public class TinyWebTest {
             });
             describe("Query parameter parsing", () -> {
                 before(() -> {
-                    svr = new TinyWeb.Server(8080) {{
+                    svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
                             endPoint(TinyWeb.Method.GET, "/query", (req, res, params) -> {
                                 res.write("Query Params: " + req.getQueryParams());
@@ -283,7 +287,7 @@ public class TinyWebTest {
 
             describe("Response header setting", () -> {
                 before(() -> {
-                    svr = new TinyWeb.Server(8080) {{
+                    svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
                             endPoint(TinyWeb.Method.GET, "/header-test", (req, res, params) -> {
                                 res.setHeader("X-Custom-Header", "HeaderValue");
@@ -310,7 +314,7 @@ public class TinyWebTest {
             describe("Exception handling in filter", () -> {
                 final StringBuilder se = new StringBuilder();
                 before(() -> {
-                    svr = new TinyWeb.Server(8080) {{
+                    svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
                             filter(TinyWeb.Method.GET, "/error", (req, res, params) -> {
                                 throw new RuntimeException("Deliberate exception in filter");
@@ -344,7 +348,7 @@ public class TinyWebTest {
 
             describe("Static file serving tests", () -> {
                 before(() -> {
-                    svr = new TinyWeb.Server(8080) {{
+                    svr = new TinyWeb.Server(8080, 8081) {{
                         serveStaticFiles("/static", "src/test/resources/static");
                     }}.start();
                 });
@@ -378,55 +382,118 @@ public class TinyWebTest {
 
         });
 
-        only().describe("WebSocket functionality", () -> {
+        describe("WebSocket functionality", () -> {
 
             before(() -> {
-                webSocketServer = new SimpleWebSocketServer(8081);
-                new Thread(() -> {
-                    webSocketServer.start();
-                }).start();
-                svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], app);
-                svr.start();
+                webSocketServer = new SimpleWebSocketServer(8081) {{
+                    registerMessageHandler("/foo/baz", (message, sender) -> {
+                        for (int i = 1; i <= 3; i++) {
+                            String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                            }
+                        }
+                    });
+                }};
+                Thread serverThread = new Thread(webSocketServer::start);
+                serverThread.start();
+            });
+
+            it("should echo three messages based on recieved message", () -> {
+                try {
+                    Thread.sleep(1000); // Wait for server startup
+                } catch (InterruptedException e) {
+                }
+
+                // Example client usage
+                try (SimpleWebSocketServer.WebSocketClient client = new SimpleWebSocketServer.WebSocketClient("localhost", 8081)) {
+                    client.performHandshake();
+                    client.sendMessage("/foo/baz", "Hello WebSocket");
+
+                    StringBuilder sb = new StringBuilder();
+
+                    // Read all three response frames
+                    for (int i = 0; i < 3; i++) {
+                        String response = client.receiveMessage();
+                        if (response != null) {
+                            sb.append(response);
+                        }
+                    }
+                    assertThat(sb.toString(), equalTo(
+                            "Server sent: Hello WebSocket-1" +
+                            "Server sent: Hello WebSocket-2" +
+                            "Server sent: Hello WebSocket-3"));
+
+                }
+
+            });
+
+            after(() -> {
+                webSocketServer.stop();
+                webSocketServer = null;
+            });
+        });
+
+        describe("WebSocket functionality 2", () -> {
+
+            before(() -> {
+                svr = new TinyWeb.Server(8080, 8081) {{
+                    path("/foo", () -> {
+                        endPoint(TinyWeb.Method.GET, "/bar", (req, res, params) -> {
+                            res.write("OK");
+                        });
+                        webSocket("/baz", (message, sender) -> {
+                            for (int i = 1; i <= 3; i++) {
+                                String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                                sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
+                                }
+                            }
+                        });
+                    });
+                }}.start();
             });
 
             it("should echo messages sent to the WebSocket", () -> {
-                final String messageToSend = "Hello WebSocket";
-                final StringBuilder receivedMessage = new StringBuilder();
-
-                try (Socket socket = new Socket("localhost", 8081)) {
-                    OutputStream out = socket.getOutputStream();
-                    // Send a WebSocket text frame
-                    out.write(0x81); // FIN bit set and text frame
-                    if (messageToSend.length() <= 125) {
-                        out.write(messageToSend.length());
-                    } else if (messageToSend.length() <= 65535) {
-                        out.write(126);
-                        out.write((messageToSend.length() >> 8) & 0xFF);
-                        out.write(messageToSend.length() & 0xFF);
-                    } else {
-                        out.write(127);
-                        for (int i = 7; i >= 0; i--) {
-                            out.write((messageToSend.length() >> (8 * i)) & 0xFF);
-                        }
-                    }
-                    out.write(messageToSend.getBytes());
-                    out.flush();
-
-                    byte[] buffer = new byte[1024];
-                    int bytesRead = socket.getInputStream().read(buffer);
-                    if (bytesRead > 0) {
-                        receivedMessage.append(new String(buffer, 0, bytesRead));
-                    } else {
-                        System.out.println("No bytes read or error occurred. bytesRead: " + bytesRead);
-                    }
+                try {
+                    Thread.sleep(1000); // Wait for server startup
+                } catch (InterruptedException e) {
                 }
 
-                assertThat(receivedMessage.toString(), equalTo(messageToSend));
+                try (Response response = httpGet("http://localhost:8080/foo/bar")) {
+                    assertThat(response.code(), equalTo(200));
+                    assertThat(response.body().string(), equalTo("OK"));
+                }
+
+                // Example client usage
+                try (SimpleWebSocketServer.WebSocketClient client = new SimpleWebSocketServer.WebSocketClient("localhost", 8081)) {
+                    client.performHandshake();
+                    client.sendMessage("/foo/baz", "Hello WebSocket");
+
+                    StringBuilder sb = new StringBuilder();
+
+                    // Read all three response frames
+                    for (int i = 0; i < 3; i++) {
+                        String response = client.receiveMessage();
+                        if (response != null) {
+                            sb.append(response);
+                        }
+                    }
+                    assertThat(sb.toString(), equalTo(
+                            "Server sent: Hello WebSocket-1" +
+                            "Server sent: Hello WebSocket-2" +
+                            "Server sent: Hello WebSocket-3"));
+
+                }
+
             });
 
             after(() -> {
                 svr.stop();
-                webSocketServer.stop();
                 svr = null;
             });
         });
