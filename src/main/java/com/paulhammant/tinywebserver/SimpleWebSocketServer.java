@@ -232,42 +232,27 @@ public class SimpleWebSocketServer {
         }
     }
 
-    public static void main(String[] args) {
-        SimpleWebSocketServer server = new SimpleWebSocketServer(8081);
+    public static class WebSocketClient implements AutoCloseable {
+        private final Socket socket;
+        private final InputStream in;
+        private final OutputStream out;
+        private static final SecureRandom random = new SecureRandom();
 
-        server.registerMessageHandler((message, sender) -> {
-            for (int i = 1; i <= 3; i++) {
-                String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        });
-
-        Thread serverThread = new Thread(server::start);
-        serverThread.start();
-
-        // Give the server a moment to start
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
+        public WebSocketClient(String host, int port) throws IOException {
+            this.socket = new Socket(host, port);
+            this.socket.setSoTimeout(5000);
+            this.in = socket.getInputStream();
+            this.out = socket.getOutputStream();
         }
 
-        try (Socket socket = new Socket("localhost", 8081)) {
-            socket.setSoTimeout(5000); // 5 second timeout
-            OutputStream out = socket.getOutputStream();
-            InputStream in = socket.getInputStream();
-
-            // Perform WebSocket handshake
+        public void performHandshake() throws IOException {
+            String key = "dGhlIHNhbXBsZSBub25jZQ=="; // In practice, generate this randomly
             String handshakeRequest =
                     "GET / HTTP/1.1\r\n" +
                             "Host: localhost:8081\r\n" +
                             "Upgrade: websocket\r\n" +
                             "Connection: Upgrade\r\n" +
-                            "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+                            "Sec-WebSocket-Key: " + key + "\r\n" +
                             "Sec-WebSocket-Version: 13\r\n\r\n";
 
             out.write(handshakeRequest.getBytes("UTF-8"));
@@ -278,12 +263,10 @@ public class SimpleWebSocketServer {
             int responseBytes = in.read(responseBuffer);
             String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
             System.out.println("Handshake response: " + response);
+        }
 
-            // Send a masked WebSocket text frame
-            String messageToSend = "Hello WebSocket";
-            byte[] messageBytes = messageToSend.getBytes("UTF-8");
-
-            // Generate random mask
+        public void sendMessage(String message) throws IOException {
+            byte[] messageBytes = message.getBytes("UTF-8");
             byte[] mask = new byte[4];
             random.nextBytes(mask);
 
@@ -297,48 +280,93 @@ public class SimpleWebSocketServer {
                 out.write(messageBytes[i] ^ mask[i % 4]);
             }
             out.flush();
+        }
 
-            // Read all three response frames
-            for (int frameCount = 0; frameCount < 3; frameCount++) {
-                // Read frame header
-                int byte1 = in.read(); // FIN and opcode
-                if (byte1 == -1) break;  // Connection closed
+        public String receiveMessage() throws IOException {
+            // Read frame header
+            int byte1 = in.read();
+            if (byte1 == -1) return null;
 
-                int byte2 = in.read(); // Mask and payload length
-                if (byte2 == -1) break;  // Connection closed
+            int byte2 = in.read();
+            if (byte2 == -1) return null;
 
-                int payloadLength = byte2 & 0x7F;
+            int payloadLength = byte2 & 0x7F;
 
-                // Handle extended payload length if needed
-                if (payloadLength == 126) {
-                    byte[] extendedLength = new byte[2];
-                    readFully(in, extendedLength, 0, 2);
-                    payloadLength = ((extendedLength[0] & 0xFF) << 8) | (extendedLength[1] & 0xFF);
-                } else if (payloadLength == 127) {
-                    byte[] extendedLength = new byte[8];
-                    readFully(in, extendedLength, 0, 8);
-                    payloadLength = 0;
-                    for (int i = 0; i < 8; i++) {
-                        payloadLength |= (extendedLength[i] & 0xFF) << ((7 - i) * 8);
-                    }
+            // Handle extended payload length
+            if (payloadLength == 126) {
+                byte[] extendedLength = new byte[2];
+                readFully(in, extendedLength, 0, 2);
+                payloadLength = ((extendedLength[0] & 0xFF) << 8) | (extendedLength[1] & 0xFF);
+            } else if (payloadLength == 127) {
+                byte[] extendedLength = new byte[8];
+                readFully(in, extendedLength, 0, 8);
+                payloadLength = 0;
+                for (int i = 0; i < 8; i++) {
+                    payloadLength |= (extendedLength[i] & 0xFF) << ((7 - i) * 8);
                 }
-
-                // Read payload
-                byte[] payload = new byte[payloadLength];
-                int bytesRead = readFully(in, payload, 0, payloadLength);
-                if (bytesRead < payloadLength) break;  // Connection closed
-
-                String receivedMessage = new String(payload, 0, bytesRead, "UTF-8");
-                System.out.println("Received message from server: " + receivedMessage);
             }
 
-            // Send close frame
+            byte[] payload = new byte[payloadLength];
+            int bytesRead = readFully(in, payload, 0, payloadLength);
+            if (bytesRead < payloadLength) return null;
+
+            return new String(payload, 0, bytesRead, "UTF-8");
+        }
+
+        public void sendClose() throws IOException {
+            byte[] mask = new byte[4];
+            random.nextBytes(mask);
             out.write(new byte[]{(byte) 0x88, (byte) 0x80, mask[0], mask[1], mask[2], mask[3]});
             out.flush();
+        }
 
-        } catch (Exception e) {
-            System.err.println("Test failed with exception: " + e.getMessage());
-            e.printStackTrace();
+        @Override
+        public void close() throws IOException {
+            sendClose();
+            socket.close();
+        }
+    }
+
+    public static void main(String[] args) {
+        SimpleWebSocketServer server = new SimpleWebSocketServer(8081);
+
+        // Register echo handler that sends 3 responses
+        server.registerMessageHandler((message, sender) -> {
+            for (int i = 1; i <= 3; i++) {
+                String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                }
+            }
+        });
+
+        // Start server in separate thread
+        Thread serverThread = new Thread(server::start);
+        serverThread.start();
+
+        try {
+            try {
+                Thread.sleep(1000); // Wait for server startup
+            } catch (InterruptedException e) {
+            }
+
+            // Example client usage
+            try (WebSocketClient client = new WebSocketClient("localhost", 8081)) {
+                client.performHandshake();
+                client.sendMessage("Hello WebSocket");
+
+                // Read all three response frames
+                for (int i = 0; i < 3; i++) {
+                    String response = client.receiveMessage();
+                    if (response != null) {
+                        System.out.println("Received message from server: " + response);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         } finally {
             server.stop();
         }
