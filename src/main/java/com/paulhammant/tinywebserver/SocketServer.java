@@ -16,10 +16,10 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.security.SecureRandom;
-public class SimpleWebSocketServer {
+public class SocketServer {
 
     @FunctionalInterface
-    public interface WebSocketMessageHandler {
+    public interface SocketMessageHandler {
         void handleMessage(byte[] message, MessageSender sender) throws IOException;
     }
 
@@ -54,13 +54,13 @@ public class SimpleWebSocketServer {
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private static final int SOCKET_TIMEOUT = 30000; // 30 seconds timeout
     private static final SecureRandom random = new SecureRandom();
-    private Map<String, WebSocketMessageHandler> messageHandlers = new HashMap<>();
+    private Map<String, SocketMessageHandler> messageHandlers = new HashMap<>();
 
-    public SimpleWebSocketServer(int port) {
+    public SocketServer(int port) {
         this.port = port;
     }
 
-    public void registerMessageHandler(String path, WebSocketMessageHandler handler) {
+    public void registerMessageHandler(String path, SocketMessageHandler handler) {
         this.messageHandlers.put(path, handler);
     }
 
@@ -239,7 +239,7 @@ public class SimpleWebSocketServer {
                     byte[] messagePayload = Arrays.copyOfRange(payload, pathLength + 1, payload.length);
                     System.out.println("Message payload length: " + messagePayload.length);
 
-                    WebSocketMessageHandler handler = getHandler(path);
+                    SocketMessageHandler handler = getHandler(path);
                     if (handler != null) {
                         handler.handleMessage(messagePayload, sender);
                     } else {
@@ -251,7 +251,7 @@ public class SimpleWebSocketServer {
         }
     }
 
-    protected WebSocketMessageHandler getHandler(String path) {
+    protected SocketMessageHandler getHandler(String path) {
         return messageHandlers.get(path);
     }
 

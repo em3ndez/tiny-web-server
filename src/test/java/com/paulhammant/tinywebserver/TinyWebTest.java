@@ -4,8 +4,6 @@ package com.paulhammant.tinywebserver;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import org.mockito.Mockito;
-import java.io.OutputStream;
-import java.net.Socket;
 import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.reporters.DefaultReporter;
@@ -13,7 +11,6 @@ import org.forgerock.cuppa.reporters.DefaultReporter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static okhttp3.Request.*;
@@ -25,7 +22,7 @@ import static org.hamcrest.Matchers.*;
 public class TinyWebTest {
     TinyWeb.ExampleApp app = Mockito.mock(TinyWeb.ExampleApp.class);
     TinyWeb.Server svr;
-    SimpleWebSocketServer webSocketServer;
+    SocketServer webSocketServer;
 
     {
         describe("ExampleApp.exampleComposition() server tested via sockets", () -> {
@@ -385,7 +382,7 @@ public class TinyWebTest {
         describe("SimpleWebSocketServer without TinyWeb", () -> {
 
             before(() -> {
-                webSocketServer = new SimpleWebSocketServer(8081) {{
+                webSocketServer = new SocketServer(8081) {{
                     registerMessageHandler("/foo/baz", (message, sender) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
@@ -408,7 +405,7 @@ public class TinyWebTest {
                 }
 
                 // Example client usage
-                try (SimpleWebSocketServer.WebSocketClient client = new SimpleWebSocketServer.WebSocketClient("localhost", 8081)) {
+                try (SocketServer.WebSocketClient client = new SocketServer.WebSocketClient("localhost", 8081)) {
                     client.performHandshake();
                     client.sendMessage("/foo/baz", "Hello WebSocket");
 
@@ -470,7 +467,7 @@ public class TinyWebTest {
                 }
 
                 // Example client usage
-                try (SimpleWebSocketServer.WebSocketClient client = new SimpleWebSocketServer.WebSocketClient("localhost", 8081)) {
+                try (SocketServer.WebSocketClient client = new SocketServer.WebSocketClient("localhost", 8081)) {
                     client.performHandshake();
                     client.sendMessage("/foo/baz", "Hello WebSocket");
 

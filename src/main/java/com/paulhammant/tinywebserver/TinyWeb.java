@@ -21,13 +21,13 @@ public class TinyWeb {
     public static class Context {
 
         protected Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
-        protected Map<Pattern, SimpleWebSocketServer.WebSocketMessageHandler> wsRoutes = new HashMap<>();
+        protected Map<Pattern, SocketServer.SocketMessageHandler> wsRoutes = new HashMap<>();
         protected Map<Method, List<FilterEntry>> filters = new HashMap<>();
 
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
             Map<Method, Map<Pattern, EndPoint>> previousRoutes = this.routes;
-            Map<Pattern, SimpleWebSocketServer.WebSocketMessageHandler> previousWsRoutes = this.wsRoutes;
+            Map<Pattern, SocketServer.SocketMessageHandler> previousWsRoutes = this.wsRoutes;
             Map<Method, List<FilterEntry>> previousFilters = this.filters;
 
             // Create new maps to collect routes and filters within this path
@@ -61,9 +61,9 @@ public class TinyWeb {
             }
 
             // Prefix basePath to WebSocket handlers
-            for (Map.Entry<Pattern, SimpleWebSocketServer.WebSocketMessageHandler> entry : this.wsRoutes.entrySet()) {
+            for (Map.Entry<Pattern, SocketServer.SocketMessageHandler> entry : this.wsRoutes.entrySet()) {
                 Pattern pattern = entry.getKey();
-                SimpleWebSocketServer.WebSocketMessageHandler wsHandler = entry.getValue();
+                SocketServer.SocketMessageHandler wsHandler = entry.getValue();
                 Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
                 previousWsRoutes.put(newPattern, wsHandler);
             }
@@ -107,7 +107,7 @@ public class TinyWeb {
             return this;
         }
 
-        public Context webSocket(String path, SimpleWebSocketServer.WebSocketMessageHandler wsHandler) {
+        public Context webSocket(String path, SocketServer.SocketMessageHandler wsHandler) {
             wsRoutes.put(Pattern.compile("^" + path + "$"), wsHandler);
             return this;
         }
@@ -179,7 +179,7 @@ public class TinyWeb {
     public static class Server extends Context {
 
         private final HttpServer httpServer;
-        private final SimpleWebSocketServer simpleWebSocketServer;
+        private final SocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
 
         public Server(int httpPort, int webSocketPort) {
@@ -191,17 +191,17 @@ public class TinyWeb {
             httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
             if (webSocketPort != -1) {
-                simpleWebSocketServer = new SimpleWebSocketServer(webSocketPort) {
+                socketServer = new SocketServer(webSocketPort) {
                     @Override
-                    protected WebSocketMessageHandler getHandler(String path) {
-                        for (Map.Entry<Pattern, WebSocketMessageHandler> patternWebSocketMessageHandlerEntry : wsRoutes.entrySet()) {
+                    protected SocketMessageHandler getHandler(String path) {
+                        for (Map.Entry<Pattern, SocketMessageHandler> patternWebSocketMessageHandlerEntry : wsRoutes.entrySet()) {
                             Pattern key = patternWebSocketMessageHandlerEntry.getKey();
-                            WebSocketMessageHandler value = patternWebSocketMessageHandlerEntry.getValue();
+                            SocketMessageHandler value = patternWebSocketMessageHandlerEntry.getValue();
                             if (key.matcher(path).matches()) {
                                 return value;
                             }
                         }
-                        return new WebSocketMessageHandler() {
+                        return new SocketMessageHandler() {
                             @Override
                             public void handleMessage(byte[] message, MessageSender sender) throws IOException {
                                 sender.sendTextFrame("no matching path on the server side".getBytes("UTF-8"));
@@ -211,7 +211,7 @@ public class TinyWeb {
                 };
             } else {
 
-                simpleWebSocketServer = null;
+                socketServer = null;
             }
 
             for (Method method : Method.values()) {
@@ -319,8 +319,8 @@ public class TinyWeb {
 
         public TinyWeb.Server start() {
             httpServer.start();
-            if (simpleWebSocketServer != null) {
-                simpleWebSocketServerThread = new Thread(simpleWebSocketServer::start);
+            if (socketServer != null) {
+                simpleWebSocketServerThread = new Thread(socketServer::start);
                 simpleWebSocketServerThread.start();
             }
             return this;
@@ -329,7 +329,7 @@ public class TinyWeb {
         public TinyWeb.Server stop() {
             httpServer.stop(0);
             if (simpleWebSocketServerThread != null) {
-                simpleWebSocketServer.stop();
+                socketServer.stop();
                 simpleWebSocketServerThread.interrupt();
             }
             return this;
