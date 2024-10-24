@@ -382,7 +382,7 @@ public class TinyWebTest {
 
         });
 
-        describe("WebSocket functionality", () -> {
+        describe("SimpleWebSocketServer without TinyWeb", () -> {
 
             before(() -> {
                 webSocketServer = new SimpleWebSocketServer(8081) {{
@@ -401,7 +401,7 @@ public class TinyWebTest {
                 serverThread.start();
             });
 
-            it("should echo three messages based on recieved message", () -> {
+            it("should echo three messages plus -1 -2 -3 back to the client", () -> {
                 try {
                     Thread.sleep(1000); // Wait for server startup
                 } catch (InterruptedException e) {
@@ -436,7 +436,7 @@ public class TinyWebTest {
             });
         });
 
-        describe("WebSocket functionality 2", () -> {
+        describe("TinyWeb.Server and sockets together", () -> {
 
             before(() -> {
                 svr = new TinyWeb.Server(8080, 8081) {{
@@ -458,7 +458,7 @@ public class TinyWebTest {
                 }}.start();
             });
 
-            it("should echo messages sent to the WebSocket", () -> {
+            it("should echo three messages plus -1 -2 -3 back to the client", () -> {
                 try {
                     Thread.sleep(1000); // Wait for server startup
                 } catch (InterruptedException e) {
