@@ -379,7 +379,7 @@ public class TinyWebTest {
 
         });
 
-        describe("SimpleWebSocketServer without TinyWeb", () -> {
+        describe("TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
             before(() -> {
                 webSocketServer = new TinyWeb.SocketServer(8081) {{

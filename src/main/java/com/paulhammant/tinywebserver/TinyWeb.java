@@ -312,16 +312,16 @@ public class TinyWeb {
         }
 
         protected void serverException(ServerException e) {
-            System.out.println(e.getMessage() + "\nStack Trace:");
-            e.printStackTrace(System.out);
+            System.err.println(e.getMessage() + "\nStack Trace:");
+            e.printStackTrace(System.err);
         }
 
         /**
          * Most likely a RuntimeException or Error in a endPoint() or filter() code block
          */
         protected void appHandlingException(Exception e) {
-            System.out.println(e.getMessage() + "\nStack Trace:");
-            e.printStackTrace(System.out);
+            System.err.println(e.getMessage() + "\nStack Trace:");
+            e.printStackTrace(System.err);
         }
 
         public TinyWeb.Server start() {
@@ -588,13 +588,12 @@ public class TinyWeb {
         public void start() {
             try {
                 server = new ServerSocket(port);
-                System.out.println("WebSocket server started on port " + port);
 
                 while (!server.isClosed()) {
                     try {
                         Socket client = server.accept();
                         client.setSoTimeout(SOCKET_TIMEOUT);
-                        System.out.println("A client connected.");
+                        clientConnected(client);
 
                         executor.execute(() -> handleClient(client));
                     } catch (SocketException e) {
@@ -603,14 +602,14 @@ public class TinyWeb {
                         } else {
                             throw e;
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        System.err.println("Error accepting client: " + e.getMessage());
                     }
                 }
             } catch (IOException e) {
-                throw new RuntimeException("Can't start WebSocket Server", e);
+                throw new ServerException("Can't start WebSocket Server", e);
             }
+        }
+
+        protected void clientConnected(Socket client) {
         }
 
         private void handleClient(Socket client) {
@@ -624,7 +623,6 @@ public class TinyWeb {
                     Matcher get = Pattern.compile("^GET").matcher(data);
 
                     if (get.find()) {
-                        System.out.println("Received handshake data: " + data);
                         Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
                         if (!match.find()) {
                             client.close();
@@ -654,7 +652,7 @@ public class TinyWeb {
                                 .digest((webSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
                                         .getBytes("UTF-8")));
             } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
+                throw new ServerException("NoSuchAlgorithm", e);
             }
         }
 
@@ -682,10 +680,7 @@ public class TinyWeb {
                 boolean masked = (buffer[1] & 0x80) != 0;
                 int payloadLength = buffer[1] & 0x7F;
                 int offset = 2;
-
-                System.out.println("Frame Header - FIN: " + fin + ", Opcode: " + opcode +
-                        ", Masked: " + masked + ", Initial PayloadLength: " + payloadLength);
-
+                
                 // Handle extended payload length cases
                 if (payloadLength == 126) {
                     headerLength = readFully(in, buffer, offset, 2);
@@ -701,9 +696,7 @@ public class TinyWeb {
                     }
                     offset += 8;
                 }
-
-                System.out.println("Final PayloadLength: " + payloadLength);
-
+                
                 // Handle close frame immediately
                 if (opcode == 8) { // Close frame
                     sendCloseFrame(out);
@@ -718,7 +711,6 @@ public class TinyWeb {
                         headerLength = readFully(in, buffer, offset, 4);
                         if (headerLength < 4) break;
                         maskingKey = Arrays.copyOfRange(buffer, offset, offset + 4);
-                        System.out.println("Masking Key: " + Arrays.toString(maskingKey));
                         offset += 4;
                     }
 
@@ -729,10 +721,7 @@ public class TinyWeb {
                     byte[] payload = new byte[payloadLength];
                     int bytesRead = readFully(in, payload, 0, payloadLength);
                     if (bytesRead < payloadLength) break;
-
-                    System.out.println("Raw payload (first few bytes): " +
-                            Arrays.toString(Arrays.copyOfRange(payload, 0, Math.min(10, payload.length))));
-
+                    
                     // Unmask the entire payload
                     if (masked) {
                         for (int i = 0; i < payload.length; i++) {
@@ -743,22 +732,18 @@ public class TinyWeb {
                     // Now work with the unmasked payload
                     if (payload.length > 0) {
                         int pathLength = payload[0] & 0xFF;
-                        System.out.println("Decoded path length: " + pathLength);
 
                         if (pathLength > payload.length - 1) {
-                            System.err.println("Invalid path length: " + pathLength +
-                                    " (payload length: " + payload.length + ")");
+                            invalidPathLength(pathLength, payload);
                             break;
                         }
 
                         // Extract path
                         byte[] pathBytes = Arrays.copyOfRange(payload, 1, pathLength + 1);
                         String path = new String(pathBytes, StandardCharsets.US_ASCII);
-                        System.out.println("Decoded path: " + path);
 
                         // Extract message
                         byte[] messagePayload = Arrays.copyOfRange(payload, pathLength + 1, payload.length);
-                        System.out.println("Message payload length: " + messagePayload.length);
 
                         SocketMessageHandler handler = getHandler(path);
                         if (handler != null) {
@@ -770,6 +755,10 @@ public class TinyWeb {
                 }
                 // Other control frames (ping/pong) could be handled here
             }
+        }
+
+        protected static void invalidPathLength(int pathLength, byte[] payload) {
+            System.err.println("Invalid path length: " + pathLength + " (payload length: " + payload.length + ")");
         }
 
         protected SocketMessageHandler getHandler(String path) {
@@ -797,7 +786,7 @@ public class TinyWeb {
                     server.close();
                 }
             } catch (IOException e) {
-                throw new RuntimeException("Can't stop WebSocket Server", e);
+                throw new ServerException("Can't stop WebSocket Server", e);
             }
         }
 
@@ -831,7 +820,6 @@ public class TinyWeb {
                 byte[] responseBuffer = new byte[1024];
                 int responseBytes = in.read(responseBuffer);
                 String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
-                System.out.println("Handshake response: " + response);
             }
 
             public void sendMessage(String path, String message) throws IOException {
@@ -842,10 +830,6 @@ public class TinyWeb {
 
                 // Calculate total payload length (1 byte for path length + path + message)
                 int totalLength = 1 + pathBytes.length + messageBytes.length;
-
-                System.out.println("Sending - Path: " + path + ", Path length: " + pathBytes.length);
-                System.out.println("Total payload length: " + totalLength);
-                System.out.println("Mask: " + Arrays.toString(mask));
 
                 // Write frame header
                 out.write(0x81); // FIN bit set, text frame
