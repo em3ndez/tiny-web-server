@@ -1,6 +1,7 @@
 # TinyWebTest Examples
 
 ## Echoing GET Endpoint
+```java
 // describe("Echoing GET endpoint respond with..", () -> {
 //     it("should return user profile for Jimmy", () -> {
 try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
@@ -10,8 +11,10 @@ try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
 try (Response response = httpGet("http://localhost:8080/users/Thelma")) {
     assertThat(response.body().string(), equalTo("User profile: Thelma"));
 }
+```
 
 ## Nested Path with Parameterized Parts
+```java
 // describe("Nested path with parameterized parts", () -> {
 //     it("should extract parameters correctly from nested path", () -> {
 try (Response response = httpGet("http://localhost:8080/api/v1/items/123/details/456")) {
@@ -27,8 +30,10 @@ try (Response response = httpGet("http://localhost:8080/api/v1/items/123/456")) 
     assertThat(response.body().string(), equalTo("Not found"));
     assertThat(response.code(), equalTo(404));
 }
+```
 
 ## Filtering
+```java
 // describe("Filtering", () -> {
 //     it("should allow access when header 'sucks' is absent", () -> {
 try (Response response = httpGet("http://localhost:8080/foo/bar")) {
@@ -40,8 +45,10 @@ try (Response response = httpGet("http://localhost:8080/foo/bar", "sucks", "true
     assertThat(response.code(), equalTo(403));
     assertThat(response.body().string(), equalTo("Access Denied"));
 }
+```
 
 ## Static File Serving
+```java
 // describe("Static file serving functionality", () -> {
 //     it("should return 200 and serve a text file", () -> {
 try (Response response = httpGet("http://localhost:8080/static/README.md")) {
@@ -66,8 +73,10 @@ try (Response response = httpGet("http://localhost:8080/static/target/classes/co
     assertThat(response.body().contentType().toString(), equalTo("application/java-vm"));
     assertThat(response.body().string(), containsString("(Lcom/sun/net/httpserver/HttpExchange;ILjava/lang/String;)V"));
 }
+```
 
 ## WebSocket Communication
+```java
 // describe("TinyWeb.SocketServer with TinyWeb.Server", () -> {
 //     it("should echo three messages plus -1 -2 -3 back to the client", () -> {
 try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
@@ -88,3 +97,4 @@ try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) 
                     "Server sent: Hello WebSocket-2" +
                     "Server sent: Hello WebSocket-3"));
 }
+```
