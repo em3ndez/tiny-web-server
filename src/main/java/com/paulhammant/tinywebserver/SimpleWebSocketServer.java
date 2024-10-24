@@ -235,13 +235,6 @@ public class SimpleWebSocketServer {
     public static void main(String[] args) {
         SimpleWebSocketServer server = new SimpleWebSocketServer(8081);
 
-//        // Example of registering a custom handler
-//        server.registerMessageHandler((message, sender) -> {
-//            String receivedText = new String(message, "UTF-8");
-//            String response = "Received: " + receivedText;
-//            sender.sendTextFrame(response.getBytes("UTF-8"));
-//        });
-
         server.registerMessageHandler((message, sender) -> {
             for (int i = 1; i <= 3; i++) {
                 String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
@@ -305,17 +298,39 @@ public class SimpleWebSocketServer {
             }
             out.flush();
 
-            // Read response frame header
-            int byte1 = in.read(); // FIN and opcode
-            int byte2 = in.read(); // Mask and payload length
-            int payloadLength = byte2 & 0x7F;
+            // Read all three response frames
+            for (int frameCount = 0; frameCount < 3; frameCount++) {
+                // Read frame header
+                int byte1 = in.read(); // FIN and opcode
+                if (byte1 == -1) break;  // Connection closed
 
-            // Read payload
-            byte[] payload = new byte[payloadLength];
-            int bytesRead = readFully(in, payload, 0, payloadLength);
-            String receivedMessage = new String(payload, 0, bytesRead, "UTF-8");
+                int byte2 = in.read(); // Mask and payload length
+                if (byte2 == -1) break;  // Connection closed
 
-            System.out.println("Received message from server: " + receivedMessage);
+                int payloadLength = byte2 & 0x7F;
+
+                // Handle extended payload length if needed
+                if (payloadLength == 126) {
+                    byte[] extendedLength = new byte[2];
+                    readFully(in, extendedLength, 0, 2);
+                    payloadLength = ((extendedLength[0] & 0xFF) << 8) | (extendedLength[1] & 0xFF);
+                } else if (payloadLength == 127) {
+                    byte[] extendedLength = new byte[8];
+                    readFully(in, extendedLength, 0, 8);
+                    payloadLength = 0;
+                    for (int i = 0; i < 8; i++) {
+                        payloadLength |= (extendedLength[i] & 0xFF) << ((7 - i) * 8);
+                    }
+                }
+
+                // Read payload
+                byte[] payload = new byte[payloadLength];
+                int bytesRead = readFully(in, payload, 0, payloadLength);
+                if (bytesRead < payloadLength) break;  // Connection closed
+
+                String receivedMessage = new String(payload, 0, bytesRead, "UTF-8");
+                System.out.println("Received message from server: " + receivedMessage);
+            }
 
             // Send close frame
             out.write(new byte[]{(byte) 0x88, (byte) 0x80, mask[0], mask[1], mask[2], mask[3]});
@@ -328,7 +343,6 @@ public class SimpleWebSocketServer {
             server.stop();
         }
     }
-
 
 
 }
