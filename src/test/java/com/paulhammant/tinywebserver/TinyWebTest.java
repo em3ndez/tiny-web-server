@@ -405,7 +405,7 @@ public class TinyWebTest {
                 }
 
                 // Example client usage
-                try (TinyWeb.SocketServer.WebSocketClient client = new TinyWeb.SocketServer.WebSocketClient("localhost", 8081)) {
+                try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
                     client.performHandshake();
                     client.sendMessage("/foo/baz", "Hello WebSocket");
 
@@ -433,7 +433,7 @@ public class TinyWebTest {
             });
         });
 
-        describe("TinyWeb.Server and sockets together", () -> {
+        describe("TinyWeb.SocketServer with TinyWeb.Server", () -> {
 
             before(() -> {
                 svr = new TinyWeb.Server(8080, 8081) {{
@@ -467,7 +467,7 @@ public class TinyWebTest {
                 }
 
                 // Example client usage
-                try (TinyWeb.SocketServer.WebSocketClient client = new TinyWeb.SocketServer.WebSocketClient("localhost", 8081)) {
+                try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
                     client.performHandshake();
                     client.sendMessage("/foo/baz", "Hello WebSocket");
 

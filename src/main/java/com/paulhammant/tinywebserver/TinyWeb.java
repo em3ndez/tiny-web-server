@@ -210,7 +210,7 @@ public class TinyWeb {
                         }
                         return new SocketMessageHandler() {
                             @Override
-                            public void handleMessage(byte[] message, MessageSender sender) throws IOException {
+                            public void handleMessage(byte[] message, TinyWeb.MessageSender sender) throws IOException {
                                 sender.sendTextFrame("no matching path on the server side".getBytes("UTF-8"));
                             }
                         };
@@ -541,33 +541,7 @@ public class TinyWeb {
 
         @FunctionalInterface
         public interface SocketMessageHandler {
-            void handleMessage(byte[] message, MessageSender sender) throws IOException;
-        }
-
-        public static class MessageSender {
-            private final OutputStream outputStream;
-
-            public MessageSender(OutputStream outputStream) {
-                this.outputStream = outputStream;
-            }
-
-            public void sendTextFrame(byte[] payload) throws IOException {
-                outputStream.write(0x81); // FIN bit set, text frame
-                if (payload.length < 126) {
-                    outputStream.write(payload.length);
-                } else if (payload.length <= 65535) {
-                    outputStream.write(126);
-                    outputStream.write((payload.length >> 8) & 0xFF);
-                    outputStream.write(payload.length & 0xFF);
-                } else {
-                    outputStream.write(127);
-                    for (int i = 7; i >= 0; i--) {
-                        outputStream.write((payload.length >> (8 * i)) & 0xFF);
-                    }
-                }
-                outputStream.write(payload);
-                outputStream.flush();
-            }
+            void handleMessage(byte[] message, TinyWeb.MessageSender sender) throws IOException;
         }
 
         private final int port;
@@ -667,7 +641,7 @@ public class TinyWeb {
         }
 
         private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out) throws IOException {
-            MessageSender sender = new MessageSender(out);
+            TinyWeb.MessageSender sender = new TinyWeb.MessageSender(out);
             byte[] buffer = new byte[8192];
 
             while (!client.isClosed()) {
@@ -789,112 +763,138 @@ public class TinyWeb {
                 throw new ServerException("Can't stop WebSocket Server", e);
             }
         }
+    }
 
-        public static class WebSocketClient implements AutoCloseable {
-            private final Socket socket;
-            private final InputStream in;
-            private final OutputStream out;
-            private static final SecureRandom random = new SecureRandom();
+    public static class SocketClient implements AutoCloseable {
+        private final Socket socket;
+        private final InputStream in;
+        private final OutputStream out;
+        private static final SecureRandom random = new SecureRandom();
 
-            public WebSocketClient(String host, int port) throws IOException {
-                this.socket = new Socket(host, port);
-                this.socket.setSoTimeout(5000);
-                this.in = socket.getInputStream();
-                this.out = socket.getOutputStream();
+        public SocketClient(String host, int port) throws IOException {
+            this.socket = new Socket(host, port);
+            this.socket.setSoTimeout(5000);
+            this.in = socket.getInputStream();
+            this.out = socket.getOutputStream();
+        }
+
+        public void performHandshake() throws IOException {
+            String key = "dGhlIHNhbXBsZSBub25jZQ=="; // In practice, generate this randomly
+            String handshakeRequest =
+                    "GET / HTTP/1.1\r\n" +
+                            "Host: localhost:8081\r\n" +
+                            "Upgrade: websocket\r\n" +
+                            "Connection: Upgrade\r\n" +
+                            "Sec-WebSocket-Key: " + key + "\r\n" +
+                            "Sec-WebSocket-Version: 13\r\n\r\n";
+
+            out.write(handshakeRequest.getBytes("UTF-8"));
+            out.flush();
+
+            // Read handshake response
+            byte[] responseBuffer = new byte[1024];
+            int responseBytes = in.read(responseBuffer);
+            String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
+        }
+
+        public void sendMessage(String path, String message) throws IOException {
+            byte[] pathBytes = path.getBytes(StandardCharsets.US_ASCII);
+            byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
+            byte[] mask = new byte[4];
+            random.nextBytes(mask);
+
+            // Calculate total payload length (1 byte for path length + path + message)
+            int totalLength = 1 + pathBytes.length + messageBytes.length;
+
+            // Write frame header
+            out.write(0x81); // FIN bit set, text frame
+            out.write(0x80 | totalLength); // Mask bit set, payload length
+
+            // Write mask
+            out.write(mask);
+
+            // Create complete payload first
+            byte[] fullPayload = new byte[totalLength];
+            fullPayload[0] = (byte) pathBytes.length;
+            System.arraycopy(pathBytes, 0, fullPayload, 1, pathBytes.length);
+            System.arraycopy(messageBytes, 0, fullPayload, 1 + pathBytes.length, messageBytes.length);
+
+            // Mask the entire payload
+            for (int i = 0; i < fullPayload.length; i++) {
+                out.write(fullPayload[i] ^ mask[i & 0x3]);
             }
 
-            public void performHandshake() throws IOException {
-                String key = "dGhlIHNhbXBsZSBub25jZQ=="; // In practice, generate this randomly
-                String handshakeRequest =
-                        "GET / HTTP/1.1\r\n" +
-                                "Host: localhost:8081\r\n" +
-                                "Upgrade: websocket\r\n" +
-                                "Connection: Upgrade\r\n" +
-                                "Sec-WebSocket-Key: " + key + "\r\n" +
-                                "Sec-WebSocket-Version: 13\r\n\r\n";
+            out.flush();
+        }
 
-                out.write(handshakeRequest.getBytes("UTF-8"));
-                out.flush();
+        public String receiveMessage() throws IOException {
+            // Read frame header
+            int byte1 = in.read();
+            if (byte1 == -1) return null;
 
-                // Read handshake response
-                byte[] responseBuffer = new byte[1024];
-                int responseBytes = in.read(responseBuffer);
-                String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
-            }
+            int byte2 = in.read();
+            if (byte2 == -1) return null;
 
-            public void sendMessage(String path, String message) throws IOException {
-                byte[] pathBytes = path.getBytes(StandardCharsets.US_ASCII);
-                byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
-                byte[] mask = new byte[4];
-                random.nextBytes(mask);
+            int payloadLength = byte2 & 0x7F;
 
-                // Calculate total payload length (1 byte for path length + path + message)
-                int totalLength = 1 + pathBytes.length + messageBytes.length;
-
-                // Write frame header
-                out.write(0x81); // FIN bit set, text frame
-                out.write(0x80 | totalLength); // Mask bit set, payload length
-
-                // Write mask
-                out.write(mask);
-
-                // Create complete payload first
-                byte[] fullPayload = new byte[totalLength];
-                fullPayload[0] = (byte) pathBytes.length;
-                System.arraycopy(pathBytes, 0, fullPayload, 1, pathBytes.length);
-                System.arraycopy(messageBytes, 0, fullPayload, 1 + pathBytes.length, messageBytes.length);
-
-                // Mask the entire payload
-                for (int i = 0; i < fullPayload.length; i++) {
-                    out.write(fullPayload[i] ^ mask[i & 0x3]);
+            // Handle extended payload length
+            if (payloadLength == 126) {
+                byte[] extendedLength = new byte[2];
+                SocketServer.readFully(in, extendedLength, 0, 2);
+                payloadLength = ((extendedLength[0] & 0xFF) << 8) | (extendedLength[1] & 0xFF);
+            } else if (payloadLength == 127) {
+                byte[] extendedLength = new byte[8];
+                SocketServer.readFully(in, extendedLength, 0, 8);
+                payloadLength = 0;
+                for (int i = 0; i < 8; i++) {
+                    payloadLength |= (extendedLength[i] & 0xFF) << ((7 - i) * 8);
                 }
-
-                out.flush();
             }
 
-            public String receiveMessage() throws IOException {
-                // Read frame header
-                int byte1 = in.read();
-                if (byte1 == -1) return null;
+            byte[] payload = new byte[payloadLength];
+            int bytesRead = SocketServer.readFully(in, payload, 0, payloadLength);
+            if (bytesRead < payloadLength) return null;
 
-                int byte2 = in.read();
-                if (byte2 == -1) return null;
+            return new String(payload, 0, bytesRead, "UTF-8");
+        }
 
-                int payloadLength = byte2 & 0x7F;
+        public void sendClose() throws IOException {
+            byte[] mask = new byte[4];
+            random.nextBytes(mask);
+            out.write(new byte[]{(byte) 0x88, (byte) 0x80, mask[0], mask[1], mask[2], mask[3]});
+            out.flush();
+        }
 
-                // Handle extended payload length
-                if (payloadLength == 126) {
-                    byte[] extendedLength = new byte[2];
-                    readFully(in, extendedLength, 0, 2);
-                    payloadLength = ((extendedLength[0] & 0xFF) << 8) | (extendedLength[1] & 0xFF);
-                } else if (payloadLength == 127) {
-                    byte[] extendedLength = new byte[8];
-                    readFully(in, extendedLength, 0, 8);
-                    payloadLength = 0;
-                    for (int i = 0; i < 8; i++) {
-                        payloadLength |= (extendedLength[i] & 0xFF) << ((7 - i) * 8);
-                    }
+        @Override
+        public void close() throws IOException {
+            sendClose();
+            socket.close();
+        }
+    }
+
+    public static class MessageSender {
+        private final OutputStream outputStream;
+
+        public MessageSender(OutputStream outputStream) {
+            this.outputStream = outputStream;
+        }
+
+        public void sendTextFrame(byte[] payload) throws IOException {
+            outputStream.write(0x81); // FIN bit set, text frame
+            if (payload.length < 126) {
+                outputStream.write(payload.length);
+            } else if (payload.length <= 65535) {
+                outputStream.write(126);
+                outputStream.write((payload.length >> 8) & 0xFF);
+                outputStream.write(payload.length & 0xFF);
+            } else {
+                outputStream.write(127);
+                for (int i = 7; i >= 0; i--) {
+                    outputStream.write((payload.length >> (8 * i)) & 0xFF);
                 }
-
-                byte[] payload = new byte[payloadLength];
-                int bytesRead = readFully(in, payload, 0, payloadLength);
-                if (bytesRead < payloadLength) return null;
-
-                return new String(payload, 0, bytesRead, "UTF-8");
             }
-
-            public void sendClose() throws IOException {
-                byte[] mask = new byte[4];
-                random.nextBytes(mask);
-                out.write(new byte[]{(byte) 0x88, (byte) 0x80, mask[0], mask[1], mask[2], mask[3]});
-                out.flush();
-            }
-
-            @Override
-            public void close() throws IOException {
-                sendClose();
-                socket.close();
-            }
+            outputStream.write(payload);
+            outputStream.flush();
         }
     }
 }
