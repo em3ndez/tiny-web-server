@@ -56,18 +56,6 @@ public class SimpleWebSocketServer {
 
     public SimpleWebSocketServer(int port) {
         this.port = port;
-        // Default handler that implements the original behavior
-        this.messageHandler = (message, sender) -> {
-            for (int i = 1; i <= 3; i++) {
-                String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        };
     }
 
     public void registerMessageHandler(WebSocketMessageHandler handler) {
@@ -247,11 +235,23 @@ public class SimpleWebSocketServer {
     public static void main(String[] args) {
         SimpleWebSocketServer server = new SimpleWebSocketServer(8081);
 
-        // Example of registering a custom handler
+//        // Example of registering a custom handler
+//        server.registerMessageHandler((message, sender) -> {
+//            String receivedText = new String(message, "UTF-8");
+//            String response = "Received: " + receivedText;
+//            sender.sendTextFrame(response.getBytes("UTF-8"));
+//        });
+
         server.registerMessageHandler((message, sender) -> {
-            String receivedText = new String(message, "UTF-8");
-            String response = "Received: " + receivedText;
-            sender.sendTextFrame(response.getBytes("UTF-8"));
+            for (int i = 1; i <= 3; i++) {
+                String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         });
 
         Thread serverThread = new Thread(server::start);
