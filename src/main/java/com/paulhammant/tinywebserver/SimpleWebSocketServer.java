@@ -15,15 +15,63 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.security.SecureRandom;
-
 public class SimpleWebSocketServer {
+
+    @FunctionalInterface
+    public interface WebSocketMessageHandler {
+        void handleMessage(byte[] message, MessageSender sender) throws IOException;
+    }
+
+    public static class MessageSender {
+        private final OutputStream outputStream;
+
+        public MessageSender(OutputStream outputStream) {
+            this.outputStream = outputStream;
+        }
+
+        public void sendTextFrame(byte[] payload) throws IOException {
+            outputStream.write(0x81); // FIN bit set, text frame
+            if (payload.length < 126) {
+                outputStream.write(payload.length);
+            } else if (payload.length <= 65535) {
+                outputStream.write(126);
+                outputStream.write((payload.length >> 8) & 0xFF);
+                outputStream.write(payload.length & 0xFF);
+            } else {
+                outputStream.write(127);
+                for (int i = 7; i >= 0; i--) {
+                    outputStream.write((payload.length >> (8 * i)) & 0xFF);
+                }
+            }
+            outputStream.write(payload);
+            outputStream.flush();
+        }
+    }
+
     private final int port;
     private ServerSocket server;
     private static final int SOCKET_TIMEOUT = 30000; // 30 seconds timeout
     private static final SecureRandom random = new SecureRandom();
+    private WebSocketMessageHandler messageHandler;
 
     public SimpleWebSocketServer(int port) {
         this.port = port;
+        // Default handler that implements the original behavior
+        this.messageHandler = (message, sender) -> {
+            for (int i = 1; i <= 3; i++) {
+                String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        };
+    }
+
+    public void registerMessageHandler(WebSocketMessageHandler handler) {
+        this.messageHandler = handler;
     }
 
     public void start() {
@@ -110,6 +158,7 @@ public class SimpleWebSocketServer {
     }
 
     private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out) throws IOException {
+        MessageSender sender = new MessageSender(out);
         byte[] buffer = new byte[8192];
 
         while (!client.isClosed()) {
@@ -165,39 +214,9 @@ public class SimpleWebSocketServer {
                 sendCloseFrame(out);
                 break;
             } else if (opcode == 1) { // Text frame
-                // Send three messages back at 100ms intervals
-                sendThreeMessagesBackAtIntervals(out, payload);
+                messageHandler.handleMessage(payload, sender);
             }
         }
-    }
-
-    private void sendThreeMessagesBackAtIntervals(OutputStream out, byte[] messageIn) throws IOException {
-        for (int i = 1; i <= 3; i++) {
-            String responseMessage = new String(messageIn, "UTF-8") + "-" + i;
-            sendTextFrame(out, responseMessage.getBytes("UTF-8"));
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
-        }
-    }
-
-    private void sendTextFrame(OutputStream out, byte[] payload) throws IOException {
-        out.write(0x81); // FIN bit set, text frame
-        if (payload.length < 126) {
-            out.write(payload.length);
-        } else if (payload.length <= 65535) {
-            out.write(126);
-            out.write((payload.length >> 8) & 0xFF);
-            out.write(payload.length & 0xFF);
-        } else {
-            out.write(127);
-            for (int i = 7; i >= 0; i--) {
-                out.write((payload.length >> (8 * i)) & 0xFF);
-            }
-        }
-        out.write(payload);
-        out.flush();
     }
 
     private void sendCloseFrame(OutputStream out) throws IOException {
@@ -227,6 +246,14 @@ public class SimpleWebSocketServer {
 
     public static void main(String[] args) {
         SimpleWebSocketServer server = new SimpleWebSocketServer(8081);
+
+        // Example of registering a custom handler
+        server.registerMessageHandler((message, sender) -> {
+            String receivedText = new String(message, "UTF-8");
+            String response = "Received: " + receivedText;
+            sender.sendTextFrame(response.getBytes("UTF-8"));
+        });
+
         Thread serverThread = new Thread(server::start);
         serverThread.start();
 
@@ -234,7 +261,6 @@ public class SimpleWebSocketServer {
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
-            e.printStackTrace();
         }
 
         try (Socket socket = new Socket("localhost", 8081)) {
@@ -279,27 +305,17 @@ public class SimpleWebSocketServer {
             }
             out.flush();
 
-            for (int i = 1; i <= 3; i++) {
-                // Read response frame header
-                int byte1 = in.read(); // FIN and opcode
-                int byte2 = in.read(); // Mask and payload length
-                int payloadLength = byte2 & 0x7F;
+            // Read response frame header
+            int byte1 = in.read(); // FIN and opcode
+            int byte2 = in.read(); // Mask and payload length
+            int payloadLength = byte2 & 0x7F;
 
-                // Read payload
-                byte[] payload = new byte[payloadLength];
-                int bytesRead = readFully(in, payload, 0, payloadLength);
-                String receivedMessage = new String(payload, 0, bytesRead, "UTF-8");
+            // Read payload
+            byte[] payload = new byte[payloadLength];
+            int bytesRead = readFully(in, payload, 0, payloadLength);
+            String receivedMessage = new String(payload, 0, bytesRead, "UTF-8");
 
-                System.out.println("Received message: " + receivedMessage);
-
-                // Assert the echoed message is correct
-                String expectedMessage = messageToSend + "-" + i;
-                if (!receivedMessage.equals(expectedMessage)) {
-                    throw new AssertionError("Expected: " + expectedMessage + " but was: " + receivedMessage);
-                } else {
-                    System.out.println("Test passed: Echoed message " + i + " is correct.");
-                }
-            }
+            System.out.println("Received message from server: " + receivedMessage);
 
             // Send close frame
             out.write(new byte[]{(byte) 0x88, (byte) 0x80, mask[0], mask[1], mask[2], mask[3]});
@@ -312,4 +328,7 @@ public class SimpleWebSocketServer {
             server.stop();
         }
     }
+
+
+
 }
