@@ -902,7 +902,9 @@ public class TinyWeb {
         @Override
         public void handle(Request request, Response response, Map<String, String> pathParams) {
             // Anemic implementation: simply respond with a placeholder message
-            response.write("WebSocketJs endpoint reached");
+            response.setHeader("Content-Type", "javascript");
+            response.sendResponse("multiline js example", 200);
+
         }
     }
 

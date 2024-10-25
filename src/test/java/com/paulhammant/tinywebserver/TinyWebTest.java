@@ -9,8 +9,15 @@ import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.reporters.DefaultReporter;
 
 import org.jetbrains.annotations.NotNull;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 
 import static okhttp3.Request.*;
@@ -499,11 +506,43 @@ public class TinyWebTest {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", (req, res, params) -> {
                             res.setHeader("Content-Type", "text/javascript");
-                            res.sendResponse("javascript websocket client here - the java code faithfully ported to JavaScript with len-of-path and path and payload", 200);
+                            res.sendResponse("""
+                                const socket = new WebSocket('ws://localhost:8081/baz');
+                                socket.onmessage = function(event) {
+                                    const messageDisplay = document.getElementById('messageDisplay');
+                                    messageDisplay.innerText += event.data + '\\n';
+                                };
+                                socket.onopen = function() {
+                                    const path = '/baz';
+                                    const message = 'Hello WebSocket';
+                                    const payload = new Uint8Array(1 + path.length + message.length);
+                                    payload[0] = path.length;
+                                    for (let i = 0; i < path.length; i++) {
+                                        payload[1 + i] = path.charCodeAt(i);
+                                    }
+                                    for (let i = 0; i < message.length; i++) {
+                                        payload[1 + path.length + i] = message.charCodeAt(i);
+                                    }
+                                    socket.send(payload);
+                                };
+                            """, 200);
                         });
-                        endPoint(TinyWeb.Method.GET, "/index", (req, res, params) -> {
+                        endPoint(TinyWeb.Method.GET, "/", (req, res, params) -> {
                             res.setHeader("Content-Type", "text/html");
-                            res.sendResponse("small js app that'll show the results of /baz changing in the page", 200);
+                            res.sendResponse("""
+                                <!DOCTYPE html>
+                                <html lang="en">
+                                <head>
+                                    <meta charset="UTF-8">
+                                    <title>WebSocket Test</title>
+                                    <script src="/javascriptWebSocketClient.js"></script>
+                                </head>
+                                <body>
+                                    <h1>WebSocket Message Display</h1>
+                                    <pre id="messageDisplay"></pre>
+                                </body>
+                                </html>
+                            """, 200);
                         });
 
                         webSocket("/baz", (message, sender) -> {
