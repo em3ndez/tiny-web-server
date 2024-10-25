@@ -521,25 +521,33 @@ public class TinyWebTest {
                                     <pre id="messageDisplay"></pre>
                                 </body>
                                 <script>
-                                try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
-                                                                client.performHandshake();
-                                                                client.sendMessage("/foo/baz", "Hello WebSocket");
-                                    
-                                                                StringBuilder sb = new StringBuilder();
-                                    
-                                                                // Read all three response frames
-                                                                for (int i = 0; i < 3; i++) {
-                                                                    String response = client.receiveMessage();
-                                                                    if (response != null) {
-                                                                        sb.append(response);
-                                                                    }
-                                                                }
-                                                                assertThat(sb.toString(), equalTo(
-                                                                        "Server sent: Hello WebSocket-1" +
-                                                                                "Server sent: Hello WebSocket-2" +
-                                                                                "Server sent: Hello WebSocket-3"));
-                                    
-                                                            }
+                                const client = new TinyWeb.SocketClient('localhost', 8081);
+
+                                async function example() {
+                                    try {
+                                        await client.waitForOpen();
+                                        await client.performHandshake();
+                                        await client.sendMessage('/foo/baz', 'Hello WebSocket');
+                                        
+                                        let sb = '';
+                                        for (let i = 0; i < 3; i++) {
+                                            const response = await client.receiveMessage();
+                                            if (response) {
+                                                sb += response;
+                                            }
+                                        }
+                                        if (sb === "Server sent: Hello WebSocket-1" +
+                                                  "Server sent: Hello WebSocket-2" +
+                                                  "Server sent: Hello WebSocket-3") {
+                                            document.getElementById('messageDisplay').textContent = sb;
+                                        }
+                                        await client.close();
+                                    } catch (error) {
+                                        console.error('WebSocket error:', error);
+                                    }
+                                }
+
+                                example();
                                 </script>
                                 </html>
                             """, 200);
