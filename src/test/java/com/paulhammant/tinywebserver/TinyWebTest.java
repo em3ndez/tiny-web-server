@@ -536,11 +536,7 @@ public class TinyWebTest {
                                                 sb += response;
                                             }
                                         }
-                                        if (sb === "Server sent: Hello WebSocket-1" +
-                                                  "Server sent: Hello WebSocket-2" +
-                                                  "Server sent: Hello WebSocket-3") {
-                                            document.getElementById('messageDisplay').textContent = sb;
-                                        }
+                                        document.getElementById('messageDisplay').textContent = sb;
                                         await client.close();
                                     } catch (error) {
                                         console.error('WebSocket error:', error);
