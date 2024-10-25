@@ -55,7 +55,8 @@ TinyWeb$ExampleApp$1.class TinyWeb$ExampleApp.class
 The last two are the built-in example app, and if we made a jar, we wouldn't bother to include those two.
 
 ```bash
-jar cf TinyWeb.jar -C target/classes/ . --exclude=TinyWeb\$ExampleApp.class --exclude=TinyWeb\$ExampleApp\$1.class
+find target/classes -name 'TinyWeb$ExampleApp*.class' -delete
+jar cf TinyWeb.jar -C target/classes/ .
 ```
 
 To compile `TinyWebTest.java` into the `target/test-classes/` directory you WILL need dependencies: (in `test_libs/`). 
