@@ -439,6 +439,7 @@ public class TinyWebTest {
                             endPoint(TinyWeb.Method.GET, "/bar", (req, res, params) -> {
                                 res.write("OK");
                             });
+
                             webSocket("/baz", (message, sender) -> {
                                 for (int i = 1; i <= 3; i++) {
                                     String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
@@ -484,6 +485,44 @@ public class TinyWebTest {
                                         "Server sent: Hello WebSocket-3"));
 
                     }
+
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+            describe("and using Selenium to subscribe in a browser", () -> {
+
+                before(() -> {
+                    svr = new TinyWeb.Server(8080, 8081) {{
+                        endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", (req, res, params) -> {
+                            res.setHeader("Content-Type", "text/javascript");
+                            res.sendResponse("javascript websocket client here - the java code faithfully ported to JavaScript with len-of-path and path and payload", 200);
+                        });
+                        endPoint(TinyWeb.Method.GET, "/index", (req, res, params) -> {
+                            res.setHeader("Content-Type", "text/html");
+                            res.sendResponse("small js app that'll show the results of /baz changing in the page", 200);
+                        });
+
+                        webSocket("/baz", (message, sender) -> {
+                            for (int i = 1; i <= 3; i++) {
+                                String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                                sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
+                                }
+                            }
+                        });
+                    }}.start();
+                });
+
+                it("echoes three messages plus -1 -2 -3 back to the client", () -> {
+                    //TODO WebDriver driver = new ChromeDriver();
+                    //TODO driver.get("https://localhost:8080");
+                    //TODO WebElement .... wait for -1 -2 -3 to be in page
 
                 });
 
