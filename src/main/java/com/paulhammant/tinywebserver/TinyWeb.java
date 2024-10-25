@@ -903,7 +903,20 @@ public class TinyWeb {
         public void handle(Request request, Response response, Map<String, String> pathParams) {
             // Anemic implementation: simply respond with a placeholder message
             response.setHeader("Content-Type", "javascript");
-            response.sendResponse("multiline js example", 200);
+            response.sendResponse("""
+                // Example JavaScript code
+                function greet(name) {
+                    console.log('Hello, ' + name + '!');
+                }
+
+                function add(a, b) {
+                    return a + b;
+                }
+
+                // Call the functions
+                greet('World');
+                console.log('Sum: ' + add(5, 3));
+                """, 200);
 
         }
     }
