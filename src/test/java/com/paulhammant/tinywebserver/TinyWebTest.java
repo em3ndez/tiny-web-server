@@ -529,14 +529,12 @@ public class TinyWebTest {
                                         await client.performHandshake();
                                         await client.sendMessage('/foo/baz', 'Hello WebSocket');
                                         
-                                        let sb = '';
                                         for (let i = 0; i < 3; i++) {
                                             const response = await client.receiveMessage();
                                             if (response) {
-                                                sb += response;
+                                                document.getElementById('messageDisplay').textContent += response;
                                             }
                                         }
-                                        document.getElementById('messageDisplay').textContent = sb;
                                         await client.close();
                                     } catch (error) {
                                         console.error('WebSocket error:', error);
