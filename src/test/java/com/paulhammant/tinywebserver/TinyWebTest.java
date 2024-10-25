@@ -520,6 +520,27 @@ public class TinyWebTest {
                                     <h1>WebSocket Message Display</h1>
                                     <pre id="messageDisplay"></pre>
                                 </body>
+                                <script>
+                                try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
+                                                                client.performHandshake();
+                                                                client.sendMessage("/foo/baz", "Hello WebSocket");
+                                    
+                                                                StringBuilder sb = new StringBuilder();
+                                    
+                                                                // Read all three response frames
+                                                                for (int i = 0; i < 3; i++) {
+                                                                    String response = client.receiveMessage();
+                                                                    if (response != null) {
+                                                                        sb.append(response);
+                                                                    }
+                                                                }
+                                                                assertThat(sb.toString(), equalTo(
+                                                                        "Server sent: Hello WebSocket-1" +
+                                                                                "Server sent: Hello WebSocket-2" +
+                                                                                "Server sent: Hello WebSocket-3"));
+                                    
+                                                            }
+                                </script>
                                 </html>
                             """, 200);
                         });
