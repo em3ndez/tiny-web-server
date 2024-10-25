@@ -354,14 +354,14 @@ public class TinyWebTest {
             describe("and testing static file serving", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
-                        serveStaticFiles("/static", "src/test/resources/static");
+                        serveStaticFiles("/static", ".");
                     }}.start();
                 });
 
                 it("serves a static file correctly", () -> {
-                    try (Response response = httpGet("http://localhost:8080/static/test.txt")) {
+                    try (Response response = httpGet("http://localhost:8080/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
-                        assertThat(response.body().string(), containsString("This is a test file."));
+                        assertThat(response.body().string(), containsString("Cuppa-Framework"));
                     }
                 });
 
@@ -373,7 +373,7 @@ public class TinyWebTest {
                 });
 
                 it("prevents directory traversal attacks", () -> {
-                    try (Response response = httpGet("http://localhost:8080/static/../../java/com/paulhammant/tinywebserver/TinyWebTest.java")) {
+                    try (Response response = httpGet("http://localhost:8080/static/../../anythingt.java")) {
                         assertThat(response.code(), equalTo(404));
                         assertThat(response.body().string(), containsString("Not found"));
                     }
