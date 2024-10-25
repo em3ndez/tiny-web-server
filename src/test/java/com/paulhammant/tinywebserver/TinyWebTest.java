@@ -20,7 +20,7 @@ import static org.hamcrest.Matchers.*;
 
 @Test
 public class TinyWebTest {
-    TinyWeb.ExampleApp mockApp = Mockito.mock(TinyWeb.ExampleApp.class);
+    TinyWeb.ExampleApp mockApp;
     TinyWeb.Server svr;
     TinyWeb.SocketServer webSocketServer;
 
@@ -157,6 +157,7 @@ public class TinyWebTest {
         describe("ExampleApp.exampleComposition() app tested with Mockito", () -> {
             describe("Greeting GET endpoint", () -> {
                 before(() -> {
+                    mockApp = Mockito.mock(TinyWeb.ExampleApp.class);
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], mockApp);
                     //waitForPortToBeClosed("localhost",8080, 8081);
                     svr.start();
