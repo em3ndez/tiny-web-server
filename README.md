@@ -217,4 +217,24 @@ Note this is a trick - the nesting belies the fact that they are of different so
 
 ## Don't do this
 
-TODO code outside lambda blocks
+When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such as `path()`, `endPoint()`, or `filter()`) is executed only once during the server's instantiation. This means that such code is not executed per request or per path hit, but rather when the server is being set up. 
+
+For example, if you have initialization logic or state that should be set up for each request or when a specific path is accessed, ensure that this logic is placed inside the appropriate lambda block. This ensures that the logic is executed in the correct context and scope, such as when a path is hit or a request is processed.
+
+Here's an example of what not to do:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+    // This code runs only once during server instantiation
+    System.out.println("Server is starting...");
+
+    path("/api", () -> {
+        // This code runs per request to /api
+        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+            res.write("Hello, World!");
+        });
+    });
+}};
+```
+
+In this example, the `System.out.println("Server is starting...");` line is executed only once when the server is created, not each time a request is made to `/api/hello`.
