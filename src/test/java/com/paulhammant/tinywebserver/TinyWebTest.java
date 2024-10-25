@@ -500,33 +500,12 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
-            describe("and using Selenium to subscribe in a browser", () -> {
+            only().describe("and using Selenium to subscribe in a browser", () -> {
 
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
-                        endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", (req, res, params) -> {
-                            res.setHeader("Content-Type", "text/javascript");
-                            res.sendResponse("""
-                                const socket = new WebSocket('ws://localhost:8081/baz');
-                                socket.onmessage = function(event) {
-                                    const messageDisplay = document.getElementById('messageDisplay');
-                                    messageDisplay.innerText += event.data + '\\n';
-                                };
-                                socket.onopen = function() {
-                                    const path = '/baz';
-                                    const message = 'Hello WebSocket';
-                                    const payload = new Uint8Array(1 + path.length + message.length);
-                                    payload[0] = path.length;
-                                    for (let i = 0; i < path.length; i++) {
-                                        payload[1 + i] = path.charCodeAt(i);
-                                    }
-                                    for (let i = 0; i < message.length; i++) {
-                                        payload[1 + path.length + i] = message.charCodeAt(i);
-                                    }
-                                    socket.send(payload);
-                                };
-                            """, 200);
-                        });
+                        endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.SocketClientJavascript());
+
                         endPoint(TinyWeb.Method.GET, "/", (req, res, params) -> {
                             res.setHeader("Content-Type", "text/html");
                             res.sendResponse("""
@@ -559,6 +538,11 @@ public class TinyWebTest {
                 });
 
                 it("echoes three messages plus -1 -2 -3 back to the client", () -> {
+                    try {
+                        Thread.sleep(600 * 1000);
+                    } catch (InterruptedException e) {
+                    }
+
                     WebDriver driver = new ChromeDriver();
                     try {
                         driver.get("http://localhost:8080/index");

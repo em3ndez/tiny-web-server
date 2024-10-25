@@ -898,26 +898,158 @@ public class TinyWeb {
         }
     }
 
-    public static class WebSocketJs implements EndPoint {
+    public static class SocketClientJavascript implements EndPoint {
         @Override
         public void handle(Request request, Response response, Map<String, String> pathParams) {
-            // Anemic implementation: simply respond with a placeholder message
             response.setHeader("Content-Type", "javascript");
             response.sendResponse("""
-                // Example JavaScript code
-                function greet(name) {
-                    console.log('Hello, ' + name + '!');
-                }
-
-                function add(a, b) {
-                    return a + b;
-                }
-
-                // Call the functions
-                greet('World');
-                console.log('Sum: ' + add(5, 3));
+                    // TinyWeb Socket Client Implementation
+                    const TinyWeb = {
+                        SocketClient: class SocketClient {
+                            #socket;
+                            #secureRandom;
+                           \s
+                            constructor(host, port) {
+                                this.#secureRandom = new Uint8Array(4);
+                                this.#socket = new WebSocket(`ws://${host}:${port}`);
+                               \s
+                                // Set timeout
+                                this.#socket.addEventListener('open', () => {
+                                    this.#socket.pingTimeout = setTimeout(() => {
+                                        this.#socket.close();
+                                    }, 5000);
+                                });
+                            }
+                    
+                            async performHandshake() {
+                                return new Promise((resolve, reject) => {
+                                    const key = 'dGhlIHNhbXBsZSBub25jZQ=='; // In practice, generate this randomly
+                                   \s
+                                    this.#socket.addEventListener('open', () => {
+                                        // WebSocket in JavaScript handles the handshake automatically
+                                        resolve();
+                                    });
+                    
+                                    this.#socket.addEventListener('error', (error) => {
+                                        reject(error);
+                                    });
+                                });
+                            }
+                    
+                            async sendMessage(path, message) {
+                                return new Promise((resolve, reject) => {
+                                    if (this.#socket.readyState !== WebSocket.OPEN) {
+                                        reject(new Error('WebSocket is not open'));
+                                        return;
+                                    }
+                    
+                                    try {
+                                        // Create the payload with path length byte + path + message
+                                        const pathBytes = new TextEncoder().encode(path);
+                                        const messageBytes = new TextEncoder().encode(message);
+                                        const payload = new Uint8Array(1 + pathBytes.length + messageBytes.length);
+                    
+                                        // Set path length
+                                        payload[0] = pathBytes.length;
+                    
+                                        // Copy path and message into payload
+                                        payload.set(pathBytes, 1);
+                                        payload.set(messageBytes, 1 + pathBytes.length);
+                    
+                                        // Generate mask
+                                        crypto.getRandomValues(this.#secureRandom);
+                    
+                                        // Mask the payload
+                                        for (let i = 0; i < payload.length; i++) {
+                                            payload[i] ^= this.#secureRandom[i & 0x3];
+                                        }
+                    
+                                        // Send the masked payload
+                                        this.#socket.send(payload);
+                                        resolve();
+                                    } catch (error) {
+                                        reject(error);
+                                    }
+                                });
+                            }
+                    
+                            async receiveMessage() {
+                                return new Promise((resolve, reject) => {
+                                    this.#socket.addEventListener('message', (event) => {
+                                        if (event.data instanceof Blob) {
+                                            event.data.arrayBuffer().then(buffer => {
+                                                const payload = new Uint8Array(buffer);
+                                                const text = new TextDecoder().decode(payload);
+                                                resolve(text);
+                                            });
+                                        } else {
+                                            resolve(event.data);
+                                        }
+                                    });
+                    
+                                    this.#socket.addEventListener('error', (error) => {
+                                        reject(error);
+                                    });
+                                });
+                            }
+                    
+                            async sendClose() {
+                                return new Promise((resolve) => {
+                                    if (this.#socket.readyState === WebSocket.OPEN) {
+                                        this.#socket.close(1000); // Normal closure
+                                    }
+                                    resolve();
+                                });
+                            }
+                    
+                            async close() {
+                                await this.sendClose();
+                                clearTimeout(this.#socket.pingTimeout);
+                            }
+                    
+                            // Helper method to ensure the socket is ready
+                            async waitForOpen() {
+                                if (this.#socket.readyState === WebSocket.OPEN) {
+                                    return Promise.resolve();
+                                }
+                    
+                                return new Promise((resolve, reject) => {
+                                    this.#socket.addEventListener('open', () => resolve());
+                                    this.#socket.addEventListener('error', (error) => reject(error));
+                                });
+                            }
+                        }
+                    };
+                    
+                    // Example usage:
+                    /*
+                    const client = new TinyWeb.SocketClient('localhost', 8081);
+                    
+                    async function example() {
+                        try {
+                            await client.waitForOpen();
+                            await client.performHandshake();
+                           \s
+                            await client.sendMessage('/path', 'Hello, WebSocket!');
+                            const response = await client.receiveMessage();
+                            console.log('Received:', response);
+                           \s
+                            await client.close();
+                        } catch (error) {
+                            console.error('WebSocket error:', error);
+                        }
+                    }
+                    */
+                    
+                    // For compatibility with different module systems
+                    if (typeof module !== 'undefined' && module.exports) {
+                        module.exports = TinyWeb;
+                    } else if (typeof define === 'function' && define.amd) {
+                        define([], function() { return TinyWeb; });
+                    } else {
+                        window.TinyWeb = TinyWeb;
+                    }
                 """, 200);
-
         }
     }
 
