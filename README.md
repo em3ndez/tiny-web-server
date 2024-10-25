@@ -183,8 +183,6 @@ I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll r
 
 ## Paths, filters and endpoints
 
-## Paths, filters and endpoints
-
 Here's a simple example of defining paths, filters, and endpoints using TinyWeb:
 
 ```java
