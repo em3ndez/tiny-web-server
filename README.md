@@ -183,7 +183,37 @@ I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll r
 
 ## Paths, filters and endpoints
 
-## Websockets
+## Paths, filters and endpoints
+
+Here's a simple example of defining paths, filters, and endpoints using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+    path("/api", () -> {
+        // Apply a filter to all GET requests under /api
+        filter(TinyWeb.Method.GET, "/.*", (req, res, params) -> {
+            if (!req.getHeaders().containsKey("Authorization")) {
+                res.write("Unauthorized", 401);
+                return false; // Stop processing if unauthorized
+            }
+            return true; // Continue processing
+        });
+
+        // Define a GET endpoint
+        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+            res.write("Hello, World!");
+        });
+
+        // Define a POST endpoint
+        endPoint(TinyWeb.Method.POST, "/data", (req, res, params) -> {
+            String data = req.getBody();
+            res.write("Received data: " + data, 201);
+        });
+    });
+}}.start();
+```
+
+In this example, a filter is applied to all GET requests under the `/api` path to check for an "Authorization" header. If the header is missing, the request is denied with a 401 status code. Two endpoints are defined: a GET endpoint at `/api/hello` that responds with "Hello, World!" and a POST endpoint at `/api/data` that echoes back the received data.
 
 Note this is a trick - the nesting belies the fact that they are of different sockets.
 
