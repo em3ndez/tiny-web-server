@@ -127,7 +127,7 @@ public class TinyWebTest {
                     try (Response response = httpGet("http://localhost:8080/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().contentType().toString(), equalTo("text/markdown"));
-                        assertThat(response.body().string(), containsString("hello"));
+                        assertThat(response.body().string(), containsString("GPT estimates the path coverage for the TinyWeb class to be around 85-90%"));
                     }
                 });
                 it("returns 404 for non-existent files", () -> {
@@ -138,7 +138,7 @@ public class TinyWebTest {
                 });
                 it("returns 200 and serves a file from a subdirectory", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                    try (Response response = httpGet("http://localhost:8080/static/src/main/java/com/paulhammant/tinywebserver/TinyWeb.java")) {
+                    try (Response response = httpGet("http://localhost:8080/static/TinyWeb.java")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().contentType().toString(), equalTo("text/x-java"));
                         assertThat(response.body().string(), containsString("class"));

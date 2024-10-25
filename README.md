@@ -1,6 +1,9 @@
 # TinyWeb.Server and TinyWeb.SocketServer
 
-The `TinyWeb` class provides a lightweight and flexible server implementation that supports both HTTP and WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.
+The `TinyWeb` class provides a lightweight and flexible server implementation that supports both HTTP and WebSocket 
+protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  It uses
+a key Java 8 syntax (Functional-Interface and lambdas) as many newer web frameworks do. It also uses the virtual thread
+system in Java 21 and the JDK's built-in HTTP APIs rather than Netty or Jetty.
 
 ## Server
 
@@ -9,6 +12,7 @@ The `TinyWeb.Server` class allows you to create an HTTP server with minimal conf
 - **Path-based Routing**: Define endpoints with path parameters and handle requests dynamically.
 - **Static File Serving**: Serve static files from a specified directory with automatic content type detection.
 - **Filters**: Apply filters to requests for pre-processing or access control.
+- Fairly open
 
 ## WebSocket
 
@@ -18,12 +22,16 @@ The `TinyWeb.SocketServer` class provides WebSocket support, enabling real-time,
 - **Secure Communication**: Supports WebSocket handshake and message framing for secure data exchange.
 - **Integration with HTTP Server**: Seamlessly integrate WebSocket functionality with the HTTP server for a unified application architecture.
 
-This technology is ideal for building lightweight web applications and services that require both HTTP and WebSocket capabilities in a single, easy-to-manage source file.
+These two together are ideal for building lightweight web applications and services that require both HTTP and WebSocket 
+capabilities. TinyWeb.SocketServer can be run separately.
 
 ## Rationale
 
-1. The primary rationale for developing this technology was to leverage nested `path()` functions to group endpoints together. This approach allows for a clean and intuitive way to define complex routing structures within the server. By nesting `path()` functions, developers can easily manage and organize routes, making the codebase more maintainable and scalable.
-2. The secondary rationale was to get it all in one script and have not dependencies
+I wanted to make something that:
+
+1. Had nested `path( .. )` lambda functions to group endpoints together. This approach allows for a clean and intuitive way to define complex routing structures within the server. By nesting `path()` functions, developers can easily manage and organize routes, making the codebase more maintainable and scalable.
+2. Could maybe be in one source file and have no dependencies at all
+3. Does not log, and has not picked a logging framework, but laves that open as an implementation detail. I wrote much of https://cwiki.apache.org/confluence/display/avalon/AvalonNoLogging back in 2003 or so.
 
 # Build and Test
 
@@ -52,12 +60,14 @@ TinyWeb$Method.class  TinyWeb$Server$1.class  TinyWeb$SocketClientJavascript.cla
 TinyWeb$ExampleApp$1.class TinyWeb$ExampleApp.class
 ```
 
-The last two are the built-in example app, and if we made a jar, we wouldn't bother to include those two.
+The last two are the built-in example app, and if we made a jar, we wouldn't bother to include those include them.
 
 ```bash
 find target/classes -name 'TinyWeb$ExampleApp*.class' -delete
 jar cf TinyWeb.jar -C target/classes/ .
 ```
+
+## Tests
 
 To compile `TinyWebTest.java` into the `target/test-classes/` directory you WILL need dependencies: (in `test_libs/`). 
 Use the following to go get them:
@@ -118,7 +128,7 @@ java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:targe
 
 ## TinyWeb.Server's Test Results
 
-As mentioned, Cuppa-Framework is the tech used for testing and it spits out spec-style success/failure like so:
+As mentioned, Cuppa-Framework is the tech used for testing, and it spits out spec-style success/failure like so:
 
 ``` 
 When using the ExampleApp server via sockets
@@ -167,5 +177,16 @@ When using the ExampleApp server via sockets
 
 ChatGPT estimates the path coverage for the TinyWeb class to be around 85-90%
 
-I wish I could use Cuppa to generate example code in markdown, too.
+I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll raise that feature request.
 
+# Example code
+
+## Paths, filters and endpoints
+
+## Websockets
+
+Note this is a trick - the nesting belies the fact that they are of different sockets.
+
+## Don't do this
+
+TODO code outside lambda blocks
