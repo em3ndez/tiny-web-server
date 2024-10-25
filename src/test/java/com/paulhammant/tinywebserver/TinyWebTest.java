@@ -520,10 +520,19 @@ public class TinyWebTest {
                 });
 
                 it("echoes three messages plus -1 -2 -3 back to the client", () -> {
-                    //TODO WebDriver driver = new ChromeDriver();
-                    //TODO driver.get("https://localhost:8080");
-                    //TODO WebElement .... wait for -1 -2 -3 to be in page
+                    WebDriver driver = new ChromeDriver();
+                    try {
+                        driver.get("http://localhost:8080/index");
+                        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+                        WebElement messageElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("messageDisplay")));
 
+                        String expectedMessages = "Server sent: Hello WebSocket-1" +
+                                                  "Server sent: Hello WebSocket-2" +
+                                                  "Server sent: Hello WebSocket-3";
+                        assertThat(messageElement.getText(), equalTo(expectedMessages));
+                    } finally {
+                        driver.quit();
+                    }
                 });
 
                 after(() -> {
