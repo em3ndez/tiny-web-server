@@ -898,6 +898,12 @@ public class TinyWeb {
         }
     }
 
-    // reusable Endpoint here called WebSocketJs
+    public static class WebSocketJs implements EndPoint {
+        @Override
+        public void handle(Request request, Response response, Map<String, String> pathParams) {
+            // Anemic implementation: simply respond with a placeholder message
+            response.write("WebSocketJs endpoint reached");
+        }
+    }
 
 }
