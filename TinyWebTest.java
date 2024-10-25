@@ -500,7 +500,7 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
-            only().describe("and using Selenium to subscribe in a browser", () -> {
+            describe("and using Selenium to subscribe in a browser", () -> {
 
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
@@ -521,21 +521,25 @@ public class TinyWebTest {
                                     <pre id="messageDisplay"></pre>
                                 </body>
                                 <script>
-                                const client = new TinyWeb.SocketClient('localhost', 8081);
-
+                                console.log("hello 1");
+                                
+                                const tinyWebSocketclient = new TinyWeb.SocketClient('localhost', 8081);
+                                
                                 async function example() {
                                     try {
-                                        await client.waitForOpen();
-                                        await client.performHandshake();
-                                        await client.sendMessage('/foo/baz', 'Hello WebSocket');
+                                        console.log("WebSocket readyState before open:", tinyWebSocketclient.socket.readyState);
+                                        await tinyWebSocketclient.waitForOpen();
+                                        console.log("WebSocket readyState after open:", tinyWebSocketclient.socket.readyState);
+                                        await tinyWebSocketclient.sendMessage('/baz', 'Hello WebSocket');
                                         
                                         for (let i = 0; i < 3; i++) {
-                                            const response = await client.receiveMessage();
+                                            const response = await tinyWebSocketclient.receiveMessage();
+                                            console.log("Received message:", response);
                                             if (response) {
-                                                document.getElementById('messageDisplay').textContent += response;
+                                                document.getElementById('messageDisplay').textContent += (response + "\\n");
                                             }
                                         }
-                                        await client.close();
+                                        await tinyWebSocketclient.close();
                                     } catch (error) {
                                         console.error('WebSocket error:', error);
                                     }
@@ -561,20 +565,21 @@ public class TinyWebTest {
                 });
 
                 it("echoes three messages plus -1 -2 -3 back to the client", () -> {
-                    try {
-                        Thread.sleep(600 * 1000);
-                    } catch (InterruptedException e) {
-                    }
+
+//                try {
+//                    Thread.sleep(600 * 1000);
+//                } catch (InterruptedException e) {
+//                }
 
                     WebDriver driver = new ChromeDriver();
                     try {
-                        driver.get("http://localhost:8080/index");
+                        driver.get("http://localhost:8080/");
                         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
                         WebElement messageElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("messageDisplay")));
 
-                        String expectedMessages = "Server sent: Hello WebSocket-1" +
-                                                  "Server sent: Hello WebSocket-2" +
-                                                  "Server sent: Hello WebSocket-3";
+                        String expectedMessages = "Server sent: Hello WebSocket-1\n" +
+                                "Server sent: Hello WebSocket-2\n" +
+                                "Server sent: Hello WebSocket-3";
                         assertThat(messageElement.getText(), equalTo(expectedMessages));
                     } finally {
                         driver.quit();

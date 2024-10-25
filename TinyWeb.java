@@ -208,12 +208,8 @@ public class TinyWeb {
                                 return value;
                             }
                         }
-                        return new SocketMessageHandler() {
-                            @Override
-                            public void handleMessage(byte[] message, TinyWeb.MessageSender sender) throws IOException {
-                                sender.sendTextFrame("no matching path on the server side".getBytes("UTF-8"));
-                            }
-                        };
+                        System.out.println("No websocket handler for " + path);
+                        return (message, sender) -> sender.sendTextFrame("no matching path on the server side".getBytes("UTF-8"));
                     }
                 };
             } else {
@@ -464,8 +460,6 @@ public class TinyWeb {
             }
         }
     }
-
-
 
     /*
      * An inline example of composing (Tiny) WebServer.
@@ -903,152 +897,126 @@ public class TinyWeb {
         public void handle(Request request, Response response, Map<String, String> pathParams) {
             response.setHeader("Content-Type", "javascript");
             response.sendResponse("""
-                    // TinyWeb Socket Client Implementation
                     const TinyWeb = {
-                        SocketClient: class SocketClient {
-                            #socket;
-                            #secureRandom;
-                           \s
-                            constructor(host, port) {
-                                this.#secureRandom = new Uint8Array(4);
-                                this.#socket = new WebSocket(`ws://${host}:${port}`);
-                               \s
-                                // Set timeout
-                                this.#socket.addEventListener('open', () => {
-                                    this.#socket.pingTimeout = setTimeout(() => {
-                                        this.#socket.close();
-                                    }, 5000);
-                                });
-                            }
+                            SocketClient: class SocketClient {
+                                socket;
                     
-                            async performHandshake() {
-                                return new Promise((resolve, reject) => {
-                                    const key = 'dGhlIHNhbXBsZSBub25jZQ=='; // In practice, generate this randomly
-                                   \s
-                                    this.#socket.addEventListener('open', () => {
-                                        // WebSocket in JavaScript handles the handshake automatically
-                                        resolve();
-                                    });
-                    
-                                    this.#socket.addEventListener('error', (error) => {
-                                        reject(error);
-                                    });
-                                });
-                            }
-                    
-                            async sendMessage(path, message) {
-                                return new Promise((resolve, reject) => {
-                                    if (this.#socket.readyState !== WebSocket.OPEN) {
-                                        reject(new Error('WebSocket is not open'));
-                                        return;
-                                    }
-                    
-                                    try {
-                                        // Create the payload with path length byte + path + message
-                                        const pathBytes = new TextEncoder().encode(path);
-                                        const messageBytes = new TextEncoder().encode(message);
-                                        const payload = new Uint8Array(1 + pathBytes.length + messageBytes.length);
-                    
-                                        // Set path length
-                                        payload[0] = pathBytes.length;
-                    
-                                        // Copy path and message into payload
-                                        payload.set(pathBytes, 1);
-                                        payload.set(messageBytes, 1 + pathBytes.length);
-                    
-                                        // Generate mask
-                                        crypto.getRandomValues(this.#secureRandom);
-                    
-                                        // Mask the payload
-                                        for (let i = 0; i < payload.length; i++) {
-                                            payload[i] ^= this.#secureRandom[i & 0x3];
-                                        }
-                    
-                                        // Send the masked payload
-                                        this.#socket.send(payload);
-                                        resolve();
-                                    } catch (error) {
-                                        reject(error);
-                                    }
-                                });
-                            }
-                    
-                            async receiveMessage() {
-                                return new Promise((resolve, reject) => {
-                                    this.#socket.addEventListener('message', (event) => {
-                                        if (event.data instanceof Blob) {
-                                            event.data.arrayBuffer().then(buffer => {
-                                                const payload = new Uint8Array(buffer);
-                                                const text = new TextDecoder().decode(payload);
-                                                resolve(text);
-                                            });
-                                        } else {
-                                            resolve(event.data);
-                                        }
-                                    });
-                    
-                                    this.#socket.addEventListener('error', (error) => {
-                                        reject(error);
-                                    });
-                                });
-                            }
-                    
-                            async sendClose() {
-                                return new Promise((resolve) => {
-                                    if (this.#socket.readyState === WebSocket.OPEN) {
-                                        this.#socket.close(1000); // Normal closure
-                                    }
-                                    resolve();
-                                });
-                            }
-                    
-                            async close() {
-                                await this.sendClose();
-                                clearTimeout(this.#socket.pingTimeout);
-                            }
-                    
-                            // Helper method to ensure the socket is ready
-                            async waitForOpen() {
-                                if (this.#socket.readyState === WebSocket.OPEN) {
-                                    return Promise.resolve();
+                                constructor(host, port) {
+                                    this.socket = new WebSocket(`ws://${host}:${port}`);
+                                    // Set the binary type to arraybuffer to receive binary data
+                                    this.socket.binaryType = 'arraybuffer';
                                 }
                     
-                                return new Promise((resolve, reject) => {
-                                    this.#socket.addEventListener('open', () => resolve());
-                                    this.#socket.addEventListener('error', (error) => reject(error));
-                                });
+                                async sendMessage(path, message) {
+                                    return new Promise((resolve, reject) => {
+                                        if (this.socket.readyState !== WebSocket.OPEN) {
+                                            reject(new Error('WebSocket is not open'));
+                                            return;
+                                        }
+                    
+                                        try {
+                                            const pathBytes = new TextEncoder().encode(path);
+                                            const messageBytes = new TextEncoder().encode(message);
+                    
+                                            // Total length: 1 byte for path length + path + message
+                                            const totalLength = 1 + pathBytes.length + messageBytes.length;
+                                            const payload = new Uint8Array(totalLength);
+                    
+                                            // Set the first byte to the length of the path
+                                            payload[0] = pathBytes.length;
+                    
+                                            // Copy the path bytes into the payload
+                                            payload.set(pathBytes, 1);
+                    
+                                            // Copy the message bytes into the payload
+                                            payload.set(messageBytes, 1 + pathBytes.length);
+                    
+                                            // Send the payload as binary data
+                                            this.socket.send(payload);
+                    
+                                            resolve();
+                                        } catch (error) {
+                                            reject(error);
+                                        }
+                                    });
+                                }
+                    
+                                async receiveMessage() {
+                                    return new Promise((resolve, reject) => {
+                                        const handleMessage = (event) => {
+                                            // Remove the listener to prevent multiple triggers
+                                            this.socket.removeEventListener('message', handleMessage);
+                    
+                                            try {
+                                                let data;
+                    
+                                                if (event.data instanceof ArrayBuffer) {
+                                                    data = new Uint8Array(event.data);
+                                                } else if (typeof event.data === 'string') {
+                                                    // If the server sends data as text, convert it to Uint8Array
+                                                    data = new TextEncoder().encode(event.data);
+                                                } else {
+                                                    reject(new Error('Unsupported data type received'));
+                                                    return;
+                                                }
+                                                           
+                                                const message = new TextDecoder('utf-8').decode(data);
+                    
+                                                resolve(message);
+                                            } catch (error) {
+                                                reject(error);
+                                            }
+                                        };
+                    
+                                        this.socket.addEventListener('message', handleMessage);
+                                        this.socket.addEventListener('error', (error) => {
+                                            reject(error);
+                                        });
+                                    });
+                                }
+                    
+                                async close() {
+                                    return new Promise((resolve) => {
+                                        if (this.socket.readyState === WebSocket.OPEN) {
+                                            this.socket.close(1000); // Normal closure
+                                        }
+                                        resolve();
+                                    });
+                                }
+                    
+                                async waitForOpen() {
+                                    if (this.socket.readyState === WebSocket.OPEN) {
+                                        return Promise.resolve();
+                                    }
+                    
+                                    return new Promise((resolve, reject) => {
+                                        this.socket.addEventListener('open', () => resolve());
+                                        this.socket.addEventListener('error', (error) => reject(error));
+                                    });
+                                }
                             }
-                        }
-                    };
+                        };
                     
-                    // Example usage:
-                    /*
-                    const client = new TinyWeb.SocketClient('localhost', 8081);
+                        // Example usage:
                     
-                    async function example() {
-                        try {
-                            await client.waitForOpen();
-                            await client.performHandshake();
-                           \s
-                            await client.sendMessage('/path', 'Hello, WebSocket!');
-                            const response = await client.receiveMessage();
-                            console.log('Received:', response);
-                           \s
-                            await client.close();
-                        } catch (error) {
-                            console.error('WebSocket error:', error);
-                        }
-                    }
-                    */
+            
                     
-                    // For compatibility with different module systems
-                    if (typeof module !== 'undefined' && module.exports) {
-                        module.exports = TinyWeb;
-                    } else if (typeof define === 'function' && define.amd) {
-                        define([], function() { return TinyWeb; });
-                    } else {
-                        window.TinyWeb = TinyWeb;
-                    }
+//                        async function example() {
+//                            try {
+//                                await client.waitForOpen();
+//                    
+//                                await client.sendMessage('/path', 'Hello, WebSocket!');
+//                                const response = await client.receiveMessage();
+//                                console.log('Received:', response);
+//                    
+//                                await client.close();
+//                            } catch (error) {
+//                                console.error('WebSocket error:', error);
+//                            }
+//                        }
+                    
+                        //example();
+                    
                 """, 200);
         }
     }
