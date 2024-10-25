@@ -897,4 +897,7 @@ public class TinyWeb {
             outputStream.flush();
         }
     }
+
+    // reusable Endpoint here called WebSocketJs
+
 }
