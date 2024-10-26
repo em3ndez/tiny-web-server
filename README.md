@@ -185,6 +185,18 @@ I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll r
 
 ### endPoint
 
+Here's a basic example of defining a GET endpoint using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+    endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+        res.write("Hello, World!");
+    });
+}}.start();
+```
+
+In this example, a GET endpoint is defined at the path `/hello`. When a request is made to this endpoint, the server responds with "Hello, World!". The server is set to listen on port 8080.
+
 ### filter and endPoint
 
 ### two endPoints within a path 
