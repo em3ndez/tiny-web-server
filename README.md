@@ -112,13 +112,60 @@ You could place your Unauthorized/401 security check inside "/api" path and have
 
 ### A filter and an EndPoint within a path
 
-Here's an example of defining two endpoints within a single path using TinyWeb:
+Here's an example of using a filter to perform authentication and passing attributes to an endpoint within a path using TinyWeb:
 
 ```java
-//TODO Copy in the authenticaion test ... incl setup, and autheication helper class and rot47 method
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+    path("/api", () -> {
+        filter(TinyWeb.Method.GET, ".*", (req, res, params) -> {
+            String allegedlyLoggedInCookie = req.getCookie("logged-in");
+            // This test class only performs rot47 on the cookie passed in.
+            // That's not secure in the slightest. See https://rot47.net/
+            Authentication auth = IsEncryptedByUs.decrypt(allegedlyLoggedInCookie);
+            if (!auth.authentic) {
+                res.write("Try logging in again", 403);
+                return false;
+            } else {
+                req.setAttribute("user", auth.user());
+            }
+            return true; // Continue processing
+        });
+        endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
+            res.write("User Is logged in: " + req.getAttribute("user"));
+        });
+    });
+}}.start();
+
+public static class IsEncryptedByUs {
+    public static Authentication decrypt(String allegedlyLoggedInCookie) {
+        String rot47ed = rot47(allegedlyLoggedInCookie);
+        // Check if it's an email address
+        if (rot47ed.matches("^[\\w.%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$")) {
+            return new Authentication(true, rot47ed);
+        } else {
+            return new Authentication(false, null);
+        }
+    }
+}
+
+public record Authentication(boolean authentic, String user) {}
+
+private static String rot47(String input) {
+    StringBuilder result = new StringBuilder();
+    for (char c : input.toCharArray()) {
+        if (c >= '!' && c <= 'O') {
+            result.append((char) (c + 47));
+        } else if (c >= 'P' && c <= '~') {
+            result.append((char) (c - 47));
+        } else {
+            result.append(c);
+        }
+    }
+    return result.toString();
+}
 ```
 
-// TODO describe what else you could do here, like an "is vulnerability checked"
+In this example, a filter is applied to all GET requests within the `/api` path to check for a "logged-in" cookie. The cookie is decrypted using a simple ROT47 algorithm to verify if the user is authenticated. If authenticated, the user's email is set as an attribute in the request, which is then accessed by the endpoint to respond with a message indicating the user is logged in.
 
 ### A webSocket and endPoint within a path
 
