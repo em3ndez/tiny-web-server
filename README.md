@@ -303,11 +303,14 @@ TODO: comment on performance
 
 ### In EndPoints Themselves
 
-When handling requests in `TinyWeb`, it's important to understand how to set HTTP response codes and customize responses. HTTP response codes are crucial for indicating the result of a request to the client. Here's how you can manage responses in `TinyWeb`:
+When handling requests in `TinyWeb`, it's important to understand how to set HTTP response codes and customize 
+responses. HTTP response codes are crucial for indicating the result of a request to the client. Here's how you can 
+manage responses in `TinyWeb`:
 
 #### Setting HTTP Response Codes
 
-In `TinyWeb`, you can set the HTTP response code by using the `write` method of the `Response` object. The `write` method allows you to specify both the response content and the status code. Here's an example:
+In `TinyWeb`, you can set the HTTP response code by using the `write` method of the `Response` object. The `write` 
+method allows you to specify both the response content and the status code. Here's an example:
 
 ```java
 endPoint(TinyWeb.Method.GET, "/example", (req, res, params) -> {
@@ -316,7 +319,7 @@ endPoint(TinyWeb.Method.GET, "/example", (req, res, params) -> {
 });
 ```
 
-In this example, the endpoint responds with a 200 OK status code, indicating that the request was successful.
+In that example, the endpoint responds with a 200 OK status code, indicating that the request was successful.
 
 #### Common HTTP Response Codes
 
@@ -346,9 +349,11 @@ endPoint(TinyWeb.Method.POST, "/submit", (req, res, params) -> {
 });
 ```
 
-In this example, the endpoint checks if the request body is empty. If it is, it responds with a 400 Bad Request status code. Otherwise, it processes the request and responds with a 201 Created status code.
+In this example, the endpoint checks if the request body is empty. If it is, it responds with a 400 Bad Request status 
+code. Otherwise, it processes the request and responds with a 201 Created status code.
 
-By understanding and using HTTP response codes effectively, you can provide clear and meaningful feedback to clients interacting with your `TinyWeb` server.
+By understanding and using HTTP response codes effectively, you can provide clear and meaningful feedback to clients 
+interacting with your `TinyWeb` server.
 
 ### TinyWeb's overridable exception methods
 
