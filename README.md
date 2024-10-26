@@ -292,12 +292,12 @@ robust SSL/TLS capabilities of these proxies, ensuring secure communication with
 TinyWeb currently supports WebSocket (WS) connections, which are not encrypted. For secure communication, it's 
 important to use Secure WebSocket (WSS) connections. Similar to HTTP, you can achieve this by using a reverse proxy 
 that supports SSL/TLS termination for WebSockets. The proxy can handle the encryption and decryption of WebSocket 
-traffic, forwarding it to TinyWeb over an unencrypted channel. This setup ensures that WebSocket communicaSecure Channelstions are 
+traffic, forwarding it to TinyWeb over an unencrypted channel. This setup ensures that WebSocket communications are 
 secure, protecting data from eavesdropping and tampering.
 
 ## Performance
 
-TODO: comment on performance
+TODO: comment on performance not being tested
 
 ## Error handling
 
@@ -357,15 +357,21 @@ interacting with your `TinyWeb` server.
 
 ### TinyWeb's Overridable Exception Methods
 
-In `TinyWeb`, exception handling is an important aspect of managing server and application errors. The framework provides two overridable methods to handle exceptions: `serverException(e)` and `appHandlingException(Exception e)`. These methods allow you to customize how exceptions are logged or processed.
+In `TinyWeb`, exception handling is an important aspect of managing server and application errors. The framework 
+provides two overridable methods to handle exceptions: `serverException(e)` and `appHandlingException(Exception e)`. 
+These methods allow you to customize how exceptions are logged or processed.
 
 #### serverException(e)
 
-The `serverException(e)` method is called when a `ServerException` occurs. This typically involves issues related to the server's internal operations, such as network errors or configuration problems. By default, this method logs the exception message and stack trace to the standard error stream. You can override this method to implement custom logging or error handling strategies.
+The `serverException(e)` method is called when a `ServerException` occurs. This typically involves issues related to 
+the server's internal operations, such as network errors or configuration problems. By default, this method logs the 
+exception message and stack trace to the standard error stream. You can override this method to implement custom 
+logging or error handling strategies.
 
 Example:
 
 ```java
+// As you instantiate TinyWeb.Server, you would add an override:
 @Override
 protected void serverException(ServerException e) {
     // Custom logging logic
@@ -376,11 +382,16 @@ protected void serverException(ServerException e) {
 
 #### appHandlingException(Exception e)
 
-The `appHandlingException(Exception e)` method is invoked when an exception occurs within an endpoint or filter. This is useful for handling application-specific errors, such as invalid input or business logic failures. By default, this method logs the exception message and stack trace to the standard error stream. You can override it to provide custom error handling, such as sending alerts or writing to a log file.
+The `appHandlingException(Exception e)` method is invoked when an exception occurs within an endpoint or filter. 
+This is useful for handling application-specific errors, such as invalid input or business logic failures. That would
+nearly always be an endpoint of filter throwing `java.lang.RuntimeException` or `java.lang.Error`. They are not supposed
+to, but they may do so. By default, this method logs the exception message and stack trace to the standard error 
+stream. You can override it to provide custom error handling, such as sending alerts or writing to a log file.
 
 Example:
 
 ```java
+// As you instantiate TinyWeb.Server, you would add an override:
 @Override
 protected void appHandlingException(Exception e) {
     // Custom application error handling
@@ -389,7 +400,12 @@ protected void appHandlingException(Exception e) {
 }
 ```
 
-By overriding these methods, you can tailor the exception handling behavior of your `TinyWeb` server to meet your application's specific needs, ensuring that errors are managed effectively and transparently.
+By overriding these methods, you can tailor the exception handling behavior of your `TinyWeb` server to meet your 
+application's specific needs, ensuring that errors are managed effectively and transparently.
+
+### Input validation
+
+TODO: user is going to have to code that themselves - including XSS & CSRF things. 
 
 ## Don't do this
 
@@ -412,6 +428,12 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 ```
 
 ## Testing your web app
+
+TODO. We suggest the Cuppa-Framework style, as it idiomatically close to the composition style of TinyWeb itself.
+
+TODO: Junit and TestNg, JBehave would be fine too
+
+TODO: Mockito - mockable function interfaces (one example in TintWebTest)
 
 # Build and Test of TinyWeb itself
 
@@ -508,7 +530,9 @@ java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:targe
 
 ## TinyWeb's own test results
 
-As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so:
+As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so, 
+from `TinyWebTest.java`, and part of the tested code is from `TinyWeb.ExampleApp` including the 
+`TinyWeb.ExampleApp.exampleComposition(..)` launch of a whole app to test.
 
 ``` 
 When using the ExampleApp server via sockets
@@ -558,5 +582,3 @@ When using the ExampleApp server via sockets
 ChatGPT estimates the path coverage for the TinyWeb class to be around 85-90%
 
 I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll raise that feature request.
-
-
