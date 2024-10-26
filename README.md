@@ -281,11 +281,33 @@ those updates is too large or complex to send over a WebSocket connection.
 
 ### Securing HTTP Channels
 
-Currently, TinyWeb supports HTTP, which is suitable for development and testing environments. However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination. These proxies can be configured to forward requests to TinyWeb over HTTP, while serving clients over HTTPS. This approach leverages the robust SSL/TLS capabilities of these proxies, ensuring secure communication without modifying the TinyWeb server code.
+Currently, TinyWeb supports HTTP, which is suitable for development and testing environments. 
+However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by 
+fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination. These proxies can be 
+configured to forward requests to TinyWeb over HTTP, while serving clients over HTTPS. This approach leverages the 
+robust SSL/TLS capabilities of these proxies, ensuring secure communication without modifying the TinyWeb server code.
 
 ### Securing WebSocket Channels
 
-TinyWeb currently supports WebSocket (WS) connections, which are not encrypted. For secure communication, it's important to use Secure WebSocket (WSS) connections. Similar to HTTP, you can achieve this by using a reverse proxy that supports SSL/TLS termination for WebSockets. The proxy can handle the encryption and decryption of WebSocket traffic, forwarding it to TinyWeb over an unencrypted channel. This setup ensures that WebSocket communications are secure, protecting data from eavesdropping and tampering.
+TinyWeb currently supports WebSocket (WS) connections, which are not encrypted. For secure communication, it's 
+important to use Secure WebSocket (WSS) connections. Similar to HTTP, you can achieve this by using a reverse proxy 
+that supports SSL/TLS termination for WebSockets. The proxy can handle the encryption and decryption of WebSocket 
+traffic, forwarding it to TinyWeb over an unencrypted channel. This setup ensures that WebSocket communicaSecure Channelstions are 
+secure, protecting data from eavesdropping and tampering.
+
+## Performance
+
+TODO: comment on performance
+
+## Error handling
+
+### In endPoints themselves
+
+TODO what a user would do to set something in response, and needing to understand/program HTTP response codes
+
+### TinyWeb's overridable exception methods
+
+TODO: serverException(e) and appHandlingException(Exception e)
 
 ## Don't do this
 
