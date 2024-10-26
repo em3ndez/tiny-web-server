@@ -446,11 +446,102 @@ By implementing robust input validation, you can enhance the security of your `T
 
 ### Dependency Injection
 
-TODO - Dagger2 example?
+Dependency Injection (DI) is a design pattern that allows for the decoupling of object creation from their usage, making code more modular and testable. Dagger2 is a popular DI framework for Java that can be used with `TinyWeb` to manage dependencies.
 
-### ORM technologies
+Here's a basic example of using Dagger2 with `TinyWeb`:
 
-TODO pick the one that's most library-like and least-framework
+1. Define a module to provide dependencies:
+
+```java
+import dagger.Module;
+import dagger.Provides;
+
+@Module
+public class AppModule {
+    @Provides
+    public MyService provideMyService() {
+        return new MyServiceImpl();
+    }
+}
+```
+
+2. Create a component interface to connect the module and the injection targets:
+
+```java
+import dagger.Component;
+
+@Component(modules = AppModule.class)
+public interface AppComponent {
+    void inject(MyWebApp app);
+}
+```
+
+3. Use the component to inject dependencies in your application:
+
+```java
+public class MyWebApp {
+    @Inject
+    MyService myService;
+
+    public MyWebApp() {
+        DaggerAppComponent.create().inject(this);
+    }
+
+    public void start() {
+        TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+            endPoint(TinyWeb.Method.GET, "/service", (req, res, params) -> {
+                res.write(myService.getData());
+            });
+        }}.start();
+    }
+}
+```
+
+In this example, `MyService` is injected into `MyWebApp` using Dagger2, allowing for easy management and testing of dependencies.
+
+### ORM Technologies
+
+Object-Relational Mapping (ORM) is a technique that allows developers to interact with a database using objects, rather than writing raw SQL queries. JDBI is a lightweight ORM library that can be easily integrated with `TinyWeb` for database operations.
+
+Here's a basic example of using JDBI with `TinyWeb`:
+
+1. Add JDBI to your project dependencies (e.g., in `pom.xml` for Maven):
+
+```xml
+<dependency>
+    <groupId>org.jdbi</groupId>
+    <artifactId>jdbi3-core</artifactId>
+    <version>3.25.0</version>
+</dependency>
+```
+
+2. Use JDBI to interact with the database in your application:
+
+```java
+import org.jdbi.v3.core.Jdbi;
+
+public class MyDatabaseApp {
+    private final Jdbi jdbi;
+
+    public MyDatabaseApp() {
+        this.jdbi = Jdbi.create("jdbc:h2:mem:test");
+    }
+
+    public void start() {
+        TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+            endPoint(TinyWeb.Method.GET, "/users", (req, res, params) -> {
+                List<String> users = jdbi.withHandle(handle ->
+                    handle.createQuery("SELECT name FROM users")
+                          .mapTo(String.class)
+                          .list());
+                res.write(String.join(", ", users));
+            });
+        }}.start();
+    }
+}
+```
+
+In this example, JDBI is used to query a list of users from an H2 in-memory database and return the results via a `TinyWeb` endpoint.
 
 ## Don't do this
 
