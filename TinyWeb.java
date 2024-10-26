@@ -464,7 +464,7 @@ public class TinyWeb {
             return queryParams;
         }
 
-        public TinyWebTest.OrderBook dep(Class<TinyWebTest.OrderBook> orderBookClass) {
+        public <T> T dep(Class<T> clazz) {
             return null;
         }
     }
