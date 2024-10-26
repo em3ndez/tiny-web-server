@@ -46,7 +46,7 @@ I wanted to make something that:
 
 Here's a basic example of defining a GET endpoint using TinyWeb:
 
-```java
+```java 
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
         res.write("Hello, World!");
@@ -238,9 +238,9 @@ the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not.
 appear within the same nested path structure of the composed server grammar. They're not really - not even the
 same port to the server.
 
-#### Connecting to a WebSocket using JavaScript TinyWeb.SocketClient
+#### Connecting to a WebSocket using JavaScript source file endpoint
 
-Here's an example of how to connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`:
+Here's an example of how to connect to a WebSocket using the JavaScript version of `TinyWeb.SocketClient`:
 
 ```html
 <!DOCTYPE html>
@@ -276,9 +276,10 @@ Here's an example of how to connect to a WebSocket using the JavaScript `TinyWeb
 </html>
 ```
 
-In this example, a `TinyWeb.SocketClient` is created in JavaScript to connect to a WebSocket server
-running on `localhost` at port 8081. The client waits for the connection to open, sends a message to the `/chat`
-path, and displays the response received from the server in the browser.
+In this example, a JavaScript version of `TinyWeb.SocketClient` (`TinyWeb.JavaScriptSocketClient`) is created in 
+JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
+connection to open, sends a message to the `/chat` path, and displays the response received from the server in 
+the browser.
 
 **Making the JavaScript WebSocket Client available to webapps**
 
@@ -287,7 +288,7 @@ the server needs to serve the JavaScript client code to the browser. This is don
 that responds with the JavaScript code when requested:
 
 ```java
-endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.SocketClientJavascript());
+endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js",new TinyWeb.JavascriptSocketClient());
 ```
 This is to honor the server-side need for path & message to be in a specific opinionated structure.
 
@@ -788,7 +789,7 @@ TinyWeb$Server.class  TinyWeb$SocketServer$SocketMessageHandler.class
 TinyWeb$EndPoint.class  TinyWeb$FilterEntry.class  TinyWeb$Request.class  
 TinyWeb$ServerException.class  TinyWeb$SocketServer.class  TinyWeb.class 
 TinyWeb$MessageSender.class  TinyWeb$Response.class  TinyWeb$SocketClient.class      
-TinyWeb$Method.class  TinyWeb$Server$1.class  TinyWeb$SocketClientJavascript.class 
+TinyWeb$Method.class  TinyWeb$Server$1.class  TinyWeb$JavascriptSocketClient.class 
 TinyWeb$ExampleApp$1.class TinyWeb$ExampleApp.class
 ```
 

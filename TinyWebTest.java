@@ -504,7 +504,7 @@ public class TinyWebTest {
 
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
-                        endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.SocketClientJavascript());
+                        endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.JavascriptSocketClient());
 
                         endPoint(TinyWeb.Method.GET, "/", (req, res, params) -> {
                             res.setHeader("Content-Type", "text/html");
