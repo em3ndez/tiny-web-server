@@ -309,7 +309,45 @@ the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not.
 appear within the same nested path structure of the composed server grammar. They're not really - not even the 
 same port to the server.
 
-TODO: same example but using the JavaScript TinyWeb.SocketClient
+#### Connecting to a WebSocket using JavaScript TinyWeb.SocketClient
+
+Here's an example of how to connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test</title>
+    <script src="/javascriptWebSocketClient.js"></script>
+</head>
+<body>
+    <h1>WebSocket Message Display</h1>
+    <pre id="messageDisplay"></pre>
+    <script>
+        const tinyWebSocketClient = new TinyWeb.SocketClient('localhost', 8081);
+
+        async function example() {
+            try {
+                await tinyWebSocketClient.waitForOpen();
+                await tinyWebSocketClient.sendMessage('/chat', 'Hello WebSocket');
+
+                const response = await tinyWebSocketClient.receiveMessage();
+                document.getElementById('messageDisplay').textContent = 'Received: ' + response;
+
+                await tinyWebSocketClient.close();
+            } catch (error) {
+                console.error('WebSocket error:', error);
+            }
+        }
+
+        example();
+    </script>
+</body>
+</html>
+```
+
+In this example, a `TinyWeb.SocketClient` is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the connection to open, sends a message to the `/chat` path, and displays the response received from the server in the browser.
 
 ### Two WebSockets with Different Paths
 
