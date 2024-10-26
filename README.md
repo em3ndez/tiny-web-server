@@ -115,18 +115,7 @@ You could place your Unauthorized/401 security check inside "/api" path and have
 Here's an example of defining two endpoints within a single path using TinyWeb:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{ 
-    path("/one", () -> {
-        filter(TinyWeb.Method.GET, ".*", (req, res, params) -> {
-            // do something useful for all matching /one/.*
-            //req.getHeaders().get("logged")
-            req.setAttribute("abc", "howdie");
-        });
-        endPoint(TinyWeb.Method.GET, "/two", (req, res, params) -> {
-            res.write("Hello from the endpoint, but a comment from the filter " + req.getAttribute("abc"));
-        });
-    });
-}}.start();
+//TODO Copy in the authenticaion test ... incl setup, and autheication helper class and rot47 method
 ```
 
 // TODO describe what else you could do here, like an "is vulnerability checked"
