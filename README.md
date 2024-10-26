@@ -165,7 +165,12 @@ private static String rot47(String input) {
 }
 ```
 
-In this example, a filter is applied to all GET requests within the `/api` path to check for a "logged-in" cookie. The cookie is decrypted using a simple ROT47 algorithm to verify if the user is authenticated. If authenticated, the user's email is set as an attribute in the request, which is then accessed by the endpoint to respond with a message indicating the user is logged in.
+In this example, a filter is applied to all GET requests within the `/api` path to check for a 
+"logged-in" cookie. The cookie is decrypted using a simple ROT47 algorithm to verify if the user 
+is authenticated. If authenticated, the user's email is set as an attribute in the request, which 
+is then accessed by the endpoint to respond with a message indicating the user is logged in.
+
+//TODO There are two alternate it() in the tests one that fails auth and one that passes. Cookie being the difference.
 
 ### A webSocket and endPoint within a path
 
