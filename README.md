@@ -119,6 +119,7 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     path("/one", () -> {
         filter(TinyWeb.Method.GET, ".*", (req, res, params) -> {
             // do something useful for all matching /one/.*
+            //req.getHeaders().get("logged")
             req.setAttribute("abc", "howdie");
         });
         endPoint(TinyWeb.Method.GET, "/two", (req, res, params) -> {
