@@ -254,6 +254,27 @@ You could place your Unauthorized/401 security check inside "/api" path and have
 
 ### webSocket and endPoint within a path
 
+Here's an example of defining both a WebSocket and an HTTP endpoint within a single path using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+    path("/api", () -> {
+        // Define a GET endpoint
+        endPoint(TinyWeb.Method.GET, "/status", (req, res, params) -> {
+            res.write("API is running");
+        });
+
+        // Define a WebSocket endpoint
+        webSocket("/chat", (message, sender) -> {
+            String responseMessage = "Echo: " + new String(message, "UTF-8");
+            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+        });
+    });
+}}.start();
+```
+
+In this example, a GET endpoint is defined at `/api/status` that responds with "API is running". Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it receives, prefixed with "Echo: ".
+
 ## Don't do this
 
 When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such 
