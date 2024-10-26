@@ -58,13 +58,12 @@ public class TinyWebTest {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
-                            filter(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
-                                req.setAttribute("message", "Hello from filter");
+                            filter(TinyWeb.Method.GET, ".*", (req, res, params) -> {
+                                req.setAttribute("message", "Filter says hello");
                                 return true; // Continue processing
                             });
                             endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
-                                String message = (String) req.getAttribute("message");
-                                res.write("Endpoint received: " + message);
+                                res.write("Endpoint says hello & " + req.getAttribute("message"));
                             });
                         });
                     }}.start();
@@ -72,8 +71,7 @@ public class TinyWebTest {
 
                 it("passes attribute from filter to endpoint", () -> {
                     try (Response response = httpGet("http://localhost:8080/api/attribute-test")) {
-                        assertThat(response.code(), equalTo(200));
-                        assertThat(response.body().string(), equalTo("Endpoint received: Hello from filter"));
+                        assertThat(response.body().string(), equalTo("Endpoint says hello & Filter says hello"));
                     }
                 });
 

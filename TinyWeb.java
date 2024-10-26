@@ -151,14 +151,6 @@ public class TinyWeb {
         }
     }
 
-    public void setAttribute(String key, Object value) {
-        attributes.put(key, value);
-    }
-
-    public Object getAttribute(String key) {
-        return attributes.get(key);
-    }
-
     public static class PathContext extends Context {
 
         private final String basePath;
@@ -258,6 +250,9 @@ public class TinyWeb {
 //                            }
                         }
 
+                        Request request = null;
+                        Response response = null;
+
                         // Apply filters
                         List<FilterEntry> methodFilters = filters.get(method);
                         if (methodFilters != null) {
@@ -269,8 +264,12 @@ public class TinyWeb {
                                         filterParams.put(String.valueOf(i), filterMatcher.group(i));
                                     }
                                     try {
-                                        Request request = new Request(exchange);
-                                        Response response = new Response(exchange);
+                                        if (request == null) {
+                                            request = new Request(exchange);
+                                        }
+                                        if (response == null) {
+                                            response = new Response(exchange);
+                                        }
                                         boolean proceed = false;
                                         try {
                                             proceed = filterEntry.filter.filter(request, response, filterParams);
@@ -292,8 +291,13 @@ public class TinyWeb {
                         }
 
                         try {
-                            Request request = new Request(exchange);
-                            Response response = new Response(exchange);
+                            if (request == null) {
+                                request = new Request(exchange);
+                            }
+                            if (response == null) {
+                                response = new Response(exchange);
+                            }
+
                             try {
                                 route.getValue().handle(request, response, params);
                             } catch (Exception e) {
@@ -391,6 +395,14 @@ public class TinyWeb {
                 this.body = null;
                 this.queryParams = null;
             }
+        }
+
+        public void setAttribute(String key, Object value) {
+            attributes.put(key, value);
+        }
+
+        public Object getAttribute(String key) {
+            return attributes.get(key);
         }
 
         public String getBody() { return body; }
