@@ -463,6 +463,10 @@ public class TinyWeb {
             }
             return queryParams;
         }
+
+        public TinyWebTest.OrderBook dep(Class<TinyWebTest.OrderBook> orderBookClass) {
+            return null;
+        }
     }
 
     public static class Response {
