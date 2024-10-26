@@ -355,9 +355,41 @@ code. Otherwise, it processes the request and responds with a 201 Created status
 By understanding and using HTTP response codes effectively, you can provide clear and meaningful feedback to clients 
 interacting with your `TinyWeb` server.
 
-### TinyWeb's overridable exception methods
+### TinyWeb's Overridable Exception Methods
 
-TODO: serverException(e) and appHandlingException(Exception e)
+In `TinyWeb`, exception handling is an important aspect of managing server and application errors. The framework provides two overridable methods to handle exceptions: `serverException(e)` and `appHandlingException(Exception e)`. These methods allow you to customize how exceptions are logged or processed.
+
+#### serverException(e)
+
+The `serverException(e)` method is called when a `ServerException` occurs. This typically involves issues related to the server's internal operations, such as network errors or configuration problems. By default, this method logs the exception message and stack trace to the standard error stream. You can override this method to implement custom logging or error handling strategies.
+
+Example:
+
+```java
+@Override
+protected void serverException(ServerException e) {
+    // Custom logging logic
+    System.err.println("Custom Server Exception: " + e.getMessage());
+    e.printStackTrace(System.err);
+}
+```
+
+#### appHandlingException(Exception e)
+
+The `appHandlingException(Exception e)` method is invoked when an exception occurs within an endpoint or filter. This is useful for handling application-specific errors, such as invalid input or business logic failures. By default, this method logs the exception message and stack trace to the standard error stream. You can override it to provide custom error handling, such as sending alerts or writing to a log file.
+
+Example:
+
+```java
+@Override
+protected void appHandlingException(Exception e) {
+    // Custom application error handling
+    System.err.println("Custom Application Exception: " + e.getMessage());
+    e.printStackTrace(System.err);
+}
+```
+
+By overriding these methods, you can tailor the exception handling behavior of your `TinyWeb` server to meet your application's specific needs, ensuring that errors are managed effectively and transparently.
 
 ## Don't do this
 
