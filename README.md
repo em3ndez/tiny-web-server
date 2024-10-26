@@ -277,6 +277,8 @@ In this example, a GET endpoint is defined at `/api/status` that responds with "
 Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it 
 receives, prefixed with "Echo: ", which we admit isn't a real world example.
 
+TODO: show what Java code would look like to conntect to the webSocket via TinyWeb.SocketClient
+
 ### Two WebSockets with Different Paths
 
 Here's an example of defining two WebSocket endpoints with different paths using TinyWeb:
@@ -299,7 +301,12 @@ TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
 }}.start();
 ```
 
-In this example, two WebSocket endpoints are defined within the `/api` path. The first WebSocket endpoint at `/api/chat` echoes back any message it receives, prefixed with "Chat Echo: ". The second WebSocket endpoint at `/api/notifications` echoes back messages prefixed with "Notification: ".
+In this example, two WebSocket endpoints are defined within the `/api` path. The first WebSocket 
+endpoint at `/api/chat` echoes back any message it receives, prefixed with "Chat Echo: ". The second 
+WebSocket endpoint at `/api/notifications` echoes back messages prefixed with "Notification: ". The server keeps a 
+big map of paths and websockets open to clients, and if this were a single web-app for one person, it'd be two
+websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean 
+four concurrently connected channels.
 
 ## Don't do this
 
