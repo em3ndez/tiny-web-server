@@ -198,31 +198,33 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 
 In this example, a GET endpoint is defined at the path `/hello`. When a request is made to this endpoint, the server responds with "Hello, World!". The server is set to listen on port 8080.
 
-### filter and endPoint
+### path and filter (and endPoints)
 
 Here's an example of using a filter with an endpoint in TinyWeb:
 
 ```java
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-    path("/api", () -> {
-        // Apply a filter to check for a custom header
-        filter(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
-            if (!req.getHeaders().containsKey("X-Auth-Token")) {
-                res.write("Unauthorized", 401);
-                return false; // Stop processing if unauthorized
-            }
-            return true; // Continue processing
-        });
 
-        // Define a GET endpoint
-        endPoint(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
-            res.write("Welcome to the secure endpoint!");
-        });
+    // Apply a filter to check for a custom header
+    filter(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
+        if (!req.getHeaders().containsKey("X-Auth-Token")) {
+            res.write("Unauthorized", 401);
+            return false; // Stop processing if unauthorized
+        }
+        return true; // Continue processing
     });
+
+    // Define a GET endpoint
+    endPoint(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
+        res.write("Welcome to the secure endpoint!");
+    });
+        
 }}.start();
 ```
 
-In this example, a filter is applied to the `/api/secure` path to check for the presence of an "X-Auth-Token" header. If the header is missing, the request is denied with a 401 status code. If the header is present, the request proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
+In this example, a filter is applied to the `/secure` path to check for the presence of an "X-Auth-Token" header. 
+If the header is missing, the request is denied with a 401 status code. If the header is present, the request 
+proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
 
 ### two endPoints within a path 
 
