@@ -191,6 +191,7 @@ Here's a basic example of defining a GET endpoint using TinyWeb:
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
         res.write("Hello, World!");
+        // req gives access to headers, etc
     });
 }}.start();
 ```
