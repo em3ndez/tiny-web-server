@@ -412,8 +412,8 @@ public class TinyWeb {
                     String[] cookies = cookie.split(";");
                     for (String c : cookies) {
                         String[] keyValue = c.trim().split("=");
-                        if (keyValue.length == 2 && keyValue[0].equals(name)) {
-                            return keyValue[1];
+                        if (keyValue.length > 1 && keyValue[0].equals(name)) {
+                            return c.trim().substring(keyValue[0].length()+1);
                         }
                     }
                 }

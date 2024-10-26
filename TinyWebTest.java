@@ -54,42 +54,6 @@ public class TinyWebTest {
                 });
             });
 
-            describe("and passing attributes from filter to endpoint", () -> {
-                before(() -> {
-                    svr = new TinyWeb.Server(8080, 8081) {{
-                        path("/api", () -> {
-                            filter(TinyWeb.Method.GET, ".*", (req, res, params) -> {
-                                String allegedlyLoggedInCookie = req.getCookie("logged-in");
-                                Authentication auth = IsEncryptedByUs.decrypt(allegedlyLoggedInCookie);
-                                if (auth.authentic == false) {
-                                    res.write("Try logging in again", 403);
-                                } else {
-                                    req.setAttribute("user", auth.user);
-                                    return true; // Continue processing
-                                });
-                                endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
-                                    res.write("User Is logged in: " + req.getAttribute("user"));
-                                });
-                            });
-                        }
-                        }.
-
-                        start();
-                    });
-                });
-
-                it("passes attribute from filter to endpoint", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/attribute-test")) {
-                        assertThat(response.body().string(), equalTo("Endpoint says hello & Filter says hello"));
-                    }
-                });
-
-                after(() -> {
-                    svr.stop();
-                    svr = null;
-                });
-            });
-
             describe("and accessing a nested path with parameters", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
@@ -627,6 +591,52 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
+
+            describe("and passing attributes from filter to endpoint", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080, -1) {{
+                        path("/api", () -> {
+                            filter(TinyWeb.Method.GET, ".*", (req, res, params) -> {
+                                String allegedlyLoggedInCookie = req.getCookie("logged-in");
+                                // This test class only performs rot47 pn the coolie passed in.
+                                // That's not in the secure in the slightest. See https://rot47.net/
+                                Authentication auth = IsEncryptedByUs.decrypt(allegedlyLoggedInCookie);
+                                if (auth.authentic == false) {
+                                    res.write("Try logging in again", 403);
+                                    return false;
+                                } else {
+                                    req.setAttribute("user", auth.user);
+                                }
+                                return true; // Continue processing
+                            });
+                            endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
+                                res.write("User Is logged in: " + req.getAttribute("user"));
+                            });
+                        });
+                        start();
+                    }};
+                });
+
+                it("attribute user was passed from filter to endPoint for authentic user", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=7C65o6I2>A=6]4@>;")) {
+                        assertThat(response.body().string(), equalTo("User Is logged in: fred@example.com"));
+                        assertThat(response.code(), equalTo(200));
+                    }
+                });
+
+                it("attribute user was not passed from filter to endPoint for inauthentic user", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=aeiouaeiou")) {
+                        assertThat(response.body().string(), equalTo("Try logging in again"));
+                        assertThat(response.code(), equalTo(403));
+                    }
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+
         });
     }
 
@@ -642,10 +652,6 @@ public class TinyWebTest {
                 .get().build()).execute();
     }
 
-    public static void main(String[] args) {
-        Runner runner = new Runner();
-        runner.run(runner.defineTests(Collections.singletonList(TinyWebTest.class)), new DefaultReporter());
-    }
     public static class IsEncryptedByUs {
         public static Authentication decrypt(String allegedlyLoggedInCookie) {
             String rot47ed = rot47(allegedlyLoggedInCookie);
@@ -671,6 +677,11 @@ public class TinyWebTest {
             }
         }
         return result.toString();
+    }
+
+    public static void main(String[] args) {
+        Runner runner = new Runner();
+        runner.run(runner.defineTests(Collections.singletonList(TinyWebTest.class)), new DefaultReporter());
     }
 
 }
