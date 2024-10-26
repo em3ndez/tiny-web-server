@@ -515,7 +515,43 @@ Here's a basic example of using JDBI with `TinyWeb`:
 </dependency>
 ```
 
-2. Use JDBI to interact with the database in your application:
+2. Use JDBI to interact with the database in your application. JDBI provides transaction management capabilities, allowing you to execute multiple operations within a single transaction. The JDBI instance is typically created at a global scope and shared across the application to manage database connections efficiently.
+
+Here's an example of using JDBI with transaction management:
+
+```java
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.transaction.TransactionIsolationLevel;
+
+public class MyDatabaseApp {
+    private final Jdbi jdbi;
+
+    public MyDatabaseApp() {
+        this.jdbi = Jdbi.create("jdbc:h2:mem:test");
+    }
+
+    public void start() {
+        TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+            endPoint(TinyWeb.Method.GET, "/users", (req, res, params) -> {
+                List<String> users = jdbi.inTransaction(handle -> 
+                    handle.createQuery("SELECT name FROM users")
+                          .mapTo(String.class)
+                          .list());
+                res.write(String.join(", ", users));
+            });
+
+            endPoint(TinyWeb.Method.POST, "/addUser", (req, res, params) -> {
+                jdbi.useTransaction(TransactionIsolationLevel.SERIALIZABLE, handle -> {
+                    handle.execute("INSERT INTO users (name) VALUES (?)", req.getBody());
+                });
+                res.write("User added successfully", 201);
+            });
+        }}.start();
+    }
+}
+```
+
+In this example, the JDBI instance is used to manage transactions for both reading and writing operations. The `inTransaction` method is used to execute a query within a transaction, and the `useTransaction` method is used to perform an insert operation with a specified transaction isolation level.
 
 ```java
 import org.jdbi.v3.core.Jdbi;
