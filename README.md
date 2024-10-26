@@ -226,7 +226,27 @@ In this example, a filter is applied to the `/secure` path to check for the pres
 If the header is missing, the request is denied with a 401 status code. If the header is present, the request 
 proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
 
-### two endPoints within a path 
+### two endPoints within a path
+
+Here's an example of defining two endpoints within a single path using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+    path("/api", () -> {
+        // Define the first GET endpoint
+        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+            res.write("Hello from the first endpoint!");
+        });
+
+        // Define the second GET endpoint
+        endPoint(TinyWeb.Method.GET, "/goodbye", (req, res, params) -> {
+            res.write("Goodbye from the second endpoint!");
+        });
+    });
+}}.start();
+```
+
+In this example, two GET endpoints are defined within the `/api` path. The first endpoint responds with "Hello from the first endpoint!" when a request is made to `/api/hello`, and the second endpoint responds with "Goodbye from the second endpoint!" when a request is made to `/api/goodbye`.
 
 ### webSocket and endPoint within a path
 
