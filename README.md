@@ -56,7 +56,7 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 
 In this example, a GET endpoint is defined at the path `/hello`. When a request is made to this endpoint, the server responds with "Hello, World!". The server is set to listen on port 8080.
 
-### Paths and Filter (and EndPoints)
+### A Filter and an EndPoints
 
 Here's an example of using a filter with an endpoint in TinyWeb:
 
@@ -84,7 +84,7 @@ In this example, a filter is applied to the `/secure` path to check for the pres
 If the header is missing, the request is denied with a 401 status code. If the header is present, the request
 proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
 
-### Rwo EndPoints within a path
+### Two EndPoints within a path
 
 Here's an example of defining two endpoints within a single path using TinyWeb:
 
@@ -109,6 +109,26 @@ from the first endpoint!" when a request is made to `/api/hello`, and the second
 "Goodbye from the second endpoint!" when a request is made to `/api/goodbye`.
 
 You could place your Unauthorized/401 security check inside "/api" path and have it apply to both endPoints
+
+### A filter and an EndPoint within a path
+
+Here's an example of defining two endpoints within a single path using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{ 
+    path("/one", () -> {
+        filter(TinyWeb.Method.GET, ".*", (req, res, params) -> {
+            // do something useful for all matching /one/.*
+            req.setAttribute("abc", "howdie");
+        });
+        endPoint(TinyWeb.Method.GET, "/two", (req, res, params) -> {
+            res.write("Hello from the endpoint, but a comment from the filter " + req.getAttribute("abc"));
+        });
+    });
+}}.start();
+```
+
+// TODO describe what else you could do here, like an "is vulnerability checked"
 
 ### A webSocket and endPoint within a path
 
