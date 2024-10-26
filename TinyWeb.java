@@ -405,6 +405,22 @@ public class TinyWeb {
             return attributes.get(key);
         }
 
+        public String getCookie(String name) {
+            List<String> cookiesHeader = exchange.getRequestHeaders().get("Cookie");
+            if (cookiesHeader != null) {
+                for (String cookie : cookiesHeader) {
+                    String[] cookies = cookie.split(";");
+                    for (String c : cookies) {
+                        String[] keyValue = c.trim().split("=");
+                        if (keyValue.length == 2 && keyValue[0].equals(name)) {
+                            return keyValue[1];
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         public String getBody() { return body; }
         public Map<String, List<String>> getHeaders() { return exchange.getRequestHeaders(); }
         public String getPath() { return exchange.getRequestURI().getPath(); }
