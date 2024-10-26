@@ -297,7 +297,14 @@ secure, protecting data from eavesdropping and tampering.
 
 ## Performance
 
-TODO: comment on performance not being tested
+Performance testing for `TinyWeb` has not been extensively conducted. However, due to its lightweight nature and minimal dependencies, `TinyWeb` is expected to perform efficiently for small to medium-sized applications. Here are some considerations for optimizing performance:
+
+- **Use Virtual Threads**: `TinyWeb` leverages Java's virtual threads, which can handle a large number of concurrent connections efficiently. Ensure your Java version supports this feature.
+- **Optimize Endpoints**: Minimize processing time within endpoints by avoiding heavy computations or blocking operations. Consider offloading such tasks to background threads or external services.
+- **Static File Caching**: If serving static files, consider using a reverse proxy or CDN to cache and deliver these files, reducing the load on the server.
+- **Connection Management**: Tune the server's connection settings, such as timeouts and maximum connections, to match your application's needs.
+
+For detailed performance analysis, consider using profiling tools like JMH (Java Microbenchmark Harness) or integrating with monitoring solutions to track real-time performance metrics.
 
 ## Error handling
 
@@ -403,9 +410,37 @@ protected void appHandlingException(Exception e) {
 By overriding these methods, you can tailor the exception handling behavior of your `TinyWeb` server to meet your 
 application's specific needs, ensuring that errors are managed effectively and transparently.
 
-### Input validation
+### Input Validation
 
-TODO: user is going to have to code that themselves - including XSS & CSRF things. 
+Input validation is crucial for ensuring the security and reliability of your `TinyWeb` application. While `TinyWeb` does not provide built-in input validation, developers should implement their own validation logic to protect against common vulnerabilities such as XSS (Cross-Site Scripting) and CSRF (Cross-Site Request Forgery).
+
+#### Example: Basic Input Validation
+
+Here's an example of how you might implement basic input validation in an endpoint:
+
+```java
+endPoint(TinyWeb.Method.POST, "/submit", (req, res, params) -> {
+    String input = req.getBody();
+    
+    // Simple validation: check if input is not empty and does not contain malicious scripts
+    if (input == null || input.trim().isEmpty() || input.contains("<script>")) {
+        res.write("Invalid input", 400);
+        return;
+    }
+    
+    // Proceed with processing the valid input
+    res.write("Input accepted", 200);
+});
+```
+
+#### Security Best Practices
+
+- **Sanitize Inputs**: Remove or escape potentially harmful characters from user inputs.
+- **Use CSRF Tokens**: Implement CSRF protection by requiring tokens for state-changing requests.
+- **Validate on Both Client and Server**: Perform validation on the client side for user feedback and on the server side for security.
+- **Limit Input Size**: Restrict the size of inputs to prevent buffer overflow attacks.
+
+By implementing robust input validation, you can enhance the security of your `TinyWeb` application and protect it from common web vulnerabilities.
 
 ## Don't do this
 
@@ -427,13 +462,69 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 }};
 ```
 
-## Testing your web app
+## Testing Your Web App
 
-TODO. We suggest the Cuppa-Framework style, as it idiomatically close to the composition style of TinyWeb itself.
+Testing is a critical part of developing reliable web applications. `TinyWeb` can be tested using various frameworks, each offering unique features. Here are some suggestions:
 
-TODO: Junit and TestNg, JBehave would be fine too
+### Cuppa-Framework
 
-TODO: Mockito - mockable function interfaces (one example in TintWebTest)
+The Cuppa-Framework is recommended for testing `TinyWeb` applications due to its idiomatic style, which closely aligns with `TinyWeb`'s composition approach. It allows for expressive and readable test definitions.
+
+Example:
+
+```java
+import static org.forgerock.cuppa.Cuppa.*;
+
+public class MyWebAppTest {
+    {
+        describe("GET /hello", () -> {
+            it("should return a greeting message", () -> {
+                // Test logic here
+            });
+        });
+    }
+}
+```
+
+### JUnit and TestNG
+
+JUnit and TestNG are popular testing frameworks that provide extensive features for unit and integration testing. They are well-suited for testing individual components and overall application behavior.
+
+Example with JUnit:
+
+```java
+import org.junit.Test;
+import static org.junit.Assert.*;
+
+public class MyWebAppTest {
+    @Test
+    public void testGreetingEndpoint() {
+        // Test logic here
+    }
+}
+```
+
+### Mockito
+
+Mockito is a powerful mocking framework that can be used to create mock objects for testing. It is particularly useful for isolating components and testing interactions.
+
+Example with Mockito:
+
+```java
+import static org.mockito.Mockito.*;
+
+public class MyWebAppTest {
+    @Test
+    public void testWithMock() {
+        MyService mockService = mock(MyService.class);
+        when(mockService.getData()).thenReturn("Mock Data");
+        
+        // Test logic using mockService
+    }
+}
+```
+
+By leveraging these testing frameworks, you can ensure that your `TinyWeb` application is robust, reliable, and ready for production.
 
 # Build and Test of TinyWeb itself
 
