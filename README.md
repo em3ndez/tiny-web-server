@@ -442,6 +442,16 @@ endPoint(TinyWeb.Method.POST, "/submit", (req, res, params) -> {
 
 By implementing robust input validation, you can enhance the security of your `TinyWeb` application and protect it from common web vulnerabilities.
 
+## Integrating other frameworks
+
+### Dependency Injection
+
+TODO - Dagger2 example?
+
+### ORM technologies
+
+TODO pick the one that's most library-like and least-framework
+
 ## Don't do this
 
 When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such
