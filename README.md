@@ -247,9 +247,29 @@ big map of paths and websockets open to clients, and if this were a single web-a
 websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
 four concurrently connected channels.
 
-## Thoughts on websockets
+## Thoughts on WebSockets
 
-TODO: short messages from server to client, client then does GET to learn more (is a school of thought)
+### Short Messages with Follow-up GET Requests
+
+In some architectures, WebSockets are used to send short, real-time notifications from the server to the client. These notifications can inform the client that an event has occurred or that new data is available. Instead of sending all the data over the WebSocket connection, the server sends a brief message, and the client then performs a traditional HTTP GET request to retrieve the full details.
+
+This approach has several advantages:
+
+1. **Efficiency**: By keeping WebSocket messages short, you reduce the amount of data transmitted over the WebSocket connection, which can be beneficial in bandwidth-constrained environments.
+
+2. **Scalability**: Using HTTP GET requests for detailed data retrieval allows you to leverage existing HTTP caching and load balancing infrastructure, which can improve scalability and performance.
+
+3. **Separation of Concerns**: This pattern separates the concerns of real-time notification and data retrieval, allowing each to be optimized independently.
+
+4. **Security**: HTTP requests can be more easily secured and monitored than WebSocket messages, allowing for better control over data access and auditing.
+
+Here's a simple example of how this might work:
+
+1. **Server**: Sends a short message over the WebSocket, e.g., "New data available for item 123".
+
+2. **Client**: Receives the message and performs a GET request to `/api/items/123` to retrieve the full details.
+
+This pattern is particularly useful in applications where real-time updates are needed, but the data associated with those updates is too large or complex to send over a WebSocket connection.
 
 
 ## Don't do this
