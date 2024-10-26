@@ -33,7 +33,248 @@ I wanted to make something that:
 2. Could maybe be in one source file and have no dependencies at all
 3. Does not log, and has not picked a logging framework, but laves that open as an implementation detail. I wrote much of https://cwiki.apache.org/confluence/display/avalon/AvalonNoLogging back in 2003 or so.
 
-# Build and Test
+# Quick user guide
+
+Users are developers obviously
+
+## Basic Use
+
+### EndPoints
+
+Here's a basic example of defining a GET endpoint using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+    endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+        res.write("Hello, World!");
+        // req gives access to headers, etc
+    });
+}}.start();
+```
+
+In this example, a GET endpoint is defined at the path `/hello`. When a request is made to this endpoint, the server responds with "Hello, World!". The server is set to listen on port 8080.
+
+### Paths and Filter (and EndPoints)
+
+Here's an example of using a filter with an endpoint in TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+
+    // Apply a filter to check for a custom header
+    filter(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
+        if (!req.getHeaders().containsKey("X-Auth-Token")) {
+            res.write("Unauthorized", 401);
+            return false; // Stop processing if unauthorized
+        }
+        return true; // Continue processing
+    });
+
+    // Define a GET endpoint
+    endPoint(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
+        res.write("Welcome to the secure endpoint!");
+    });
+        
+}}.start();
+```
+
+In this example, a filter is applied to the `/secure` path to check for the presence of an "X-Auth-Token" header.
+If the header is missing, the request is denied with a 401 status code. If the header is present, the request
+proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
+
+### Rwo EndPoints within a path
+
+Here's an example of defining two endpoints within a single path using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+    path("/api", () -> {
+        // Define the first GET endpoint
+        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+            res.write("Hello from the first endpoint!");
+        });
+
+        // Define the second GET endpoint
+        endPoint(TinyWeb.Method.GET, "/goodbye", (req, res, params) -> {
+            res.write("Goodbye from the second endpoint!");
+        });
+    });
+}}.start();
+```
+
+In this example, two GET endpoints are defined within the `/api` path. The first endpoint responds with "Hello
+from the first endpoint!" when a request is made to `/api/hello`, and the second endpoint responds with
+"Goodbye from the second endpoint!" when a request is made to `/api/goodbye`.
+
+You could place your Unauthorized/401 security check inside "/api" path and have it apply to both endPoints
+
+### A webSocket and endPoint within a path
+
+Here's an example of defining both a WebSocket and an HTTP endpoint within a single path using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+    path("/api", () -> {
+        // Define a GET endpoint
+        endPoint(TinyWeb.Method.GET, "/status", (req, res, params) -> {
+            res.write("API is running");
+        });
+
+        // Define a WebSocket endpoint
+        webSocket("/chat", (message, sender) -> {
+            String responseMessage = "Echo: " + new String(message, "UTF-8");
+            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+        });
+    });
+}}.start();
+```
+
+In this example, a GET endpoint is defined at `/api/status` that responds with "API is running".
+Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it
+receives, prefixed with "Echo: ", which we admit isn't a real world example.
+
+#### Connecting to a WebSocket using TinyWeb.SocketClient
+
+Here's an example of how to connect to a WebSocket using `TinyWeb.SocketClient`:
+
+```java
+public class WebSocketClientExample {
+    public static void main(String[] args) {
+        try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
+            // Perform the WebSocket handshake
+            client.performHandshake();
+
+            // Send a message to the WebSocket server
+            client.sendMessage("/chat", "Hello WebSocket");
+
+            // Receive a response from the WebSocket server
+            String response = client.receiveMessage();
+            System.out.println("Received: " + response);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+In this example, a `TinyWeb.SocketClient` is created to connect to a WebSocket server running on `localhost` at
+port 8081. The client performs a WebSocket handshake, sends a message to the `/chat` path, and prints the
+response received from the server. On the wire, the path and message are put in a specific structure for sending to
+the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not. This is to make the webSockets
+appear within the same nested path structure of the composed server grammar. They're not really - not even the
+same port to the server.
+
+#### Connecting to a WebSocket using JavaScript TinyWeb.SocketClient
+
+Here's an example of how to connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test</title>
+    <script src="/javascriptWebSocketClient.js"></script>
+</head>
+<body>
+    <h1>WebSocket Message Display</h1>
+    <pre id="messageDisplay"></pre>
+    <script>
+        const tinyWebSocketClient = new TinyWeb.SocketClient('localhost', 8081);
+
+        async function example() {
+            try {
+                await tinyWebSocketClient.waitForOpen();
+                await tinyWebSocketClient.sendMessage('/chat', 'Hello WebSocket');
+
+                const response = await tinyWebSocketClient.receiveMessage();
+                document.getElementById('messageDisplay').textContent = 'Received: ' + response;
+
+                await tinyWebSocketClient.close();
+            } catch (error) {
+                console.error('WebSocket error:', error);
+            }
+        }
+
+        example();
+    </script>
+</body>
+</html>
+```
+
+In this example, a `TinyWeb.SocketClient` is created in JavaScript to connect to a WebSocket server
+running on `localhost` at port 8081. The client waits for the connection to open, sends a message to the `/chat`
+path, and displays the response received from the server in the browser.
+
+**Making the JavaScript WebSocket Client available to webapps**
+
+In the example where we connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`,
+the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint
+that responds with the JavaScript code when requested:
+
+```java
+endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.SocketClientJavascript());
+```
+This is to honor the server-side need for path & message to be in a specific opinionated structure.
+
+### Two WebSockets with Different Paths
+
+Here's an example of defining two WebSocket endpoints with different paths using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+    path("/api", () -> {
+        // Define the first WebSocket endpoint
+        webSocket("/chat", (message, sender) -> {
+            String responseMessage = "Chat Echo: " + new String(message, "UTF-8");
+            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+        });
+
+        // Define the second WebSocket endpoint
+        webSocket("/notifications", (message, sender) -> {
+            String responseMessage = "Notification: " + new String(message, "UTF-8");
+            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+        });
+    });
+}}.start();
+```
+
+In this example, two WebSocket endpoints are defined within the `/api` path. The first WebSocket
+endpoint at `/api/chat` echoes back any message it receives, prefixed with "Chat Echo: ". The second
+WebSocket endpoint at `/api/notifications` echoes back messages prefixed with "Notification: ". The server keeps a
+big map of paths and websockets open to clients, and if this were a single web-app for one person, it'd be two
+websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
+four concurrently connected channels.
+
+## Thoughts on websockets
+
+TODO: short messages from server to client, client then does GET to learn more (is a school of thought)
+
+
+## Don't do this
+
+When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such
+as `path()`, `endPoint()`, or `filter()`) is executed only once during the server's instantiation. This
+means that such code is not executed per request or per path hit, but rather when the server is being set up.
+
+Here's an example of what not to do:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+    path("/api", () -> {
+        code().thatYouThink("is per to /api invocation, but it is not");
+        // This code runs per request to /api
+        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+            res.write("Code must be in lambda blocks");
+        });
+    });
+}};
+```
+
+## Testing your web app
+
+# Build and Test of TinyWeb itself
 
 ## Compiling TinyWeb
 
@@ -179,236 +420,4 @@ ChatGPT estimates the path coverage for the TinyWeb class to be around 85-90%
 
 I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll raise that feature request.
 
-# Examples
 
-## Basic Use
-
-### endPoint
-
-Here's a basic example of defining a GET endpoint using TinyWeb:
-
-```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-    endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
-        res.write("Hello, World!");
-        // req gives access to headers, etc
-    });
-}}.start();
-```
-
-In this example, a GET endpoint is defined at the path `/hello`. When a request is made to this endpoint, the server responds with "Hello, World!". The server is set to listen on port 8080.
-
-### path and filter (and endPoints)
-
-Here's an example of using a filter with an endpoint in TinyWeb:
-
-```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-
-    // Apply a filter to check for a custom header
-    filter(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
-        if (!req.getHeaders().containsKey("X-Auth-Token")) {
-            res.write("Unauthorized", 401);
-            return false; // Stop processing if unauthorized
-        }
-        return true; // Continue processing
-    });
-
-    // Define a GET endpoint
-    endPoint(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
-        res.write("Welcome to the secure endpoint!");
-    });
-        
-}}.start();
-```
-
-In this example, a filter is applied to the `/secure` path to check for the presence of an "X-Auth-Token" header. 
-If the header is missing, the request is denied with a 401 status code. If the header is present, the request 
-proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
-
-### two endPoints within a path
-
-Here's an example of defining two endpoints within a single path using TinyWeb:
-
-```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-    path("/api", () -> {
-        // Define the first GET endpoint
-        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
-            res.write("Hello from the first endpoint!");
-        });
-
-        // Define the second GET endpoint
-        endPoint(TinyWeb.Method.GET, "/goodbye", (req, res, params) -> {
-            res.write("Goodbye from the second endpoint!");
-        });
-    });
-}}.start();
-```
-
-In this example, two GET endpoints are defined within the `/api` path. The first endpoint responds with "Hello 
-from the first endpoint!" when a request is made to `/api/hello`, and the second endpoint responds with 
-"Goodbye from the second endpoint!" when a request is made to `/api/goodbye`.
-
-You could place your Unauthorized/401 security check inside "/api" path and have it apply to both endPoints
-
-### webSocket and endPoint within a path
-
-Here's an example of defining both a WebSocket and an HTTP endpoint within a single path using TinyWeb:
-
-```java
-TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-    path("/api", () -> {
-        // Define a GET endpoint
-        endPoint(TinyWeb.Method.GET, "/status", (req, res, params) -> {
-            res.write("API is running");
-        });
-
-        // Define a WebSocket endpoint
-        webSocket("/chat", (message, sender) -> {
-            String responseMessage = "Echo: " + new String(message, "UTF-8");
-            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
-        });
-    });
-}}.start();
-```
-
-In this example, a GET endpoint is defined at `/api/status` that responds with "API is running". 
-Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it 
-receives, prefixed with "Echo: ", which we admit isn't a real world example.
-
-#### Connecting to a WebSocket using TinyWeb.SocketClient
-
-Here's an example of how to connect to a WebSocket using `TinyWeb.SocketClient`:
-
-```java
-public class WebSocketClientExample {
-    public static void main(String[] args) {
-        try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
-            // Perform the WebSocket handshake
-            client.performHandshake();
-
-            // Send a message to the WebSocket server
-            client.sendMessage("/chat", "Hello WebSocket");
-
-            // Receive a response from the WebSocket server
-            String response = client.receiveMessage();
-            System.out.println("Received: " + response);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-}
-```
-
-In this example, a `TinyWeb.SocketClient` is created to connect to a WebSocket server running on `localhost` at 
-port 8081. The client performs a WebSocket handshake, sends a message to the `/chat` path, and prints the 
-response received from the server. On the wire, the path and message are put in a specific structure for sending to 
-the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not. This is to make the webSockets 
-appear within the same nested path structure of the composed server grammar. They're not really - not even the 
-same port to the server.
-
-#### Connecting to a WebSocket using JavaScript TinyWeb.SocketClient
-
-Here's an example of how to connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>WebSocket Test</title>
-    <script src="/javascriptWebSocketClient.js"></script>
-</head>
-<body>
-    <h1>WebSocket Message Display</h1>
-    <pre id="messageDisplay"></pre>
-    <script>
-        const tinyWebSocketClient = new TinyWeb.SocketClient('localhost', 8081);
-
-        async function example() {
-            try {
-                await tinyWebSocketClient.waitForOpen();
-                await tinyWebSocketClient.sendMessage('/chat', 'Hello WebSocket');
-
-                const response = await tinyWebSocketClient.receiveMessage();
-                document.getElementById('messageDisplay').textContent = 'Received: ' + response;
-
-                await tinyWebSocketClient.close();
-            } catch (error) {
-                console.error('WebSocket error:', error);
-            }
-        }
-
-        example();
-    </script>
-</body>
-</html>
-```
-
-In this example, a `TinyWeb.SocketClient` is created in JavaScript to connect to a WebSocket server 
-running on `localhost` at port 8081. The client waits for the connection to open, sends a message to the `/chat` 
-path, and displays the response received from the server in the browser.
-
-**Making the JavaScript WebSocket Client available to webapps**
-
-In the example where we connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`, 
-the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint 
-that responds with the JavaScript code when requested:
-
-```java
-endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.SocketClientJavascript());
-```
-This is to honor the server-side need for path & message to be in a specific opinionated structure.
-
-### Two WebSockets with Different Paths
-
-Here's an example of defining two WebSocket endpoints with different paths using TinyWeb:
-
-```java
-TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-    path("/api", () -> {
-        // Define the first WebSocket endpoint
-        webSocket("/chat", (message, sender) -> {
-            String responseMessage = "Chat Echo: " + new String(message, "UTF-8");
-            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
-        });
-
-        // Define the second WebSocket endpoint
-        webSocket("/notifications", (message, sender) -> {
-            String responseMessage = "Notification: " + new String(message, "UTF-8");
-            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
-        });
-    });
-}}.start();
-```
-
-In this example, two WebSocket endpoints are defined within the `/api` path. The first WebSocket 
-endpoint at `/api/chat` echoes back any message it receives, prefixed with "Chat Echo: ". The second 
-WebSocket endpoint at `/api/notifications` echoes back messages prefixed with "Notification: ". The server keeps a 
-big map of paths and websockets open to clients, and if this were a single web-app for one person, it'd be two
-websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean 
-four concurrently connected channels.
-
-## Don't do this
-
-When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such 
-as `path()`, `endPoint()`, or `filter()`) is executed only once during the server's instantiation. This 
-means that such code is not executed per request or per path hit, but rather when the server is being set up.
-
-Here's an example of what not to do:
-
-```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-    path("/api", () -> {
-        code().thatYouThink("is per to /api invocation, but it is not");
-        // This code runs per request to /api
-        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
-            res.write("Code must be in lambda blocks");
-        });
-    });
-}};
-```
-
-## Testing your web app
