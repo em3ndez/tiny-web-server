@@ -170,7 +170,7 @@ In this example, a filter is applied to all GET requests within the `/api` path 
 is authenticated. If authenticated, the user's email is set as an attribute in the request, which 
 is then accessed by the endpoint to respond with a message indicating the user is logged in.
 
-//TODO There are two alternate it() in the tests one that fails auth and one that passes. Cookie being the difference.
+In the test suite, there are two alternate test cases for authentication. One test case simulates a successful authentication by providing a valid "logged-in" cookie, which is decrypted to reveal a valid email address. The other test case simulates a failed authentication by providing an invalid cookie, which does not decrypt to a valid email address. The difference in the cookie values determines whether the authentication passes or fails, demonstrating how the filter and endpoint interact to handle authenticated and unauthenticated requests.
 
 ### A webSocket and endPoint within a path
 
