@@ -273,7 +273,11 @@ TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
 }}.start();
 ```
 
-In this example, a GET endpoint is defined at `/api/status` that responds with "API is running". Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it receives, prefixed with "Echo: ".
+In this example, a GET endpoint is defined at `/api/status` that responds with "API is running". 
+Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it 
+receives, prefixed with "Echo: ", which we admit isn't a real world example.
+
+TODO: One more example with two webSockets and different paths.
 
 ## Don't do this
 
