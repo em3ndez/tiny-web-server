@@ -650,14 +650,28 @@ public class TinyWebTest {
         public static Authentication decrypt(String allegedlyLoggedInCookie) {
             String rot47ed = rot47(allegedlyLoggedInCookie);
             // check is an email address
-            if (/* is email address */) {
+            if (rot47ed.matches("^[\\w.%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$")) {
                 return new Authentication(true, rot47ed);
             } else {
                 return new Authentication(false, null);
             }
         }
     }
-    public Record Authentication;
+    public record Authentication(boolean authentic, String user) {}
+
+    private static String rot47(String input) {
+        StringBuilder result = new StringBuilder();
+        for (char c : input.toCharArray()) {
+            if (c >= '!' && c <= 'O') {
+                result.append((char) (c + 47));
+            } else if (c >= 'P' && c <= '~') {
+                result.append((char) (c - 47));
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
+    }
 
 }
 
