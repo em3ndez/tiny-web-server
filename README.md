@@ -1,13 +1,14 @@
 # TinyWeb.Server and TinyWeb.SocketServer
 
-The `TinyWeb` single source file provides a lightweight and flexible server implementation that supports both HTTP and WebSocket 
-protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  It uses
-a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
+The `TinyWeb` single source file provides a lightweight and flexible server implementation that supports both HTTP and 
+WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  
+It uses a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
 system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Netty or Jetty.
 
 ## Web Server
 
-The `TinyWeb.Server` class allows you to create an HTTP server with minimal configuration. You can define routes for different HTTP methods (GET, POST, PUT, DELETE) and attach handlers to process requests. The server supports:
+The `TinyWeb.Server` class allows you to create an HTTP server with minimal configuration. You can define routes for 
+different HTTP methods (GET, POST, PUT, DELETE) and attach handlers to process requests. The server supports:
 
 - **Path-based Routing**: Define endpoints with path parameters and handle requests dynamically.
 - **Static File Serving**: Serve static files from a specified directory with automatic content type detection.
@@ -54,7 +55,8 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 }}.start();
 ```
 
-In this example, a GET endpoint is defined at the path `/hello`. When a request is made to this endpoint, the server responds with "Hello, World!". The server is set to listen on port 8080.
+In this example, a GET endpoint is defined at the path `/hello`. When a request is made to this endpoint, the server 
+responds with "Hello, World!". The server is set to listen on port 8080.
 
 ### A Filter and an EndPoints
 
@@ -112,7 +114,8 @@ You could place your Unauthorized/401 security check inside "/api" path and have
 
 ### A filter and an EndPoint within a path
 
-Here's an example of using a filter to perform authentication and passing attributes to an endpoint within a path using TinyWeb:
+Here's an example of using a filter to perform authentication and passing attributes to an endpoint within a path 
+using TinyWeb:
 
 ```java
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
@@ -321,25 +324,21 @@ four concurrently connected channels.
 
 ### Short Messages with Follow-up GET Requests
 
-One school of thought says WebSockets (and messaging systems generally) should send short notifications from the server to the client. 
-These notifications can inform the client that an event has occurred or that new data is available. Instead of sending 
-all the data over the implicitly async connection, the server sends a brief message, and the client then performs a traditional 
-HTTP GET request to retrieve the full details.
+One school of thought says WebSockets (and messaging systems generally) should send short notifications from the server 
+to the client. These notifications can inform the client that an event has occurred or that new data is available. 
+Instead of sending all the data over the implicitly async connection, the server sends a brief message, and the client 
+then performs a traditional HTTP GET request to retrieve the full details.
 
 This approach has several advantages:
 
 1. **Efficiency**: By keeping WebSocket messages short, you reduce the amount of data transmitted over the WebSocket connection, which can be beneficial in bandwidth-constrained environments.
-
 2. **Scalability**: Using HTTP GET requests for detailed data retrieval allows you to leverage existing HTTP caching and load balancing infrastructure, which can improve scalability and performance.
-
 3. **Separation of Concerns**: This pattern separates the concerns of real-time notification and data retrieval, allowing each to be optimized independently.
-
 4. **Security**: HTTP requests can be more easily secured and monitored than WebSocket messages, allowing for better control over data access and auditing.
 
 Here's a simple example of how this might work:
 
 1. **Server**: Sends a short message over the WebSocket, e.g., "{'newTrades': {'tickets': '['MSFT', 'since': 1730052329]}}".
-
 2. **Client**: Receives the message and performs a GET request to `/api/trades/MSFT` to retrieve the full details.
 
 This pattern is particularly useful in applications where real-time updates are needed, but the data associated with 
@@ -480,7 +479,9 @@ application's specific needs, ensuring that errors are managed effectively and t
 
 ### Input Validation
 
-Input validation is crucial for ensuring the security and reliability of your `TinyWeb` application. While `TinyWeb` does not provide built-in input validation, developers should implement their own validation logic to protect against common vulnerabilities such as XSS (Cross-Site Scripting) and CSRF (Cross-Site Request Forgery).
+Input validation is crucial for ensuring the security and reliability of your `TinyWeb` application. While `TinyWeb` 
+does not provide built-in input validation, developers should implement their own validation logic to protect against 
+common vulnerabilities such as XSS (Cross-Site Scripting) and CSRF (Cross-Site Request Forgery).
 
 #### Example: Basic Input Validation
 
@@ -508,13 +509,16 @@ endPoint(TinyWeb.Method.POST, "/submit", (req, res, params) -> {
 - **Validate on Both Client and Server**: Perform validation on the client side for user feedback and on the server side for security.
 - **Limit Input Size**: Restrict the size of inputs to prevent buffer overflow attacks.
 
-By implementing robust input validation, you can enhance the security of your `TinyWeb` application and protect it from common web vulnerabilities.
+By implementing robust input validation, you can enhance the security of your `TinyWeb` application and protect it 
+from common web vulnerabilities.
 
 ## Integrating other frameworks
 
 ### Dependency Injection
 
-Dependency Injection (DI) is a design pattern that allows for the decoupling of object creation from their usage, making code more modular and testable. Dagger2 is a popular DI framework for Java that can be used with `TinyWeb` to manage dependencies.
+Dependency Injection (DI) is a design pattern that allows for the decoupling of object creation from their usage, 
+making code more modular and testable. Dagger2 is a popular DI framework for Java that can be used with `TinyWeb` 
+to manage dependencies.
 
 Here's a basic example of using Dagger2 with `TinyWeb`:
 
@@ -579,11 +583,17 @@ public class MyWebApp {
 }
 ```
 
-In this example, `MyService` is injected into `MyWebApp` using Dagger2. The `AppModule` provides the `MyServiceImpl` instance, and the `AppComponent` interface connects the module to the `MyWebApp` class. The `myService` is injected with application scope, meaning it is a singleton within the context of the application. This ensures that the same instance of `MyService` is used throughout the application's lifecycle, which is suitable for services that do not maintain state specific to individual requests.
+In this example, `MyService` is injected into `MyWebApp` using Dagger2. The `AppModule` provides the `MyServiceImpl` 
+instance, and the `AppComponent` interface connects the module to the `MyWebApp` class. The `myService` is injected 
+with application scope, meaning it is a singleton within the context of the application. This ensures that the same 
+instance of `MyService` is used throughout the application's lifecycle, which is suitable for services that do not 
+maintain state specific to individual requests.
 
 ### ORM Technologies
 
-Object-Relational Mapping (ORM) is a technique that allows developers to interact with a database using objects, rather than writing raw SQL queries. JDBI is a lightweight ORM library that can be easily integrated with `TinyWeb` for database operations.
+Object-Relational Mapping (ORM) is a technique that allows developers to interact with a database using objects, 
+rather than writing raw SQL queries. JDBI is a lightweight ORM library that can be easily integrated with `TinyWeb` 
+for database operations.
 
 Here's a basic example of using JDBI with `TinyWeb`:
 
@@ -597,7 +607,9 @@ Here's a basic example of using JDBI with `TinyWeb`:
 </dependency>
 ```
 
-2. Use JDBI to interact with the database in your application. JDBI provides transaction management capabilities, allowing you to execute multiple operations within a single transaction. The JDBI instance is typically created at a global scope and shared across the application to manage database connections efficiently.
+2. Use JDBI to interact with the database in your application. JDBI provides transaction management capabilities, 
+3. allowing you to execute multiple operations within a single transaction. The JDBI instance is typically created 
+4. at a global scope and shared across the application to manage database connections efficiently.
 
 Here's an example of using JDBI with transaction management:
 
@@ -633,7 +645,9 @@ public class MyDatabaseApp {
 }
 ```
 
-In this example, the JDBI instance is used to manage transactions for both reading and writing operations. The `inTransaction` method is used to execute a query within a transaction, and the `useTransaction` method is used to perform an insert operation with a specified transaction isolation level.
+In this example, the JDBI instance is used to manage transactions for both reading and writing operations. The 
+`inTransaction` method is used to execute a query within a transaction, and the `useTransaction` method is used 
+to perform an insert operation with a specified transaction isolation level.
 
 ```java
 import org.jdbi.v3.core.Jdbi;
@@ -659,7 +673,8 @@ public class MyDatabaseApp {
 }
 ```
 
-In this example, JDBI is used to query a list of users from an H2 in-memory database and return the results via a `TinyWeb` endpoint.
+In this example, JDBI is used to query a list of users from an H2 in-memory database and return the results via 
+a `TinyWeb` endpoint.
 
 ## Don't do this
 
@@ -683,11 +698,13 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 
 ## Testing Your Web App
 
-Testing is a critical part of developing reliable web applications. `TinyWeb` can be tested using various frameworks, each offering unique features. Here are some suggestions:
+Testing is a critical part of developing reliable web applications. `TinyWeb` can be tested using various frameworks, 
+each offering unique features. Here are some suggestions:
 
 ### Cuppa-Framework
 
-The Cuppa-Framework is recommended for testing `TinyWeb` applications due to its idiomatic style, which closely aligns with `TinyWeb`'s composition approach. It allows for expressive and readable test definitions.
+The Cuppa-Framework is recommended for testing `TinyWeb` applications due to its idiomatic style, which closely aligns 
+with `TinyWeb`'s composition approach. It allows for expressive and readable test definitions.
 
 Example:
 
@@ -707,7 +724,8 @@ public class MyWebAppTest {
 
 ### JUnit and TestNG
 
-JUnit and TestNG are popular testing frameworks that provide extensive features for unit and integration testing. They are well-suited for testing individual components and overall application behavior.
+JUnit and TestNG are popular testing frameworks that provide extensive features for unit and integration testing. They 
+are well-suited for testing individual components and overall application behavior.
 
 Example with JUnit:
 
@@ -725,7 +743,8 @@ public class MyWebAppTest {
 
 ### Mockito
 
-Mockito is a powerful mocking framework that can be used to create mock objects for testing. It is particularly useful for isolating components and testing interactions.
+Mockito is a powerful mocking framework that can be used to create mock objects for testing. It is particularly useful 
+for isolating components and testing interactions.
 
 Example with Mockito:
 
@@ -743,7 +762,8 @@ public class MyWebAppTest {
 }
 ```
 
-By leveraging these testing frameworks, you can ensure that your `TinyWeb` application is robust, reliable, and ready for production.
+By leveraging these testing frameworks, you can ensure that your `TinyWeb` application is robust, reliable, and ready 
+for production.
 
 # Build and Test of TinyWeb itself
 
