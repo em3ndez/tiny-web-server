@@ -1,11 +1,11 @@
 # TinyWeb.Server and TinyWeb.SocketServer
 
-The `TinyWeb` class provides a lightweight and flexible server implementation that supports both HTTP and WebSocket 
+The `TinyWeb` single source file provides a lightweight and flexible server implementation that supports both HTTP and WebSocket 
 protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  It uses
-a key Java 8 syntax (Functional-Interface and lambdas) as many newer web frameworks do. It also uses the virtual thread
-system in Java 21 and the JDK's built-in HTTP APIs rather than Netty or Jetty.
+a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
+system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Netty or Jetty.
 
-## Server
+## Web Server
 
 The `TinyWeb.Server` class allows you to create an HTTP server with minimal configuration. You can define routes for different HTTP methods (GET, POST, PUT, DELETE) and attach handlers to process requests. The server supports:
 
@@ -14,15 +14,17 @@ The `TinyWeb.Server` class allows you to create an HTTP server with minimal conf
 - **Filters**: Apply filters to requests for pre-processing or access control.
 - Fairly open
 
-## WebSocket
+## Web Sockets
 
-The `TinyWeb.SocketServer` class provides WebSocket support, enabling real-time, bidirectional communication between the server and clients. Key features include:
+The `TinyWeb.SocketServer` class provides WebSocket support, enabling real-time, bidirectional communication between 
+the server and clients. Key features include:
 
 - **Message Handling**: Register handlers for specific WebSocket paths to process incoming messages.
 - **Secure Communication**: Supports WebSocket handshake and message framing for secure data exchange.
 - **Integration with HTTP Server**: Seamlessly integrate WebSocket functionality with the HTTP server for a unified application architecture.
 
-These two together are ideal for building lightweight web applications and services that require both HTTP and WebSocket 
+`TinyWeb.Server` and `TinyWeb.SocketServer` together are ideal for building lightweight web applications and services 
+that require both HTTP and WebSocket 
 capabilities. TinyWeb.SocketServer can be run separately.
 
 ## Rationale
@@ -35,7 +37,7 @@ I wanted to make something that:
 
 # Quick user guide
 
-Users are developers obviously
+"Users" are developers, if that's not obvious. 
 
 ## Basic Use
 
@@ -251,7 +253,10 @@ four concurrently connected channels.
 
 ### Short Messages with Follow-up GET Requests
 
-In some architectures, WebSockets are used to send short, real-time notifications from the server to the client. These notifications can inform the client that an event has occurred or that new data is available. Instead of sending all the data over the WebSocket connection, the server sends a brief message, and the client then performs a traditional HTTP GET request to retrieve the full details.
+One school of thought says WebSockets (and messaging systems generally) should send short notifications from the server to the client. 
+These notifications can inform the client that an event has occurred or that new data is available. Instead of sending 
+all the data over the implicitly async connection, the server sends a brief message, and the client then performs a traditional 
+HTTP GET request to retrieve the full details.
 
 This approach has several advantages:
 
@@ -265,12 +270,18 @@ This approach has several advantages:
 
 Here's a simple example of how this might work:
 
-1. **Server**: Sends a short message over the WebSocket, e.g., "New data available for item 123".
+1. **Server**: Sends a short message over the WebSocket, e.g., "{'newTrades': {'tickets': '['MSFT', 'since': 1730052329]}}".
 
-2. **Client**: Receives the message and performs a GET request to `/api/items/123` to retrieve the full details.
+2. **Client**: Receives the message and performs a GET request to `/api/trades/MSFT` to retrieve the full details.
 
-This pattern is particularly useful in applications where real-time updates are needed, but the data associated with those updates is too large or complex to send over a WebSocket connection.
+This pattern is particularly useful in applications where real-time updates are needed, but the data associated with 
+those updates is too large or complex to send over a WebSocket connection.
 
+## Secure Channels
+
+TODO: HTTP so far, HTTP to do (has traditional fronting solutions)
+
+TODO: WS so far but no WSS - thoughts?
 
 ## Don't do this
 
@@ -387,7 +398,7 @@ To run the main method of `TinyWebTest.java`, which executes the tests using the
 java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" com.paulhammant.tinywebserver.TinyWebTest
 ```
 
-## TinyWeb.Server's Test Results
+## TinyWeb's own test results
 
 As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so:
 
