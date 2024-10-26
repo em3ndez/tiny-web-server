@@ -128,7 +128,7 @@ java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:targe
 
 ## TinyWeb.Server's Test Results
 
-As mentioned, Cuppa-Framework is the tech used for testing, and it spits out spec-style success/failure like so:
+As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so:
 
 ``` 
 When using the ExampleApp server via sockets
@@ -179,62 +179,34 @@ ChatGPT estimates the path coverage for the TinyWeb class to be around 85-90%
 
 I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll raise that feature request.
 
-# Example code
+# Examples
 
-## Paths, filters and endpoints
+## Basic Use
 
-Here's a simple example of defining paths, filters, and endpoints using TinyWeb:
+### endPoint
 
-```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-    path("/api", () -> {
-        // Apply a filter to all GET requests under /api
-        filter(TinyWeb.Method.GET, "/.*", (req, res, params) -> {
-            if (!req.getHeaders().containsKey("Authorization")) {
-                res.write("Unauthorized", 401);
-                return false; // Stop processing if unauthorized
-            }
-            return true; // Continue processing
-        });
+### filter and endPoint
 
-        // Define a GET endpoint
-        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
-            res.write("Hello, World!");
-        });
+### two endPoints within a path 
 
-        // Define a POST endpoint
-        endPoint(TinyWeb.Method.POST, "/data", (req, res, params) -> {
-            String data = req.getBody();
-            res.write("Received data: " + data, 201);
-        });
-    });
-}}.start();
-```
-
-In this example, a filter is applied to all GET requests under the `/api` path to check for an "Authorization" header. If the header is missing, the request is denied with a 401 status code. Two endpoints are defined: a GET endpoint at `/api/hello` that responds with "Hello, World!" and a POST endpoint at `/api/data` that echoes back the received data.
-
-Note this is a trick - the nesting belies the fact that they are of different sockets.
+### webSocket and endPoint within a path
 
 ## Don't do this
 
-When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such as `path()`, `endPoint()`, or `filter()`) is executed only once during the server's instantiation. This means that such code is not executed per request or per path hit, but rather when the server is being set up. 
-
-For example, if you have initialization logic or state that should be set up for each request or when a specific path is accessed, ensure that this logic is placed inside the appropriate lambda block. This ensures that the logic is executed in the correct context and scope, such as when a path is hit or a request is processed.
+When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such 
+as `path()`, `endPoint()`, or `filter()`) is executed only once during the server's instantiation. This 
+means that such code is not executed per request or per path hit, but rather when the server is being set up.
 
 Here's an example of what not to do:
 
 ```java
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-    // This code runs only once during server instantiation
-    System.out.println("Server is starting...");
-
     path("/api", () -> {
+        code().thatYouThink("is per to /api invocation, but it is not");
         // This code runs per request to /api
         endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
-            res.write("Hello, World!");
+            res.write("Code must be in lambda blocks");
         });
     });
 }};
 ```
-
-In this example, the `System.out.println("Server is starting...");` line is executed only once when the server is created, not each time a request is made to `/api/hello`.

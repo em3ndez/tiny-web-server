@@ -23,7 +23,8 @@ import java.util.regex.Pattern;
 
 public class TinyWeb {
 
-    public enum Method { GET, POST, PUT, DELETE }
+    public enum Method { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE, LINK, UNLINK, LOCK, UNLOCK,
+        PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, REPORT, SEARCH, PURGE, REBIND, UNBIND , ACL}
 
     public static class Context {
 
