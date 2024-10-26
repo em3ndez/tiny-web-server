@@ -476,7 +476,9 @@ public interface AppComponent {
 }
 ```
 
-3. Use the component to inject dependencies in your application:
+3. Use the component to inject dependencies in your application. In this example, `myService` is injected with application scope, meaning it is a singleton within the context of the application. This ensures that the same instance of `MyService` is used throughout the application's lifecycle, which is suitable for services that do not maintain state specific to individual requests.
+
+If you need request-scoped dependencies, you would typically manage this within the request handling logic, as Dagger2 does not natively support request-scoped components without additional setup.
 
 ```java
 public class MyWebApp {
