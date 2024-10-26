@@ -277,7 +277,32 @@ In this example, a GET endpoint is defined at `/api/status` that responds with "
 Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it 
 receives, prefixed with "Echo: ", which we admit isn't a real world example.
 
-TODO: show what Java code would look like to conntect to the webSocket via TinyWeb.SocketClient
+### Connecting to a WebSocket using TinyWeb.SocketClient
+
+Here's an example of how to connect to a WebSocket using `TinyWeb.SocketClient`:
+
+```java
+public class WebSocketClientExample {
+    public static void main(String[] args) {
+        try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
+            // Perform the WebSocket handshake
+            client.performHandshake();
+
+            // Send a message to the WebSocket server
+            client.sendMessage("/chat", "Hello WebSocket");
+
+            // Receive a response from the WebSocket server
+            String response = client.receiveMessage();
+            System.out.println("Received: " + response);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+In this example, a `TinyWeb.SocketClient` is created to connect to a WebSocket server running on `localhost` at port `8081`. The client performs a WebSocket handshake, sends a message to the `/chat` path, and prints the response received from the server.
 
 ### Two WebSockets with Different Paths
 
