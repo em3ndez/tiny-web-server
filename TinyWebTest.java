@@ -59,14 +59,23 @@ public class TinyWebTest {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
                             filter(TinyWeb.Method.GET, ".*", (req, res, params) -> {
-                                req.setAttribute("message", "Filter says hello");
-                                return true; // Continue processing
+                                String allegedlyLoggedInCookie = req.getCookie("logged-in");
+                                Authentication auth = IsEncryptedByUs.decrypt(allegedlyLoggedInCookie);
+                                if (auth.authentic == false) {
+                                    res.write("Try logging in again", 403);
+                                } else {
+                                    req.setAttribute("user", auth.user);
+                                    return true; // Continue processing
+                                });
+                                endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
+                                    res.write("User Is logged in: " + req.getAttribute("user"));
+                                });
                             });
-                            endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
-                                res.write("Endpoint says hello & " + req.getAttribute("message"));
-                            });
-                        });
-                    }}.start();
+                        }
+                        }.
+
+                        start();
+                    });
                 });
 
                 it("passes attribute from filter to endpoint", () -> {
@@ -637,4 +646,18 @@ public class TinyWebTest {
         Runner runner = new Runner();
         runner.run(runner.defineTests(Collections.singletonList(TinyWebTest.class)), new DefaultReporter());
     }
+    public static class IsEncryptedByUs {
+        public static Authentication decrypt(String allegedlyLoggedInCookie) {
+            String rot47ed = rot47(allegedlyLoggedInCookie);
+            // check is an email address
+            if (/* is email address */) {
+                return new Authentication(true, rot47ed);
+            } else {
+                return new Authentication(false, null);
+            }
+        }
+    }
+    public Record Authentication;
+
 }
+
