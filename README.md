@@ -351,22 +351,16 @@ In this example, a `TinyWeb.SocketClient` is created in JavaScript to connect to
 running on `localhost` at port 8081. The client waits for the connection to open, sends a message to the `/chat` 
 path, and displays the response received from the server in the browser.
 
-### Serving the JavaScript WebSocket Client
+**Making the JavaScript WebSocket Client available to webapps**
 
-In the example where we connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`, the server needs to serve the JavaScript client code to the browser. This is done by defining an endpoint that responds with the JavaScript code when requested.
-
-Here's how the server-side route is set up:
+In the example where we connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`, 
+the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint 
+that responds with the JavaScript code when requested:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-    // Serve the JavaScript WebSocket client
-    endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.SocketClientJavascript());
-
-    // Other endpoints and WebSocket handlers...
-}}.start();
+endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.SocketClientJavascript());
 ```
-
-In this setup, an endpoint is defined at `/javascriptWebSocketClient.js` that serves the JavaScript client code. The `TinyWeb.SocketClientJavascript` class is responsible for providing the JavaScript code that implements the WebSocket client. When the browser requests this path, the server responds with the JavaScript code, allowing the browser to establish a WebSocket connection using the provided client implementation.
+This is to honor the server-side need for path & message to be in a specific opinionated structure.
 
 ### Two WebSockets with Different Paths
 
@@ -416,3 +410,5 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     });
 }};
 ```
+
+## Testing your web app
