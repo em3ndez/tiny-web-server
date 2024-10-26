@@ -277,7 +277,7 @@ In this example, a GET endpoint is defined at `/api/status` that responds with "
 Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it 
 receives, prefixed with "Echo: ", which we admit isn't a real world example.
 
-### Connecting to a WebSocket using TinyWeb.SocketClient
+#### Connecting to a WebSocket using TinyWeb.SocketClient
 
 Here's an example of how to connect to a WebSocket using `TinyWeb.SocketClient`:
 
@@ -302,7 +302,14 @@ public class WebSocketClientExample {
 }
 ```
 
-In this example, a `TinyWeb.SocketClient` is created to connect to a WebSocket server running on `localhost` at port `8081`. The client performs a WebSocket handshake, sends a message to the `/chat` path, and prints the response received from the server.
+In this example, a `TinyWeb.SocketClient` is created to connect to a WebSocket server running on `localhost` at 
+port 8081. The client performs a WebSocket handshake, sends a message to the `/chat` path, and prints the 
+response received from the server. On the wire, the path and message are put in a specific structure for sending to 
+the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not. This is to make the webSockets 
+appear within the same nested path structure of the composed server grammar. They're not really - not even the 
+same port to the server.
+
+TODO: same example but using the JavaScript TinyWeb.SocketClient
 
 ### Two WebSockets with Different Paths
 
