@@ -54,6 +54,35 @@ public class TinyWebTest {
                 });
             });
 
+            describe("and passing attributes from filter to endpoint", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080, 8081) {{
+                        path("/api", () -> {
+                            filter(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
+                                req.setAttribute("message", "Hello from filter");
+                                return true; // Continue processing
+                            });
+                            endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
+                                String message = (String) req.getAttribute("message");
+                                res.write("Endpoint received: " + message);
+                            });
+                        });
+                    }}.start();
+                });
+
+                it("passes attribute from filter to endpoint", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/attribute-test")) {
+                        assertThat(response.code(), equalTo(200));
+                        assertThat(response.body().string(), equalTo("Endpoint received: Hello from filter"));
+                    }
+                });
+
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+
             describe("and accessing a nested path with parameters", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
