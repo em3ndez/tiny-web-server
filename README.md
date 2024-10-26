@@ -347,7 +347,11 @@ Here's an example of how to connect to a WebSocket using the JavaScript `TinyWeb
 </html>
 ```
 
-In this example, a `TinyWeb.SocketClient` is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the connection to open, sends a message to the `/chat` path, and displays the response received from the server in the browser.
+In this example, a `TinyWeb.SocketClient` is created in JavaScript to connect to a WebSocket server 
+running on `localhost` at port 8081. The client waits for the connection to open, sends a message to the `/chat` 
+path, and displays the response received from the server in the browser.
+
+TODO explain the additional serverside woute for javascriptWebSocketClient.js
 
 ### Two WebSockets with Different Paths
 
