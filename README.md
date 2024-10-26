@@ -301,9 +301,54 @@ TODO: comment on performance
 
 ## Error handling
 
-### In endPoints themselves
+### In EndPoints Themselves
 
-TODO what a user would do to set something in response, and needing to understand/program HTTP response codes
+When handling requests in `TinyWeb`, it's important to understand how to set HTTP response codes and customize responses. HTTP response codes are crucial for indicating the result of a request to the client. Here's how you can manage responses in `TinyWeb`:
+
+#### Setting HTTP Response Codes
+
+In `TinyWeb`, you can set the HTTP response code by using the `write` method of the `Response` object. The `write` method allows you to specify both the response content and the status code. Here's an example:
+
+```java
+endPoint(TinyWeb.Method.GET, "/example", (req, res, params) -> {
+    // Set a 200 OK response
+    res.write("Request was successful", 200);
+});
+```
+
+In this example, the endpoint responds with a 200 OK status code, indicating that the request was successful.
+
+#### Common HTTP Response Codes
+
+Understanding common HTTP response codes is essential for effectively communicating the outcome of requests:
+
+- **200 OK**: The request was successful, and the server returned the requested resource.
+- **201 Created**: The request was successful, and a new resource was created.
+- **400 Bad Request**: The server could not understand the request due to invalid syntax.
+- **401 Unauthorized**: The client must authenticate itself to get the requested response.
+- **403 Forbidden**: The client does not have access rights to the content.
+- **404 Not Found**: The server cannot find the requested resource.
+- **500 Internal Server Error**: The server encountered an unexpected condition that prevented it from fulfilling the request.
+
+#### Example: Handling Different Scenarios
+
+Here's an example of how you might handle different scenarios in an endpoint:
+
+```java
+endPoint(TinyWeb.Method.POST, "/submit", (req, res, params) -> {
+    if (req.getBody().isEmpty()) {
+        // Respond with 400 Bad Request if the body is empty
+        res.write("Request body cannot be empty", 400);
+    } else {
+        // Process the request and respond with 201 Created
+        res.write("Resource created successfully", 201);
+    }
+});
+```
+
+In this example, the endpoint checks if the request body is empty. If it is, it responds with a 400 Bad Request status code. Otherwise, it processes the request and responds with a 201 Created status code.
+
+By understanding and using HTTP response codes effectively, you can provide clear and meaningful feedback to clients interacting with your `TinyWeb` server.
 
 ### TinyWeb's overridable exception methods
 
