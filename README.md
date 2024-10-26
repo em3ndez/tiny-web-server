@@ -246,7 +246,11 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 }}.start();
 ```
 
-In this example, two GET endpoints are defined within the `/api` path. The first endpoint responds with "Hello from the first endpoint!" when a request is made to `/api/hello`, and the second endpoint responds with "Goodbye from the second endpoint!" when a request is made to `/api/goodbye`.
+In this example, two GET endpoints are defined within the `/api` path. The first endpoint responds with "Hello 
+from the first endpoint!" when a request is made to `/api/hello`, and the second endpoint responds with 
+"Goodbye from the second endpoint!" when a request is made to `/api/goodbye`.
+
+You could place your Unauthorized/401 security check inside "/api" path and have it apply to both endPoints
 
 ### webSocket and endPoint within a path
 
