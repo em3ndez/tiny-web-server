@@ -151,6 +151,14 @@ public class TinyWeb {
         }
     }
 
+    public void setAttribute(String key, Object value) {
+        attributes.put(key, value);
+    }
+
+    public Object getAttribute(String key) {
+        return attributes.get(key);
+    }
+
     public static class PathContext extends Context {
 
         private final String basePath;
@@ -367,6 +375,7 @@ public class TinyWeb {
         private final String body;
 
         private final Map<String, String> queryParams;
+        private final Map<String, Object> attributes = new HashMap<>();
 
         public Request(HttpExchange exchange) {
             this.exchange = exchange;
