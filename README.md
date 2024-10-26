@@ -277,7 +277,29 @@ In this example, a GET endpoint is defined at `/api/status` that responds with "
 Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it 
 receives, prefixed with "Echo: ", which we admit isn't a real world example.
 
-TODO: One more example with two webSockets and different paths.
+### Two WebSockets with Different Paths
+
+Here's an example of defining two WebSocket endpoints with different paths using TinyWeb:
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+    path("/api", () -> {
+        // Define the first WebSocket endpoint
+        webSocket("/chat", (message, sender) -> {
+            String responseMessage = "Chat Echo: " + new String(message, "UTF-8");
+            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+        });
+
+        // Define the second WebSocket endpoint
+        webSocket("/notifications", (message, sender) -> {
+            String responseMessage = "Notification: " + new String(message, "UTF-8");
+            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+        });
+    });
+}}.start();
+```
+
+In this example, two WebSocket endpoints are defined within the `/api` path. The first WebSocket endpoint at `/api/chat` echoes back any message it receives, prefixed with "Chat Echo: ". The second WebSocket endpoint at `/api/notifications` echoes back messages prefixed with "Notification: ".
 
 ## Don't do this
 
