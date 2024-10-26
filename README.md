@@ -279,9 +279,13 @@ those updates is too large or complex to send over a WebSocket connection.
 
 ## Secure Channels
 
-TODO: HTTP so far, HTTP to do (has traditional fronting solutions)
+### Securing HTTP Channels
 
-TODO: WS so far but no WSS - thoughts?
+Currently, TinyWeb supports HTTP, which is suitable for development and testing environments. However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination. These proxies can be configured to forward requests to TinyWeb over HTTP, while serving clients over HTTPS. This approach leverages the robust SSL/TLS capabilities of these proxies, ensuring secure communication without modifying the TinyWeb server code.
+
+### Securing WebSocket Channels
+
+TinyWeb currently supports WebSocket (WS) connections, which are not encrypted. For secure communication, it's important to use Secure WebSocket (WSS) connections. Similar to HTTP, you can achieve this by using a reverse proxy that supports SSL/TLS termination for WebSockets. The proxy can handle the encryption and decryption of WebSocket traffic, forwarding it to TinyWeb over an unencrypted channel. This setup ensures that WebSocket communications are secure, protecting data from eavesdropping and tampering.
 
 ## Don't do this
 
