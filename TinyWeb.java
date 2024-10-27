@@ -355,7 +355,7 @@ public class TinyWeb {
             return this;
         }
 
-        public <T> T instantiatetDep(Class<T> clazz) {
+        public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> depsForRequest) {
             throw new TinyWeb.ServerException("not implemented - you need to override getRequestScopedDependency()");
         }
     }
@@ -480,7 +480,7 @@ public class TinyWeb {
             if (Request.this.deps.containsKey(clazz)) {
                 return (T) deps.get(clazz);
             }
-            T t = server.instantiatetDep(clazz);
+            T t = server.instantiateDep(clazz, deps);
             deps.put(clazz, t);
             return t;
         }
@@ -530,6 +530,10 @@ public class TinyWeb {
     }
 
     public static class ExampleApp {
+
+        public record FooBarDeps(StringBuilder gratuitousExampleDep) {}
+
+        @Dependencies(clazz=FooBarDeps.class)
         public void foobar(Request req, Response res, Map<String, String> params) {
             res.write(String.format("Hello, %s %s!", params.get("1"), params.get("2")));
         }
@@ -566,6 +570,7 @@ public class TinyWeb {
                 endPoint(Method.GET, "/users/(\\w+)", (req, res, params) -> {
                     res.write("User profile: " + params.get("1"));
                 });
+
 
                 endPoint(Method.POST, "/echo", (req, res, params) -> {
                     res.write("You sent: " + req.getBody(), 201);
