@@ -603,6 +603,9 @@ public static class ShoppingCart {
         return true;
     }
 }
+
+// Also copy in `and endpoint and filters can depend on components`
+
 ```
 
 
