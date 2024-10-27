@@ -240,8 +240,12 @@ public class TinyWebTest {
                         path("/api", () -> {
                             //deps([OrderBook.class]);
                             endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, ctx) -> {
-                                OrderBook ob = ctx.dep(OrderBook.class);
-                                res.write("Orders: " + ob.orderCount());
+                                ShoppingCart sc = ctx.dep(ShoppingCart.class);
+                                res.write("Cart Items before: " + sc.cartCount() + "\n");
+                                boolean picked = sc.pickItem("apple");
+                                res.write("apple picked: " + picked + "\n");
+                                res.write("Cart Items after: " + sc.cartCount() + "\n");
+
                             });
                         });
                         start();
@@ -249,7 +253,7 @@ public class TinyWebTest {
 
                         @Override
                         public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
-                            return (T) new OrderBook();
+                            return (T) new ShoppingCart(new ProductInventory());
                         }
                     };
                 });
@@ -595,10 +599,12 @@ public class TinyWebTest {
 
                 it("echoes three messages plus -1 -2 -3 back to the client", () -> {
 
-//                try {
-//                    Thread.sleep(600 * 1000);
-//                } catch (InterruptedException e) {
-//                }
+                    // To play with the wee browser app, uncomment this, and go to localhost:8080
+                    // after kicking off the test suite
+//                    try {
+//                        Thread.sleep(600 * 1000);
+//                    } catch (InterruptedException e) {
+//                    }
 
                     WebDriver driver = new ChromeDriver();
                     try {
@@ -666,6 +672,36 @@ public class TinyWebTest {
                 });
             });
 
+            describe("and the composition can happen for a previously instantiated TinyWeb.Server", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080, 8081) {{
+                        endPoint(TinyWeb.Method.GET, "/foo", (req, res, ctx) -> {
+                            res.write("Hello1");
+                        });
+                    }};
+                    new TinyWeb.AdditionalServerContexts(svr) {{
+                        path("/bar", () -> {
+                            endPoint(TinyWeb.Method.GET, "/baz", (req, res, ctx) -> {
+                                res.write("Hello2");
+                            });
+                        });
+                    }};
+                    svr.start();
+                });
+                only().it("both endpoints can be GET", () -> {
+                    try (Response response = httpGet("http://localhost:8080/foo")) {
+                        assertThat(response.body().string(), equalTo("Hello1"));
+                    }
+                    try (Response response = httpGet("http://localhost:8080/bar/baz")) {
+                        assertThat(response.body().string(), equalTo("Hello2"));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
+
         });
     }
 
@@ -708,10 +744,51 @@ public class TinyWebTest {
         return result.toString();
     }
 
-    public static class OrderBook {
 
-        public int orderCount() {
-            return 3;
+
+    public static class ProductInventory {
+
+        Map<String, Integer> stockItems = new HashMap<>() {{
+            put("apple", 100);
+            put("orange", 50);
+            put("bagged bannana", 33);
+        }};
+
+        public boolean customerReserves(String item) {
+            if (stockItems.containsKey(item)) {
+                if (stockItems.get(item) > 0) {
+                    stockItems.put(item, stockItems.get(item) -1);
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    public static class ShoppingCart {
+
+        private final ProductInventory inv;
+        private final Map<String, Integer> items = new HashMap<>();
+
+        public ShoppingCart(ProductInventory inv) {
+            this.inv = inv;
+        }
+
+        public int cartCount() {
+            // return item count from items map ;
+        }
+
+        public boolean pickItem(String item) {
+            boolean gotIt = inv.customerReserves(item);
+            if (!gotIt) {
+                return false;
+            }
+            if (items.containsKey(item)) {
+                items.put(item, items.get(item) +1);
+            } else {
+                items.put(item, 1);
+            }
+            return true;
         }
     }
 
