@@ -182,6 +182,10 @@ public class TinyWeb {
         public ServerException(String message, Throwable cause) {
             super(message, cause);
         }
+
+        public ServerException(String message) {
+            super(message);
+        }
     }
 
     public static class Server extends Context {
@@ -265,7 +269,7 @@ public class TinyWeb {
                                     }
                                     try {
                                         if (request == null) {
-                                            request = new Request(exchange);
+                                            request = new Request(exchange, this);
                                         }
                                         if (response == null) {
                                             response = new Response(exchange);
@@ -292,7 +296,7 @@ public class TinyWeb {
 
                         try {
                             if (request == null) {
-                                request = new Request(exchange);
+                                request = new Request(exchange, this);
                             }
                             if (response == null) {
                                 response = new Response(exchange);
@@ -350,6 +354,10 @@ public class TinyWeb {
             }
             return this;
         }
+
+        public <T> T instantiatetDep(Class<T> clazz) {
+            throw new TinyWeb.ServerException("not implemented - you need to override getRequestScopedDependency()");
+        }
     }
 
 
@@ -376,13 +384,16 @@ public class TinyWeb {
 
     public static class Request {
         private final HttpExchange exchange;
+        private final Server server;
         private final String body;
 
         private final Map<String, String> queryParams;
         private final Map<String, Object> attributes = new HashMap<>();
+        private Map<Class, Object> deps = new HashMap<>();
 
-        public Request(HttpExchange exchange) {
+        public Request(HttpExchange exchange, Server server) {
             this.exchange = exchange;
+            this.server = server;
             if (exchange != null) {
                 try {
                     this.body = new String(exchange.getRequestBody().readAllBytes());
@@ -465,7 +476,12 @@ public class TinyWeb {
         }
 
         public <T> T dep(Class<T> clazz) {
-            return null;
+            if (Request.this.deps.containsKey(clazz)) {
+                return (T) deps.get(clazz);
+            }
+            T t = server.instantiatetDep(clazz);
+            deps.put(clazz, t);
+            return t;
         }
     }
 

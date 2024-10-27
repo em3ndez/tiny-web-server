@@ -235,6 +235,36 @@ public class TinyWebTest {
                     svr = null;
                 });
             });
+            describe("and endpoint and filters can depend on components", () -> {
+                before(() -> {
+                    svr = new TinyWeb.Server(8080, 8081) {{
+                        path("/api", () -> {
+                            //deps([OrderBook.class]);
+                            endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, params) -> {
+                                OrderBook ob = req.dep(OrderBook.class);
+                                res.write("Orders: " + ob.orderCount());
+                            });
+                        });
+                        start();
+                    }
+
+                        @Override
+                        public <T> T instantiatetDep(Class<T> clazz) {
+                            return (T) new OrderBook();
+                        }
+                    };
+                });
+                it("extracts parameters correctly from the path", () -> {
+                    try (Response response = httpGet("http://localhost:8080/api/howManyOrderInBook")) {
+                        assertThat(response.body().string(), equalTo("Orders: 3"));
+                        assertThat(response.code(), equalTo(200));
+                    }
+                });
+                after(() -> {
+                    svr.stop();
+                    svr = null;
+                });
+            });
             describe("and an application exception is thrown from an endpoint", () -> {
                 final StringBuilder se = new StringBuilder();
                 before(() -> {
@@ -618,14 +648,14 @@ public class TinyWebTest {
                 });
 
                 it("attribute user was passed from filter to endPoint for authentic user", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=7C65o6I2>A=6]4@>;")) {
+                    try (Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=7C65o6I2>A=6]4@>")) {
                         assertThat(response.body().string(), equalTo("User Is logged in: fred@example.com"));
                         assertThat(response.code(), equalTo(200));
                     }
                 });
 
                 it("attribute user was not passed from filter to endPoint for inauthentic user", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=aeiouaeiou")) {
+                    try (Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=aeiouaeiou;")) {
                         assertThat(response.body().string(), equalTo("Try logging in again"));
                         assertThat(response.code(), equalTo(403));
                     }
@@ -677,6 +707,13 @@ public class TinyWebTest {
             }
         }
         return result.toString();
+    }
+
+    public static class OrderBook {
+
+        public int orderCount() {
+            return 3;
+        }
     }
 
     public static void main(String[] args) {
