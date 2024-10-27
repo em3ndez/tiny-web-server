@@ -249,7 +249,7 @@ public class TinyWebTest {
                     }
 
                         @Override
-                        public <T> T instantiatetDep(Class<T> clazz) {
+                        public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
                             return (T) new OrderBook();
                         }
                     };

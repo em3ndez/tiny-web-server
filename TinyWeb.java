@@ -247,15 +247,11 @@ public class TinyWeb {
                         int groupCount = matcher.groupCount();
                         Pattern key = route.getKey();
                         for (int i = 1; i <= groupCount; i++) {
-//                            if (key.toString().endsWith("?(.*)$") && i == groupCount) {
-//                                placeQueryStringItemsInParams(params, matcher.group(i));
-//                            } else {
-                                params.put(String.valueOf(i), matcher.group(i));
-//                            }
+                            params.put(String.valueOf(i), matcher.group(i));
                         }
 
-                        Request request = null;
-                        Response response = null;
+                        final Request request = new Request(exchange, this);
+                        final Response response = new Response(exchange);
 
                         // Apply filters
                         List<FilterEntry> methodFilters = filters.get(method);
@@ -268,12 +264,6 @@ public class TinyWeb {
                                         filterParams.put(String.valueOf(i), filterMatcher.group(i));
                                     }
                                     try {
-                                        if (request == null) {
-                                            request = new Request(exchange, this);
-                                        }
-                                        if (response == null) {
-                                            response = new Response(exchange);
-                                        }
                                         boolean proceed = false;
                                         try {
                                             proceed = filterEntry.filter.filter(request, response, filterParams);
@@ -295,12 +285,6 @@ public class TinyWeb {
                         }
 
                         try {
-                            if (request == null) {
-                                request = new Request(exchange, this);
-                            }
-                            if (response == null) {
-                                response = new Response(exchange);
-                            }
 
                             try {
                                 route.getValue().handle(request, response, params);
