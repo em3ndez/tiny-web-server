@@ -97,7 +97,6 @@ public class TinyWebTest {
             describe("and applying filters", () -> {
                 before(() -> {
                     svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], new TinyWeb.ExampleApp());
-                    //waitForPortToBeClosed("localhost",8080, 8081);
                     svr.start();
                 });
                 it("allows access when the 'sucks' header is absent", () -> {
@@ -108,8 +107,8 @@ public class TinyWebTest {
                 });
                 it("denies access when the 'sucks' header is present", () -> {
                     try (Response response = httpGet("http://localhost:8080/foo/bar", "sucks", "true")) {
-                        assertThat(response.code(), equalTo(403));
                         assertThat(response.body().string(), equalTo("Access Denied"));
+                        assertThat(response.code(), equalTo(403));
                     }
                 });
                 after(() -> {
@@ -369,8 +368,8 @@ public class TinyWebTest {
 
                 it("returns 500 and an error message for a runtime exception in a filter", () -> {
                     try (Response response = httpGet("http://localhost:8080/api/error")) {
-                        assertThat(response.code(), equalTo(500));
                         assertThat(response.body().string(), containsString("Server Error"));
+                        assertThat(response.code(), equalTo(500));
                         assertThat(se.toString(), containsString("appHandlingException exception: Deliberate exception in filter"));
                     }
                 });
@@ -626,7 +625,7 @@ public class TinyWebTest {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, -1) {{
                         path("/api", () -> {
-                            filter(TinyWeb.Method.GET, ".*", (req, res, ctx) -> {
+                            filter(".*", (req, res, ctx) -> {
                                 String allegedlyLoggedInCookie = req.getCookie("logged-in");
                                 // This test class only performs rot47 pn the coolie passed in.
                                 // That's not in the secure in the slightest. See https://rot47.net/

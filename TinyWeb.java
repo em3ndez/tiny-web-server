@@ -31,7 +31,7 @@ public class TinyWeb {
 
         protected Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
         protected Map<Pattern, SocketServer.SocketMessageHandler> wsRoutes = new HashMap<>();
-        protected Map<Method, List<FilterEntry>> filters = new HashMap<>();
+        protected Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
 
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
@@ -123,15 +123,8 @@ public class TinyWeb {
 
 
         public ServerContext filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
-            if (method == Method.ALL) {
-                for (Method m : Method.values()) {
-                    filters.computeIfAbsent(m, k -> new ArrayList<>())
-                            .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
-                }
-            } else {
-                filters.computeIfAbsent(method, k -> new ArrayList<>())
-                        .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
-            }
+            filters.computeIfAbsent(method, k -> new ArrayList<>())
+                    .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
             return this;
         }
 
@@ -269,31 +262,34 @@ public class TinyWeb {
 
                         // Apply filters
                         List<FilterEntry> methodFilters = filters.get(method);
-                        if (methodFilters != null) {
-                            for (FilterEntry filterEntry : methodFilters) {
-                                Matcher filterMatcher = filterEntry.pattern.matcher(path);
-                                if (filterMatcher.matches()) {
-                                    Map<String, String> filterParams = new HashMap<>();
-                                    for (int i = 1; i <= filterMatcher.groupCount(); i++) {
-                                        filterParams.put(String.valueOf(i), filterMatcher.group(i));
-                                    }
+                        if (methodFilters == null) {
+                            methodFilters = new ArrayList<FilterEntry>();
+                        }
+                        methodFilters.addAll(filters.get(Method.ALL));
+
+                        for (FilterEntry filterEntry : methodFilters) {
+                            Matcher filterMatcher = filterEntry.pattern.matcher(path);
+                            if (filterMatcher.matches()) {
+                                Map<String, String> filterParams = new HashMap<>();
+                                for (int i = 1; i <= filterMatcher.groupCount(); i++) {
+                                    filterParams.put(String.valueOf(i), filterMatcher.group(i));
+                                }
+                                try {
+                                    boolean proceed = false;
                                     try {
-                                        boolean proceed = false;
-                                        try {
-                                            proceed = filterEntry.filter.filter(request, response, makeCtx(filterParams, deps, attributes));
-                                        } catch (Exception e) {
-                                            appHandlingException(e);
-                                            sendError(exchange, 500, "Server Error");
-                                            return;
-                                        }
-                                        if (!proceed) {
-                                            return; // Stop processing if filter returns false
-                                        }
-                                    } catch (ServerException e) {
-                                        serverException(e);
-                                        sendError(exchange, 500, "Internal server error: " + e.getMessage());
+                                        proceed = filterEntry.filter.filter(request, response, makeCtx(filterParams, deps, attributes));
+                                    } catch (Exception e) {
+                                        appHandlingException(e);
+                                        sendError(exchange, 500, "Server Error");
                                         return;
                                     }
+                                    if (!proceed) {
+                                        return; // Stop processing if filter returns false
+                                    }
+                                } catch (ServerException e) {
+                                    serverException(e);
+                                    sendError(exchange, 500, "Internal server error: " + e.getMessage());
+                                    return;
                                 }
                             }
                         }
