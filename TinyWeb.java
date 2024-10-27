@@ -389,7 +389,7 @@ public class TinyWeb {
 
         private final Map<String, String> queryParams;
         private final Map<String, Object> attributes = new HashMap<>();
-        private Map<Class<?>, Object> deps = new HashMap<>();
+        private final Map<Class<?>, Object> deps = new HashMap<>();
 
         public Request(HttpExchange exchange, Server server) {
             this.exchange = exchange;
