@@ -726,6 +726,7 @@ public class TinyWebTest {
             } else {
                 return new Authentication(false, null);
             }
+            return items.values().stream().mapToInt(Integer::intValue).sum();
         }
     }
     public record Authentication(boolean authentic, String user) {}
