@@ -17,8 +17,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,13 +32,13 @@ public class TinyWeb {
     public static class ServerContext {
 
         protected Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
-        protected Map<Pattern, SocketServer.SocketMessageHandler> wsRoutes = new HashMap<>();
+        protected Map<Pattern, SocketMessageHandler> wsRoutes = new HashMap<>();
         protected Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
 
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
             Map<Method, Map<Pattern, EndPoint>> previousRoutes = this.routes;
-            Map<Pattern, SocketServer.SocketMessageHandler> previousWsRoutes = this.wsRoutes;
+            Map<Pattern, SocketMessageHandler> previousWsRoutes = this.wsRoutes;
             Map<Method, List<FilterEntry>> previousFilters = this.filters;
 
             // Create new maps to collect routes and filters within this path
@@ -70,9 +72,9 @@ public class TinyWeb {
             }
 
             // Prefix basePath to WebSocket handlers
-            for (Map.Entry<Pattern, SocketServer.SocketMessageHandler> entry : this.wsRoutes.entrySet()) {
+            for (Map.Entry<Pattern, SocketMessageHandler> entry : this.wsRoutes.entrySet()) {
                 Pattern pattern = entry.getKey();
-                SocketServer.SocketMessageHandler wsHandler = entry.getValue();
+                SocketMessageHandler wsHandler = entry.getValue();
                 Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
                 previousWsRoutes.put(newPattern, wsHandler);
             }
@@ -116,7 +118,7 @@ public class TinyWeb {
             return this;
         }
 
-        public ServerContext webSocket(String path, SocketServer.SocketMessageHandler wsHandler) {
+        public ServerContext webSocket(String path, SocketMessageHandler wsHandler) {
             wsRoutes.put(Pattern.compile("^" + path + "$"), wsHandler);
             return this;
         }
@@ -533,6 +535,25 @@ public class TinyWeb {
         }
     }
 
+    public interface ComponentCache {
+        <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier);
+    }
+    public static class DefaultComponentCache implements ComponentCache {
+        private final Map<Class<?>, Object> cache = new ConcurrentHashMap<>();
+
+        @Override
+        public <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier) {
+            return (T) cache.computeIfAbsent(clazz, key -> supplier.get());
+        }
+    }
+
+    public static class NullObjectCache implements ComponentCache {
+        @Override
+        public <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier) {
+            return supplier.get();
+        }
+    }
+
     /*
      * An inline example of composing (Tiny) WebServer.(
      * If anyone was using this tech for their own solution they would
@@ -623,7 +644,7 @@ public class TinyWeb {
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
             Map<Method, Map<Pattern, EndPoint>> previousRoutes = server.routes;
-            Map<Pattern, SocketServer.SocketMessageHandler> previousWsRoutes = server.wsRoutes;
+            Map<Pattern, SocketMessageHandler> previousWsRoutes = server.wsRoutes;
             Map<Method, List<FilterEntry>> previousFilters = server.filters;
 
             // Create new maps to collect routes and filters within this path
@@ -656,9 +677,9 @@ public class TinyWeb {
             }
 
             // Prefix basePath to WebSocket handlers
-            for (Map.Entry<Pattern, SocketServer.SocketMessageHandler> entry : this.wsRoutes.entrySet()) {
+            for (Map.Entry<Pattern, SocketMessageHandler> entry : this.wsRoutes.entrySet()) {
                 Pattern pattern = entry.getKey();
-                SocketServer.SocketMessageHandler wsHandler = entry.getValue();
+                SocketMessageHandler wsHandler = entry.getValue();
                 Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
                 previousWsRoutes.put(newPattern, wsHandler);
             }
@@ -693,10 +714,12 @@ public class TinyWeb {
         }
     }
 
-        @FunctionalInterface
-        public interface SocketMessageHandler {
-            void handleMessage(byte[] message, TinyWeb.MessageSender sender) throws IOException;
-        }
+    @FunctionalInterface
+    public interface SocketMessageHandler {
+        void handleMessage(byte[] message, TinyWeb.MessageSender sender) throws IOException;
+    }
+
+    public static class SocketServer {
 
         private final int port;
         private ServerSocket server;

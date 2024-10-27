@@ -241,11 +241,9 @@ public class TinyWebTest {
                             //deps([OrderBook.class]);
                             endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, ctx) -> {
                                 ShoppingCart sc = ctx.dep(ShoppingCart.class);
-                                res.write("Cart Items before: " + sc.cartCount() + "\n");
-                                boolean picked = sc.pickItem("apple");
-                                res.write("apple picked: " + picked + "\n");
-                                res.write("Cart Items after: " + sc.cartCount() + "\n");
-
+                                res.write("Cart Items before: " + sc.cartCount() + "\n" +
+                                    "apple picked: " + sc.pickItem("apple") + "\n" +
+                                    "Cart Items after: " + sc.cartCount() + "\n");
                             });
                         });
                         start();
@@ -259,7 +257,9 @@ public class TinyWebTest {
                 });
                 it("extracts parameters correctly from the path", () -> {
                     try (Response response = httpGet("http://localhost:8080/api/howManyOrderInBook")) {
-                        assertThat(response.body().string(), equalTo("Orders: 3"));
+                        assertThat(response.body().string(), equalTo("Cart Items before: 0\n" +
+                                "apple picked: true\n" +
+                                "Cart Items after: 1\n"));
                         assertThat(response.code(), equalTo(200));
                     }
                 });
@@ -672,7 +672,7 @@ public class TinyWebTest {
                 });
             });
 
-            describe("and the composition can happen for a previously instantiated TinyWeb.Server", () -> {
+            describe("and the composition can happen on a previously instantiated TinyWeb.Server", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         endPoint(TinyWeb.Method.GET, "/foo", (req, res, ctx) -> {
@@ -688,7 +688,7 @@ public class TinyWebTest {
                     }};
                     svr.start();
                 });
-                only().it("both endpoints can be GET", () -> {
+                it("both endpoints can be GET", () -> {
                     try (Response response = httpGet("http://localhost:8080/foo")) {
                         assertThat(response.body().string(), equalTo("Hello1"));
                     }
@@ -726,7 +726,6 @@ public class TinyWebTest {
             } else {
                 return new Authentication(false, null);
             }
-            return items.values().stream().mapToInt(Integer::intValue).sum();
         }
     }
     public record Authentication(boolean authentic, String user) {}
@@ -776,7 +775,7 @@ public class TinyWebTest {
         }
 
         public int cartCount() {
-            // return item count from items map ;
+            return items.values().stream().mapToInt(Integer::intValue).sum();
         }
 
         public boolean pickItem(String item) {

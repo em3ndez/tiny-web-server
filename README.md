@@ -1,4 +1,6 @@
-# TinyWeb.Server and TinyWeb.SocketServer
+# TinyWeb 
+
+Server and SocketServer depending only on the JDK and in a single source file.
 
 ## Table of Contents
 - [Web Server](#web-server)
