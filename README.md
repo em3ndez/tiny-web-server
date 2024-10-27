@@ -561,7 +561,49 @@ dependencies in the (req, resp, context) functional interfaces, nor do they have
 grammar is felt to me more important than making the tech directly compatible with DI. We can follow Inversion of 
 Control (IoC) with a lookup-style container, and we've built something rudimentary in. Here's an example
 
-// Copy in the ShoppingCart / ProductInventory example
+```java
+public static class ProductInventory {
+
+    Map<String, Integer> stockItems = new HashMap<>() {{
+        put("apple", 100);
+        put("orange", 50);
+        put("bagged banana", 33);
+    }};
+
+    public boolean customerReserves(String item) {
+        if (stockItems.containsKey(item)) {
+            if (stockItems.get(item) > 0) {
+                stockItems.put(item, stockItems.get(item) - 1);
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+public static class ShoppingCart {
+
+    private final ProductInventory inv;
+    private final Map<String, Integer> items = new HashMap<>();
+
+    public ShoppingCart(ProductInventory inv) {
+        this.inv = inv;
+    }
+
+    public int cartCount() {
+        return items.values().stream().mapToInt(Integer::intValue).sum();
+    }
+
+    public boolean pickItem(String item) {
+        boolean gotIt = inv.customerReserves(item);
+        if (!gotIt) {
+            return false;
+        }
+        items.put(item, items.getOrDefault(item, 0) + 1);
+        return true;
+    }
+}
+```
 
 
 ### ORM Technologies
