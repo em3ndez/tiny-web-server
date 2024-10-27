@@ -255,11 +255,10 @@ public class TinyWebTest {
 
                         @Override
                         public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
-                            switch (clazz) {
-                                case ShoppingCart.class -> cache.getOrCreate(ShoppingCart.class, () -> {
-                                    return createUserService(cache);
-                                });
-                            };
+                            if (clazz == ShoppingCart.class) {
+                                return (T) cache.getOrCreate(ShoppingCart.class, () -> createUserService(cache));
+                            }
+                            throw new IllegalArgumentException("Unsupported class: " + clazz);
                         }
                     };
                 });
