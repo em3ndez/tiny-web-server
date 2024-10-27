@@ -604,7 +604,31 @@ public static class ShoppingCart {
     }
 }
 
-// Also copy in `and endpoint and filters can depend on components`
+```java
+TinyWeb.ComponentCache cache = new TinyWeb.DefaultComponentCache();
+
+TinyWeb.Server svr = new TinyWeb.Server(8080, 8081) {
+
+    @Override
+    public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
+        if (clazz == ShoppingCart.class) {
+            return (T) cache.getOrCreate(ShoppingCart.class, () -> createUserService(cache));
+        }
+        throw new IllegalArgumentException("Unsupported class: " + clazz);
+    }
+};
+
+new TinyWeb.AdditionalServerContexts(svr) {{
+    path("/api", () -> {
+        endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, ctx) -> {
+            ShoppingCart sc = ctx.dep(ShoppingCart.class);
+            res.write("Cart Items before: " + sc.cartCount() + "\n" +
+                    "apple picked: " + sc.pickItem("apple") + "\n" +
+                    "Cart Items after: " + sc.cartCount() + "\n");
+        });
+    });
+}};
+```
 
 ```
 
