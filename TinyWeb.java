@@ -123,8 +123,15 @@ public class TinyWeb {
 
 
         public ServerContext filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
-            filters.computeIfAbsent(method, k -> new ArrayList<>())
-                    .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
+            if (method == Method.ALL) {
+                for (Method m : Method.values()) {
+                    filters.computeIfAbsent(m, k -> new ArrayList<>())
+                            .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
+                }
+            } else {
+                filters.computeIfAbsent(method, k -> new ArrayList<>())
+                        .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
+            }
             return this;
         }
 
