@@ -1,5 +1,42 @@
 # TinyWeb.Server and TinyWeb.SocketServer
 
+## Table of Contents
+- [Web Server](#web-server)
+- [Web Sockets](#web-sockets)
+- [Rationale](#rationale)
+- [Quick user guide](#quick-user-guide)
+  - [Basic Use](#basic-use)
+  - [EndPoints](#endpoints)
+  - [A Filter and an EndPoints](#a-filter-and-an-endpoints)
+  - [Two EndPoints within a path](#two-endpoints-within-a-path)
+  - [A filter and an EndPoint within a path](#a-filter-and-an-endpoint-within-a-path)
+  - [A webSocket and endPoint within a path](#a-websocket-and-endpoint-within-a-path)
+  - [Connecting to a WebSocket using TinyWeb.SocketClient](#connecting-to-a-websocket-using-tinywebsocketclient)
+  - [Connecting to a WebSocket using JavaScript source file endpoint](#connecting-to-a-websocket-using-javascript-source-file-endpoint)
+  - [Two WebSockets with Different Paths](#two-websockets-with-different-paths)
+- [Thoughts on WebSockets](#thoughts-on-websockets)
+  - [Short Messages with Follow-up GET Requests](#short-messages-with-follow-up-get-requests)
+- [Secure Channels](#secure-channels)
+  - [Securing HTTP Channels](#securing-http-channels)
+  - [Securing WebSocket Channels](#securing-websocket-channels)
+- [Performance](#performance)
+- [Error handling](#error-handling)
+  - [In EndPoints Themselves](#in-endpoints-themselves)
+  - [TinyWeb's Overridable Exception Methods](#tinywebs-overridable-exception-methods)
+  - [Input Validation](#input-validation)
+- [Integrating other frameworks](#integrating-other-frameworks)
+  - [Dependency Injection](#dependency-injection)
+  - [ORM Technologies](#orm-technologies)
+- [Don't do this](#dont-do-this)
+- [Testing Your Web App](#testing-your-web-app)
+  - [Cuppa-Framework](#cuppa-framework)
+  - [JUnit and TestNG](#junit-and-testng)
+  - [Mockito](#mockito)
+- [Build and Test of TinyWeb itself](#build-and-test-of-tinyweb-itself)
+  - [Compiling TinyWeb](#compiling-tinyweb)
+  - [Tests](#tests)
+  - [TinyWeb's own test results](#tinywebs-own-test-results)
+
 The `TinyWeb` single source file provides a lightweight and flexible server implementation that supports both HTTP and 
 WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  
 It uses a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
