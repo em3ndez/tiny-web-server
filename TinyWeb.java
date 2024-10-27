@@ -533,6 +533,10 @@ public class TinyWeb {
 
         public record FooBarDeps(StringBuilder gratuitousExampleDep) {}
 
+        @interface Dependencies {
+            Class<?> clazz();
+        }
+
         @Dependencies(clazz=FooBarDeps.class)
         public void foobar(Request req, Response res, Map<String, String> params) {
             res.write(String.format("Hello, %s %s!", params.get("1"), params.get("2")));
