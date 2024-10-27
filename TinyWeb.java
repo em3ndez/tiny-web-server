@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 
 public class TinyWeb {
 
-    public enum Method { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE, LINK, UNLINK, LOCK, UNLOCK,
+    public enum Method { ALL, GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE, LINK, UNLINK, LOCK, UNLOCK,
         PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, REPORT, SEARCH, PURGE, REBIND, UNBIND , ACL}
 
     public static class ServerContext {
@@ -126,6 +126,10 @@ public class TinyWeb {
             filters.computeIfAbsent(method, k -> new ArrayList<>())
                     .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
             return this;
+        }
+
+        public ServerContext filter(String path, TinyWeb.Filter filter) {
+            return filter(Method.ALL, path, filter);
         }
 
         public ServerContext serveStaticFiles(String basePath, String directory) {
