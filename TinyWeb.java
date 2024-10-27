@@ -2,6 +2,7 @@
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -26,7 +27,7 @@ public class TinyWeb {
     public enum Method { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE, LINK, UNLINK, LOCK, UNLOCK,
         PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, REPORT, SEARCH, PURGE, REBIND, UNBIND , ACL}
 
-    public static class Context {
+    public static class ServerContext {
 
         protected Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
         protected Map<Pattern, SocketServer.SocketMessageHandler> wsRoutes = new HashMap<>();
@@ -109,27 +110,27 @@ public class TinyWeb {
                 new Response(exchange).write(message, code);
         }
 
-        public Context endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
+        public ServerContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
             routes.computeIfAbsent(method, k -> new HashMap<>())
                     .put(Pattern.compile("^" + path + "$"), endPoint);
             return this;
         }
 
-        public Context webSocket(String path, SocketServer.SocketMessageHandler wsHandler) {
+        public ServerContext webSocket(String path, SocketServer.SocketMessageHandler wsHandler) {
             wsRoutes.put(Pattern.compile("^" + path + "$"), wsHandler);
             return this;
         }
 
 
-        public Context filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
+        public ServerContext filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
             filters.computeIfAbsent(method, k -> new ArrayList<>())
                     .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
             return this;
         }
 
-        public Context serveStaticFiles(String basePath, String directory) {
-            endPoint(Method.GET, basePath + "/(.*)", (req, res, params) -> {
-                String filePath = params.get("1");
+        public ServerContext serveStaticFiles(String basePath, String directory) {
+            endPoint(Method.GET, basePath + "/(.*)", (req, res, ctx) -> {
+                String filePath = ctx.getParam("1");
                 Path path = Paths.get(directory, filePath);
                 if (Files.exists(path) && !Files.isDirectory(path)) {
                     try {
@@ -151,12 +152,12 @@ public class TinyWeb {
         }
     }
 
-    public static class PathContext extends Context {
+    public static class PathContext extends ServerContext {
 
         private final String basePath;
-        private final TinyWeb.Context parentContext;
+        private final ServerContext parentContext;
 
-        public PathContext(String basePath, TinyWeb.Context parentContext) {
+        public PathContext(String basePath, ServerContext parentContext) {
             this.basePath = basePath;
             this.parentContext = parentContext;
         }
@@ -188,7 +189,7 @@ public class TinyWeb {
         }
     }
 
-    public static class Server extends Context {
+    public static class Server extends ServerContext {
 
         private final HttpServer httpServer;
         private final SocketServer socketServer;
@@ -252,6 +253,7 @@ public class TinyWeb {
 
                         final Request request = new Request(exchange, this);
                         final Response response = new Response(exchange);
+                        final Map<Class<?>, Object> deps = new HashMap<>();
 
                         // Apply filters
                         List<FilterEntry> methodFilters = filters.get(method);
@@ -266,7 +268,7 @@ public class TinyWeb {
                                     try {
                                         boolean proceed = false;
                                         try {
-                                            proceed = filterEntry.filter.filter(request, response, filterParams);
+                                            proceed = filterEntry.filter.filter(request, response, makeCtx(filterParams, deps));
                                         } catch (Exception e) {
                                             appHandlingException(e);
                                             sendError(exchange, 500, "Server Error");
@@ -287,7 +289,7 @@ public class TinyWeb {
                         try {
 
                             try {
-                                route.getValue().handle(request, response, params);
+                                route.getValue().handle(request, response, makeCtx(params, deps));
                             } catch (Exception e) {
                                 appHandlingException(e);
                                 sendError(exchange, 500, "Server error");
@@ -306,6 +308,26 @@ public class TinyWeb {
                     sendError(exchange, 404, "Not found");
                 }
             });
+        }
+
+        private @NotNull RequestContext makeCtx(Map<String, String> params, Map<Class<?>, Object> deps) {
+            return new RequestContext() {
+                @Override
+                public String getParam(String key) {
+                    return params.get(key);
+                }
+
+                @Override
+                @SuppressWarnings("unchecked")
+                public <T> T dep(Class<T> clazz) {
+                    if (deps.containsKey(clazz)) {
+                        return (T) deps.get(clazz);
+                    }
+                    T t = instantiateDep(clazz, deps);
+                    deps.put(clazz, t);
+                    return t;
+                }
+            };
         }
 
         protected void serverException(ServerException e) {
@@ -344,16 +366,21 @@ public class TinyWeb {
         }
     }
 
+    interface RequestContext {
+        String getParam(String key);
+        @SuppressWarnings("unchecked")
+        <T> T dep(Class<T> clazz);
+    }
 
     @FunctionalInterface
     public interface EndPoint {
-        void handle(Request request, Response response, Map<String, String> pathParams);
+        void handle(Request request, Response response, RequestContext ctx);
     }
 
 
     @FunctionalInterface
     public interface Filter {
-        boolean filter(Request request, Response response, Map<String, String> pathParams);
+        boolean filter(Request request, Response response, RequestContext ctx);
     }
 
     public static class FilterEntry {
@@ -373,7 +400,6 @@ public class TinyWeb {
 
         private final Map<String, String> queryParams;
         private final Map<String, Object> attributes = new HashMap<>();
-        private final Map<Class<?>, Object> deps = new HashMap<>();
 
         public Request(HttpExchange exchange, Server server) {
             this.exchange = exchange;
@@ -458,16 +484,6 @@ public class TinyWeb {
             }
             return queryParams;
         }
-
-        @SuppressWarnings("unchecked")
-        public <T> T dep(Class<T> clazz) {
-            if (Request.this.deps.containsKey(clazz)) {
-                return (T) deps.get(clazz);
-            }
-            T t = server.instantiateDep(clazz, deps);
-            deps.put(clazz, t);
-            return t;
-        }
     }
 
     public static class Response {
@@ -505,7 +521,7 @@ public class TinyWeb {
     }
 
     /*
-     * An inline example of composing (Tiny) WebServer.
+     * An inline example of composing (Tiny) WebServer.(
      * If anyone was using this tech for their own solution they would
      * not use these two methods, even if they were inspired by them.
      */
@@ -522,22 +538,22 @@ public class TinyWeb {
         }
 
         @Dependencies(clazz=FooBarDeps.class)
-        public void foobar(Request req, Response res, Map<String, String> params) {
-            res.write(String.format("Hello, %s %s!", params.get("1"), params.get("2")));
+        public void foobar(Request req, Response res, RequestContext ctx) {
+            res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
         }
 
         public static TinyWeb.Server exampleComposition(String[] args, ExampleApp app) {
             TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
 
                 path("/foo", () -> {
-                    filter(Method.GET, "/.*", (req, res, params) -> {
+                    filter(Method.GET, "/.*", (req, res, ctx) -> {
                         if (req.getHeaders().containsKey("sucks")) {
                             res.write("Access Denied", 403);
                             return false; // don't proceed
                         }
                         return true; // proceed
                     });
-                    endPoint(Method.GET, "/bar", (req, res, params) -> {
+                    endPoint(Method.GET, "/bar", (req, res, ctx) -> {
                         res.write("Hello, World!");
                         // This endpoint is /foo/bar if that wasn't obvious
                     });
@@ -555,24 +571,24 @@ public class TinyWeb {
 
                 serveStaticFiles("/static", new File(".").getAbsolutePath());
 
-                endPoint(Method.GET, "/users/(\\w+)", (req, res, params) -> {
-                    res.write("User profile: " + params.get("1"));
+                endPoint(Method.GET, "/users/(\\w+)", (req, res, ctx) -> {
+                    res.write("User profile: " + ctx.getParam("1"));
                 });
 
 
-                endPoint(Method.POST, "/echo", (req, res, params) -> {
+                endPoint(Method.POST, "/echo", (req, res, ctx) -> {
                     res.write("You sent: " + req.getBody(), 201);
                 });
 
                 endPoint(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
 
-                endPoint(Method.PUT, "/update", (req, res, params) -> {
+                endPoint(Method.PUT, "/update", (req, res, ctx) -> {
                     res.write("Updated data: " + req.getBody(), 200);
                 });
 
                 path("/api", () -> {
-                    endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, params) -> {
-                        res.write("Parameter: " + params.get("1"));
+                    endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
+                        res.write("Parameter: " + ctx.getParam("1"));
                     });
                 });
 
@@ -946,7 +962,7 @@ public class TinyWeb {
 
     public static class JavascriptSocketClient implements EndPoint {
         @Override
-        public void handle(Request request, Response response, Map<String, String> pathParams) {
+        public void handle(Request request, Response response, RequestContext context) {
             response.setHeader("Content-Type", "javascript");
             response.sendResponse("""
                 const TinyWeb = {
@@ -955,7 +971,6 @@ public class TinyWeb {
             
                         constructor(host, port) {
                             this.socket = new WebSocket(`ws://${host}:${port}`);
-                            // Set the binary type to arraybuffer to receive binary data
                             this.socket.binaryType = 'arraybuffer';
                         }
             
@@ -969,23 +984,12 @@ public class TinyWeb {
                                 try {
                                     const pathBytes = new TextEncoder().encode(path);
                                     const messageBytes = new TextEncoder().encode(message);
-            
-                                    // Total length: 1 byte for path length + path + message
                                     const totalLength = 1 + pathBytes.length + messageBytes.length;
                                     const payload = new Uint8Array(totalLength);
-            
-                                    // Set the first byte to the length of the path
                                     payload[0] = pathBytes.length;
-            
-                                    // Copy the path bytes into the payload
                                     payload.set(pathBytes, 1);
-            
-                                    // Copy the message bytes into the payload
                                     payload.set(messageBytes, 1 + pathBytes.length);
-            
-                                    // Send the payload as binary data
                                     this.socket.send(payload);
-            
                                     resolve();
                                 } catch (error) {
                                     reject(error);
@@ -1001,7 +1005,6 @@ public class TinyWeb {
             
                                     try {
                                         let data;
-            
                                         if (event.data instanceof ArrayBuffer) {
                                             data = new Uint8Array(event.data);
                                         } else if (typeof event.data === 'string') {
@@ -1011,9 +1014,7 @@ public class TinyWeb {
                                             reject(new Error('Unsupported data type received'));
                                             return;
                                         }
-                                                   
                                         const message = new TextDecoder('utf-8').decode(data);
-            
                                         resolve(message);
                                     } catch (error) {
                                         reject(error);

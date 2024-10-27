@@ -784,7 +784,7 @@ That makes:
 ``` 
 ls target/classes/com/paulhammant/tinywebserver
 
-TinyWeb$Context.class  TinyWeb$Filter.class  TinyWeb$PathContext.class  
+TinyWeb$ServerContext.class  TinyWeb$Filter.class  TinyWeb$PathContext.class  
 TinyWeb$Server.class  TinyWeb$SocketServer$SocketMessageHandler.class 
 TinyWeb$EndPoint.class  TinyWeb$FilterEntry.class  TinyWeb$Request.class  
 TinyWeb$ServerException.class  TinyWeb$SocketServer.class  TinyWeb.class 
