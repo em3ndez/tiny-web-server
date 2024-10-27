@@ -19,6 +19,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static okhttp3.Request.*;
 import static org.forgerock.cuppa.Cuppa.*;
@@ -236,6 +237,9 @@ public class TinyWebTest {
             });
             describe("and endpoint and filters can depend on components", () -> {
                 before(() -> {
+
+                    TinyWeb.ComponentCache cache = new TinyWeb.DefaultComponentCache();
+
                     svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
                             //deps([OrderBook.class]);
@@ -251,7 +255,11 @@ public class TinyWebTest {
 
                         @Override
                         public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
-                            return (T) new ShoppingCart(new ProductInventory());
+                            switch (clazz) {
+                                case ShoppingCart.class -> cache.getOrCreate(ShoppingCart.class, () -> {
+                                    return createUserService(cache);
+                                });
+                            };
                         }
                     };
                 });
@@ -791,6 +799,19 @@ public class TinyWebTest {
             return true;
         }
     }
+
+    public static ShoppingCart createUserService(TinyWeb.ComponentCache cache) {
+        return cache.getOrCreate(ShoppingCart.class, () ->
+                new ShoppingCart(createProductInventory(cache))
+        );
+    }
+
+    public static ProductInventory createProductInventory(TinyWeb.ComponentCache cache) {
+        return cache.getOrCreate(ProductInventory.class, () ->
+                new ProductInventory()
+        );
+    }
+
 
     public static void main(String[] args) {
         Runner runner = new Runner();
