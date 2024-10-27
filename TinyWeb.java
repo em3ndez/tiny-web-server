@@ -254,6 +254,7 @@ public class TinyWeb {
                         final Request request = new Request(exchange, this);
                         final Response response = new Response(exchange);
                         final Map<Class<?>, Object> deps = new HashMap<>();
+                        final Map<String, Object> attributes  = new HashMap<>();
 
                         // Apply filters
                         List<FilterEntry> methodFilters = filters.get(method);
@@ -268,7 +269,7 @@ public class TinyWeb {
                                     try {
                                         boolean proceed = false;
                                         try {
-                                            proceed = filterEntry.filter.filter(request, response, makeCtx(filterParams, deps));
+                                            proceed = filterEntry.filter.filter(request, response, makeCtx(filterParams, deps, attributes));
                                         } catch (Exception e) {
                                             appHandlingException(e);
                                             sendError(exchange, 500, "Server Error");
@@ -289,7 +290,7 @@ public class TinyWeb {
                         try {
 
                             try {
-                                route.getValue().handle(request, response, makeCtx(params, deps));
+                                route.getValue().handle(request, response, makeCtx(params, deps, attributes));
                             } catch (Exception e) {
                                 appHandlingException(e);
                                 sendError(exchange, 500, "Server error");
@@ -310,8 +311,9 @@ public class TinyWeb {
             });
         }
 
-        private @NotNull RequestContext makeCtx(Map<String, String> params, Map<Class<?>, Object> deps) {
+        private @NotNull RequestContext makeCtx(Map<String, String> params, Map<Class<?>, Object> deps, Map<String, Object> attributes) {
             return new RequestContext() {
+
                 @Override
                 public String getParam(String key) {
                     return params.get(key);
@@ -327,6 +329,15 @@ public class TinyWeb {
                     deps.put(clazz, t);
                     return t;
                 }
+
+                public void setAttribute(String key, Object value) {
+                    attributes.put(key, value);
+                }
+
+                public Object getAttribute(String key) {
+                    return attributes.get(key);
+                }
+
             };
         }
 
@@ -370,6 +381,10 @@ public class TinyWeb {
         String getParam(String key);
         @SuppressWarnings("unchecked")
         <T> T dep(Class<T> clazz);
+
+        void setAttribute(String key, Object value);
+        Object getAttribute(String key);
+
     }
 
     @FunctionalInterface
@@ -398,8 +413,8 @@ public class TinyWeb {
         private final Server server;
         private final String body;
 
+        // TODO why unused?
         private final Map<String, String> queryParams;
-        private final Map<String, Object> attributes = new HashMap<>();
 
         public Request(HttpExchange exchange, Server server) {
             this.exchange = exchange;
@@ -417,15 +432,6 @@ public class TinyWeb {
                 this.queryParams = null;
             }
         }
-
-        public void setAttribute(String key, Object value) {
-            attributes.put(key, value);
-        }
-
-        public Object getAttribute(String key) {
-            return attributes.get(key);
-        }
-
         public String getCookie(String name) {
             List<String> cookiesHeader = exchange.getRequestHeaders().get("Cookie");
             if (cookiesHeader != null) {

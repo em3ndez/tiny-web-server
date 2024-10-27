@@ -635,12 +635,12 @@ public class TinyWebTest {
                                     res.write("Try logging in again", 403);
                                     return false;
                                 } else {
-                                    req.setAttribute("user", auth.user);
+                                    ctx.setAttribute("user", auth.user);
                                 }
                                 return true; // Continue processing
                             });
                             endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, ctx) -> {
-                                res.write("User Is logged in: " + req.getAttribute("user"));
+                                res.write("User Is logged in: " + ctx.getAttribute("user"));
                             });
                         });
                         start();
