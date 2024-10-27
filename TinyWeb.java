@@ -475,6 +475,7 @@ public class TinyWeb {
             return queryParams;
         }
 
+        @SuppressWarnings("unchecked")
         public <T> T dep(Class<T> clazz) {
             if (Request.this.deps.containsKey(clazz)) {
                 return (T) deps.get(clazz);
