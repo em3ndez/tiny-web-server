@@ -19,7 +19,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
-import java.util.function.Supplier;
 
 import static okhttp3.Request.*;
 import static org.forgerock.cuppa.Cuppa.*;
@@ -240,27 +239,19 @@ public class TinyWebTest {
 
                     TinyWeb.ComponentCache cache = new TinyWeb.DefaultComponentCache();
 
-                    svr = new TinyWeb.Server(8080, 8081) {{
-                        path("/api", () -> {
-                            //deps([OrderBook.class]);
-                            endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, ctx) -> {
-                                ShoppingCart sc = ctx.dep(ShoppingCart.class);
-                                res.write("Cart Items before: " + sc.cartCount() + "\n" +
-                                    "apple picked: " + sc.pickItem("apple") + "\n" +
-                                    "Cart Items after: " + sc.cartCount() + "\n");
-                            });
-                        });
-                        start();
-                    }
+                    svr = new TinyWeb.Server(8080, 8081) {
 
                         @Override
                         public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
                             if (clazz == ShoppingCart.class) {
-                                return (T) cache.getOrCreate(ShoppingCart.class, () -> createUserService(cache));
+                                return (T) cache.getOrCreate(ShoppingCart.class, () -> createShoppingCart(cache));
                             }
                             throw new IllegalArgumentException("Unsupported class: " + clazz);
                         }
                     };
+                    doCompositionForOneTest(svr);
+                    svr.start();
+
                 });
                 it("extracts parameters correctly from the path", () -> {
                     try (Response response = httpGet("http://localhost:8080/api/howManyOrderInBook")) {
@@ -712,6 +703,21 @@ public class TinyWebTest {
         });
     }
 
+    private static void doCompositionForOneTest(TinyWeb.Server svr) {
+        new TinyWeb.AdditionalServerContexts(svr) {{
+            path("/api", () -> {
+                //deps([OrderBook.class]);
+                endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, ctx) -> {
+                    ShoppingCart sc = ctx.dep(ShoppingCart.class);
+                    res.write("Cart Items before: " + sc.cartCount() + "\n" +
+                            "apple picked: " + sc.pickItem("apple") + "\n" +
+                            "Cart Items after: " + sc.cartCount() + "\n");
+                });
+            });
+
+        }};
+    }
+
     private static @NotNull Response httpGet(String url) throws IOException {
         return new OkHttpClient().newCall(new Builder()
                 .url(url)
@@ -799,7 +805,7 @@ public class TinyWebTest {
         }
     }
 
-    public static ShoppingCart createUserService(TinyWeb.ComponentCache cache) {
+    public static ShoppingCart createShoppingCart(TinyWeb.ComponentCache cache) {
         return cache.getOrCreate(ShoppingCart.class, () ->
                 new ShoppingCart(createProductInventory(cache))
         );

@@ -72,8 +72,10 @@ capabilities. TinyWeb.SocketServer can be run separately.
 I wanted to make something that:
 
 1. Had nested `path( .. )` lambda functions to group endpoints together. This approach allows for a clean and intuitive way to define complex routing structures within the server. By nesting `path()` functions, developers can easily manage and organize routes, making the codebase more maintainable and scalable.
-2. Could maybe be in one source file and have no dependencies at all
-3. Does not log, and has not picked a logging framework, but laves that open as an implementation detail. I wrote much of https://cwiki.apache.org/confluence/display/avalon/AvalonNoLogging back in 2003 or so.
+2. Could take a series of multiple such registrations of nested paths/filter/endPoints.
+3. Attempted to coerce websockets into the same nested path organization.
+3. Could maybe be exist in a single source file and have no dependencies at all
+3. Does not itself pollute sydout, and has not picked a logging framework, but laves that open as an implementation detail. I wrote much of https://cwiki.apache.org/confluence/display/avalon/AvalonNoLogging back in 2003 or so.
 
 # Quick user guide
 
@@ -247,7 +249,7 @@ receives, prefixed with "Echo: ", which we admit isn't a real world example.
 
 #### Connecting to a WebSocket using TinyWeb.SocketClient
 
-Here's an example of how to connect to a WebSocket using `TinyWeb.SocketClient`:
+Here's an example of how a client connects to a server WebSocket using `TinyWeb.SocketClient`:
 
 ```java
 public class WebSocketClientExample {
@@ -360,9 +362,9 @@ big map of paths and websockets open to clients, and if this were a single web-a
 websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
 four concurrently connected channels.
 
-## Thoughts on WebSockets
+#### Thoughts on WebSockets
 
-### Short Messages with Follow-up GET Requests
+**Short Messages with Follow-up GET Requests**
 
 One school of thought says WebSockets (and messaging systems generally) should send short notifications from the server 
 to the client. These notifications can inform the client that an event has occurred or that new data is available. 
@@ -402,7 +404,7 @@ that supports SSL/TLS termination for WebSockets. The proxy can handle the encry
 traffic, forwarding it to TinyWeb over an unencrypted channel. This setup ensures that WebSocket communications are 
 secure, protecting data from eavesdropping and tampering.
 
-## Performance
+## TinyWeb Performance
 
 Performance testing for `TinyWeb` has not been extensively conducted. However, due to its lightweight nature and minimal dependencies, `TinyWeb` is expected to perform efficiently for small to medium-sized applications. Here are some considerations for optimizing performance:
 
@@ -485,13 +487,17 @@ logging or error handling strategies.
 Example:
 
 ```java
-// As you instantiate TinyWeb.Server, you would add an override:
-@Override
-protected void serverException(ServerException e) {
-    // Custom logging logic
-    System.err.println("Custom Server Exception: " + e.getMessage());
-    e.printStackTrace(System.err);
-}
+svr = new TinyWeb.Server(8080, -1) {
+    {
+      // paths, filters, endPoints
+    }
+    @Override
+    protected void serverException (ServerException e){
+        // Custom logging logic
+        System.err.println("Custom Server Exception: " + e.getMessage());
+        e.printStackTrace(System.err);
+    }
+};
 ```
 
 #### appHandlingException(Exception e)
@@ -505,13 +511,18 @@ stream. You can override it to provide custom error handling, such as sending al
 Example:
 
 ```java
-// As you instantiate TinyWeb.Server, you would add an override:
-@Override
-protected void appHandlingException(Exception e) {
-    // Custom application error handling
-    System.err.println("Custom Application Exception: " + e.getMessage());
-    e.printStackTrace(System.err);
-}
+svr = new TinyWeb.Server(8080, -1) {
+    {
+        // paths, filters, endPoints
+    }
+
+    @Override
+    protected void appHandlingException (Exception e){
+        // Custom application error handling
+        System.err.println("Custom Application Exception: " + e.getMessage());
+        e.printStackTrace(System.err);
+    }
+};
 ```
 
 By overriding these methods, you can tailor the exception handling behavior of your `TinyWeb` server to meet your 
@@ -604,11 +615,38 @@ public static class ShoppingCart {
     }
 }
 
-```java
+public static ShoppingCart createShoppingCart(TinyWeb.ComponentCache cache) {
+  return cache.getOrCreate(ShoppingCart.class, () ->
+          new ShoppingCart(createProductInventory(cache))
+  );
+}
+
+public static ProductInventory createProductInventory(TinyWeb.ComponentCache cache) {
+  return cache.getOrCreate(ProductInventory.class, () ->
+          new ProductInventory() // in reality there would likely be a dependency on a database
+  );
+}
+
+private static void doComposition(TinyWeb.Server svr) {
+  new TinyWeb.AdditionalServerContexts(svr) {{
+      
+    // Code in any of these paths can't interact with the ComponentCache directly. 
+    // Only through ctx.dep(Class)
+    path("/api", () -> {
+      //deps([OrderBook.class]);
+      endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, ctx) -> {
+        ShoppingCart sc = ctx.dep(ShoppingCart.class);
+        res.write("Cart Items before: " + sc.cartCount() + "\n" +
+                "apple picked: " + sc.pickItem("apple") + "\n" +
+                "Cart Items after: " + sc.cartCount() + "\n");
+      });
+    });
+  }};
+}
+
 TinyWeb.ComponentCache cache = new TinyWeb.DefaultComponentCache();
 
 TinyWeb.Server svr = new TinyWeb.Server(8080, 8081) {
-
     @Override
     public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
         if (clazz == ShoppingCart.class) {
@@ -617,19 +655,8 @@ TinyWeb.Server svr = new TinyWeb.Server(8080, 8081) {
         throw new IllegalArgumentException("Unsupported class: " + clazz);
     }
 };
-
-new TinyWeb.AdditionalServerContexts(svr) {{
-    path("/api", () -> {
-        endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, ctx) -> {
-            ShoppingCart sc = ctx.dep(ShoppingCart.class);
-            res.write("Cart Items before: " + sc.cartCount() + "\n" +
-                    "apple picked: " + sc.pickItem("apple") + "\n" +
-                    "Cart Items after: " + sc.cartCount() + "\n");
-        });
-    });
-}};
-```
-
+doComposition(svr); // paths, filters, endPoints added here.
+svr.start();
 ```
 
 

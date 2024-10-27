@@ -331,12 +331,7 @@ public class TinyWeb {
                 @Override
                 @SuppressWarnings("unchecked")
                 public <T> T dep(Class<T> clazz) {
-                    if (deps.containsKey(clazz)) {
-                        return (T) deps.get(clazz);
-                    }
-                    T t = instantiateDep(clazz, deps);
-                    deps.put(clazz, t);
-                    return t;
+                    return (T) deps.get(clazz);
                 }
 
                 public void setAttribute(String key, Object value) {
