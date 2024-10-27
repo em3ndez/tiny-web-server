@@ -556,78 +556,13 @@ from common web vulnerabilities.
 
 ### Dependency Injection
 
-Dependency Injection (DI) is a design pattern that allows for the decoupling of object creation from their usage, 
-making code more modular and testable. Dagger2 is a popular DI framework for Java that can be used with `TinyWeb` 
-to manage dependencies.
+We can't automate dependency injection with TinyWeb. The reason for that is handlers don't take strongly typed 
+dependencies in the (req, resp, context) functional interfaces, nor do they have constructors associated. The nested
+grammar is felt to me more important than making the tech directly compatible with DI. We can follow Inversion of 
+Control (IoC) with a lookup-style container, and we've built something rudimentary in. Here's an example
 
-Here's a basic example of using Dagger2 with `TinyWeb`:
+// Copy in the ShoppingCart / ProductInventory example
 
-Here's a complete example of using Dagger2 with `TinyWeb`:
-
-```java
-// Import necessary Dagger2 annotations and classes
-import dagger.Module;
-import dagger.Provides;
-import dagger.Component;
-import javax.inject.Inject;
-
-// Define a module to provide dependencies
-@Module
-public class AppModule {
-    @Provides
-    public MyService provideMyService() {
-        return new MyServiceImpl(); // Provide an instance of MyServiceImpl
-    }
-}
-
-// Create a component interface to connect the module and the injection targets
-@Component(modules = AppModule.class)
-public interface AppComponent {
-    void inject(MyWebApp app); // Method to perform injection
-}
-
-// Define the MyService interface
-interface MyService {
-    String getData();
-}
-
-// Implement the MyService interface
-class MyServiceImpl implements MyService {
-    @Override
-    public String getData() {
-        return "Service Data"; // Return some data
-    }
-}
-
-// Main application class where dependencies are injected
-public class MyWebApp {
-    @Inject
-    MyService myService; // Declare the service to be injected
-
-    public MyWebApp() {
-        DaggerAppComponent.create().inject(this); // Perform the injection
-    }
-
-    public void start() {
-        // Create and start the TinyWeb server
-        TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-            endPoint(TinyWeb.Method.GET, "/service", (req, res, params) -> {
-                res.write(myService.getData()); // Use the injected service
-            });
-        }}.start();
-    }
-
-    public static void main(String[] args) {
-        new MyWebApp().start(); // Start the application
-    }
-}
-```
-
-In this example, `MyService` is injected into `MyWebApp` using Dagger2. The `AppModule` provides the `MyServiceImpl` 
-instance, and the `AppComponent` interface connects the module to the `MyWebApp` class. The `myService` is injected 
-with application scope, meaning it is a singleton within the context of the application. This ensures that the same 
-instance of `MyService` is used throughout the application's lifecycle, which is suitable for services that do not 
-maintain state specific to individual requests.
 
 ### ORM Technologies
 
