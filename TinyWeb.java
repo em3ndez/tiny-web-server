@@ -28,6 +28,10 @@ public class TinyWeb {
     public enum Method { ALL, GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE, LINK, UNLINK, LOCK, UNLOCK,
         PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, REPORT, SEARCH, PURGE, REBIND, UNBIND , ACL}
 
+    public enum FilterResult {
+        CONTINUE, STOP
+    }
+
     public static class ServerContext {
 
         protected Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
@@ -123,13 +127,13 @@ public class TinyWeb {
         }
 
 
-        public ServerContext filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
+        public ServerContext filter(TinyWeb.Method method, String path, Filter filter) {
             filters.computeIfAbsent(method, k -> new ArrayList<>())
                     .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
             return this;
         }
 
-        public ServerContext filter(String path, TinyWeb.Filter filter) {
+        public ServerContext filter(String path, Filter filter) {
             return filter(Method.ALL, path, filter);
         }
 
@@ -277,16 +281,16 @@ public class TinyWeb {
                                     filterParams.put(String.valueOf(i), filterMatcher.group(i));
                                 }
                                 try {
-                                    boolean proceed = false;
+                                    FilterResult result;
                                     try {
-                                        proceed = filterEntry.filter.filter(request, response, makeCtx(filterParams, cache, attributes));
+                                        result = filterEntry.filter.filter(request, response, makeCtx(filterParams, cache, attributes));
                                     } catch (Exception e) {
                                         appHandlingException(e);
                                         sendError(exchange, 500, "Server Error");
                                         return;
                                     }
-                                    if (!proceed) {
-                                        return; // Stop processing if filter returns false
+                                    if (result == FilterResult.STOP) {
+                                        return; // Stop processing if filter returns STOP
                                     }
                                 } catch (ServerException e) {
                                     serverException(e);
@@ -399,7 +403,7 @@ public class TinyWeb {
 
     @FunctionalInterface
     public interface Filter {
-        boolean filter(Request request, Response response, RequestContext ctx);
+        FilterResult filter(Request request, Response response, RequestContext ctx);
     }
 
     public static class FilterEntry {
@@ -579,9 +583,9 @@ public class TinyWeb {
                     filter(Method.GET, "/.*", (req, res, ctx) -> {
                         if (req.getHeaders().containsKey("sucks")) {
                             res.write("Access Denied", 403);
-                            return false; // don't proceed
+                            return FilterResult.STOP; // don't proceed
                         }
-                        return true; // proceed
+                        return FilterResult.CONTINUE; // proceed
                     });
                     endPoint(Method.GET, "/bar", (req, res, ctx) -> {
                         res.write("Hello, World!");
