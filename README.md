@@ -110,9 +110,9 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     filter(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
         if (!req.getHeaders().containsKey("X-Auth-Token")) {
             res.write("Unauthorized", 401);
-            return false; // Stop processing if unauthorized
+            return FilterResult.STOP; // Stop processing if unauthorized
         }
-        return true; // Continue processing
+        return FilterResult.CONTINUE; // Continue processing
     });
 
     // Define a GET endpoint
@@ -168,11 +168,11 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
             Authentication auth = IsEncryptedByUs.decrypt(allegedlyLoggedInCookie);
             if (!auth.authentic) {
                 res.write("Try logging in again", 403);
-                return false;
+                return FilterResult.STOP;
             } else {
                 req.setAttribute("user", auth.user());
             }
-            return true; // Continue processing
+            return FilterResult.CONTINUE; // Continue processing
         });
         endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
             res.write("User Is logged in: " + req.getAttribute("user"));
