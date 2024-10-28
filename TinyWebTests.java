@@ -191,20 +191,22 @@ public class TinyWebTests {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                             path("/api", () -> {
-                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
-                                    res.write("Parameter: " + ctx.getParam("1"));
+                                path("/v1", () -> {
+                                    endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
+                                        res.write("Parameter: " + ctx.getParam("1"));
+                                    });
                                 });
                             });
                         }}.start();
                 });
                 it("extracts parameters correctly from the path", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/test/123")) {
+                    try (Response response = httpGet("http://localhost:8080/api/v1/test/123")) {
                         assertThat(response.body().string(), equalTo("Parameter: 123"));
                         assertThat(response.code(), equalTo(200));
                     }
                 });
                 it("returns 404 when two parameters are provided for a one-parameter path", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/test/123/456")) {
+                    try (Response response = httpGet("http://localhost:8080/api/v1/test/123/456")) {
                         assertThat(response.body().string(), equalTo("Not found"));
                         assertThat(response.code(), equalTo(404));
                     }
