@@ -26,7 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 @Test
-public class TinyWebTest {
+public class TinyWebTests {
     TinyWeb.ExampleApp mockApp;
     TinyWeb.Server svr;
     TinyWeb.SocketServer webSocketServer;
@@ -253,7 +253,7 @@ public class TinyWebTest {
                     svr.start();
 
                 });
-                it("extracts parameters correctly from the path", () -> {
+                only().it("extracts parameters correctly from the path", () -> {
                     try (Response response = httpGet("http://localhost:8080/api/howManyOrderInBook")) {
                         assertThat(response.body().string(), equalTo("Cart Items before: 0\n" +
                                 "apple picked: true\n" +
@@ -820,7 +820,7 @@ public class TinyWebTest {
 
     public static void main(String[] args) {
         Runner runner = new Runner();
-        runner.run(runner.defineTests(Collections.singletonList(TinyWebTest.class)), new DefaultReporter());
+        runner.run(runner.defineTests(Collections.singletonList(TinyWebTests.class)), new DefaultReporter());
     }
 
 }

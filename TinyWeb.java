@@ -2,12 +2,8 @@
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -159,11 +155,6 @@ public class TinyWeb {
             });
             return this;
         }
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @interface DependenciesContainer {
-        Dependencies[] value();
     }
 
     public static class PathContext extends ServerContext {
@@ -328,7 +319,7 @@ public class TinyWeb {
             });
         }
 
-        private @NotNull RequestContext makeCtx(Map<String, String> params, Map<Class<?>, Object> deps, Map<String, Object> attributes) {
+        private RequestContext makeCtx(Map<String, String> params, Map<Class<?>, Object> deps, Map<String, Object> attributes) {
             return new RequestContext() {
 
                 @Override
@@ -339,7 +330,7 @@ public class TinyWeb {
                 @Override
                 @SuppressWarnings("unchecked")
                 public <T> T dep(Class<T> clazz) {
-                    return (T) deps.get(clazz);
+                    return (T) instantiateDep(clazz, deps);
                 }
 
                 public void setAttribute(String key, Object value) {
@@ -570,13 +561,6 @@ public class TinyWeb {
 
         public record FooBarDeps(StringBuilder gratuitousExampleDep) {}
 
-        @Repeatable(DependenciesContainer.class)
-        @interface Dependencies {
-            Class<?> clazz();
-        }
-
-        @Dependencies(clazz=FooBarDeps.class)
-        @Dependencies(clazz=FooBarDeps.class)
         public void foobar(Request req, Response res, RequestContext ctx) {
             res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
         }

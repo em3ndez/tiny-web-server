@@ -3,3 +3,4 @@ target/
 .idea/
 *.iml
 test_libs/
+TinyWeb.jar

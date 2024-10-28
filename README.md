@@ -1,6 +1,6 @@
 # TinyWeb 
 
-Server and SocketServer depending only on the JDK and in a single source file.
+A tiny web Server and SocketServer that depend only on JDK classes and are in a single source file.
 
 ## Table of Contents
 - [Web Server](#web-server)
@@ -868,11 +868,12 @@ The last two are the built-in example app, and if we made a jar, we wouldn't bot
 ```bash
 find target/classes -name 'TinyWeb$ExampleApp*.class' -delete
 jar cf TinyWeb.jar -C target/classes/ .
+// that's about 100K in size
 ```
 
 ## Tests
 
-To compile `TinyWebTest.java` into the `target/test-classes/` directory you WILL need dependencies: (in `test_libs/`). 
+To compile `TinyWebTests.java` into the `target/test-classes/` directory you WILL need dependencies: (in `test_libs/`). 
 Use the following to go get them:
 
 ```bash
@@ -920,19 +921,19 @@ Then you can compile the tests class:
 
 ```bash
 mkdir -p target/test-classes
-javac -d target/test-classes -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/classes" TinyWebTest.java
+javac -d target/test-classes -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/classes" TinyWebTests.java
 ```
 
-To run the main method of `TinyWebTest.java`, which executes the tests using the Cuppa framework, use the following command:
+To run the main method of `TinyWebTests.java`, which executes the tests using the Cuppa framework, use the following command:
 
 ```bash
-java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" com.paulhammant.tinywebserver.TinyWebTest
+java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" com.paulhammant.tinywebserver.TinyWebTests
 ```
 
 ## TinyWeb's own test results
 
 As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so, 
-from `TinyWebTest.java`, and part of the tested code is from `TinyWeb.ExampleApp` including the 
+from `TinyWebTests.java`, and part of the tested code is from `TinyWeb.ExampleApp` including the 
 `TinyWeb.ExampleApp.exampleComposition(..)` launch of a whole app to test.
 
 ``` 
