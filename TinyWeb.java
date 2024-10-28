@@ -199,6 +199,7 @@ public class TinyWeb {
         private final HttpServer httpServer;
         private final SocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
+        protected ComponentCache applicationScopeCache = new DefaultComponentCache(null);
 
         public Server(int httpPort, int webSocketPort) {
             try {
@@ -258,7 +259,7 @@ public class TinyWeb {
 
                         final Request request = new Request(exchange, this);
                         final Response response = new Response(exchange);
-                        final Map<Class<?>, Object> deps = new HashMap<>();
+                        final TinyWeb.ComponentCache cache = new DefaultComponentCache(applicationScopeCache);
                         final Map<String, Object> attributes  = new HashMap<>();
 
                         // Apply filters
@@ -278,7 +279,7 @@ public class TinyWeb {
                                 try {
                                     boolean proceed = false;
                                     try {
-                                        proceed = filterEntry.filter.filter(request, response, makeCtx(filterParams, deps, attributes));
+                                        proceed = filterEntry.filter.filter(request, response, makeCtx(filterParams, cache, attributes));
                                     } catch (Exception e) {
                                         appHandlingException(e);
                                         sendError(exchange, 500, "Server Error");
@@ -298,7 +299,7 @@ public class TinyWeb {
                         try {
 
                             try {
-                                route.getValue().handle(request, response, makeCtx(params, deps, attributes));
+                                route.getValue().handle(request, response, makeCtx(params, cache, attributes));
                             } catch (Exception e) {
                                 appHandlingException(e);
                                 sendError(exchange, 500, "Server error");
@@ -319,7 +320,7 @@ public class TinyWeb {
             });
         }
 
-        private RequestContext makeCtx(Map<String, String> params, Map<Class<?>, Object> deps, Map<String, Object> attributes) {
+        private RequestContext makeCtx(Map<String, String> params, TinyWeb.ComponentCache cache, Map<String, Object> attributes) {
             return new RequestContext() {
 
                 @Override
@@ -330,7 +331,7 @@ public class TinyWeb {
                 @Override
                 @SuppressWarnings("unchecked")
                 public <T> T dep(Class<T> clazz) {
-                    return (T) instantiateDep(clazz, deps);
+                    return (T) instantiateDep(clazz, cache);
                 }
 
                 public void setAttribute(String key, Object value) {
@@ -375,7 +376,7 @@ public class TinyWeb {
             return this;
         }
 
-        public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> depsForRequest) {
+        public <T> T instantiateDep(Class<T> clazz, TinyWeb.ComponentCache cache) {
             throw new TinyWeb.ServerException("not implemented - you need to override getRequestScopedDependency()");
         }
     }
@@ -531,20 +532,26 @@ public class TinyWeb {
 
     public interface ComponentCache {
         <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier);
+
+        ComponentCache getParent();
     }
     public static class DefaultComponentCache implements ComponentCache {
         private final Map<Class<?>, Object> cache = new ConcurrentHashMap<>();
+        private final ComponentCache parentCache;
 
-        @Override
-        public <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier) {
-            return (T) cache.computeIfAbsent(clazz, key -> supplier.get());
+        public DefaultComponentCache(ComponentCache parentCache) {
+            this.parentCache = parentCache;
         }
-    }
 
-    public static class NullObjectCache implements ComponentCache {
+        @Override
+        public ComponentCache getParent() {
+            return parentCache;
+        }
+
         @Override
         public <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier) {
-            return supplier.get();
+            System.out.println("Cache: " + clazz.getName() + " being sought");
+            return (T) cache.computeIfAbsent(clazz, key -> supplier.get());
         }
     }
 

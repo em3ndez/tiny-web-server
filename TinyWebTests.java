@@ -237,23 +237,25 @@ public class TinyWebTests {
             describe("and endpoint and filters can depend on components", () -> {
                 before(() -> {
 
-                    TinyWeb.ComponentCache cache = new TinyWeb.DefaultComponentCache();
+                    //TinyWeb.ComponentCache cache = new TinyWeb.DefaultComponentCache();
 
                     svr = new TinyWeb.Server(8080, 8081) {
 
+                        ProductInventory productInventory = new ProductInventory();
                         @Override
-                        public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
+                        public <T> T instantiateDep(Class<T> clazz, TinyWeb.ComponentCache cache) {
                             if (clazz == ShoppingCart.class) {
-                                return (T) cache.getOrCreate(ShoppingCart.class, () -> createShoppingCart(cache));
+                                return (T) createOrGetShoppingCart(cache);
                             }
                             throw new IllegalArgumentException("Unsupported class: " + clazz);
                         }
                     };
+                    //svr.applicationScopeCache.put()
                     doCompositionForOneTest(svr);
                     svr.start();
 
                 });
-                only().it("extracts parameters correctly from the path", () -> {
+                it("extracts parameters correctly from the path", () -> {
                     try (Response response = httpGet("http://localhost:8080/api/howManyOrderInBook")) {
                         assertThat(response.body().string(), equalTo("Cart Items before: 0\n" +
                                 "apple picked: true\n" +
@@ -805,16 +807,16 @@ public class TinyWebTests {
         }
     }
 
-    public static ShoppingCart createShoppingCart(TinyWeb.ComponentCache cache) {
+
+
+    public static ShoppingCart createOrGetShoppingCart(TinyWeb.ComponentCache cache) {
         return cache.getOrCreate(ShoppingCart.class, () ->
-                new ShoppingCart(createProductInventory(cache))
+                new ShoppingCart(getOrCreateProductInventory(cache))
         );
     }
 
-    public static ProductInventory createProductInventory(TinyWeb.ComponentCache cache) {
-        return cache.getOrCreate(ProductInventory.class, () ->
-                new ProductInventory()
-        );
+    public static ProductInventory getOrCreateProductInventory(TinyWeb.ComponentCache cache) {
+        return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
     }
 
 

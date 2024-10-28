@@ -575,44 +575,44 @@ Control (IoC) with a lookup-style container, and we've built something rudimenta
 ```java
 public static class ProductInventory {
 
-    Map<String, Integer> stockItems = new HashMap<>() {{
-        put("apple", 100);
-        put("orange", 50);
-        put("bagged banana", 33);
-    }};
+  Map<String, Integer> stockItems = new HashMap<>() {{
+    put("apple", 100);
+    put("orange", 50);
+    put("bagged banana", 33);
+  }};
 
-    public boolean customerReserves(String item) {
-        if (stockItems.containsKey(item)) {
-            if (stockItems.get(item) > 0) {
-                stockItems.put(item, stockItems.get(item) - 1);
-                return true;
-            }
-        }
-        return false;
+  public boolean customerReserves(String item) {
+    if (stockItems.containsKey(item)) {
+      if (stockItems.get(item) > 0) {
+        stockItems.put(item, stockItems.get(item) - 1);
+        return true;
+      }
     }
+    return false;
+  }
 }
 
 public static class ShoppingCart {
 
-    private final ProductInventory inv;
-    private final Map<String, Integer> items = new HashMap<>();
+  private final ProductInventory inv;
+  private final Map<String, Integer> items = new HashMap<>();
 
-    public ShoppingCart(ProductInventory inv) {
-        this.inv = inv;
-    }
+  public ShoppingCart(ProductInventory inv) {
+    this.inv = inv;
+  }
 
-    public int cartCount() {
-        return items.values().stream().mapToInt(Integer::intValue).sum();
-    }
+  public int cartCount() {
+    return items.values().stream().mapToInt(Integer::intValue).sum();
+  }
 
-    public boolean pickItem(String item) {
-        boolean gotIt = inv.customerReserves(item);
-        if (!gotIt) {
-            return false;
-        }
-        items.put(item, items.getOrDefault(item, 0) + 1);
-        return true;
+  public boolean pickItem(String item) {
+    boolean gotIt = inv.customerReserves(item);
+    if (!gotIt) {
+      return false;
     }
+    items.put(item, items.getOrDefault(item, 0) + 1);
+    return true;
+  }
 }
 
 public static ShoppingCart createShoppingCart(TinyWeb.ComponentCache cache) {
@@ -629,7 +629,7 @@ public static ProductInventory createProductInventory(TinyWeb.ComponentCache cac
 
 private static void doComposition(TinyWeb.Server svr) {
   new TinyWeb.AdditionalServerContexts(svr) {{
-      
+
     // Code in any of these paths can't interact with the ComponentCache directly. 
     // Only through ctx.dep(Class)
     path("/api", () -> {
@@ -647,16 +647,19 @@ private static void doComposition(TinyWeb.Server svr) {
 TinyWeb.ComponentCache cache = new TinyWeb.DefaultComponentCache();
 
 TinyWeb.Server svr = new TinyWeb.Server(8080, 8081) {
-    @Override
-    public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
-        if (clazz == ShoppingCart.class) {
-            return (T) cache.getOrCreate(ShoppingCart.class, () -> createUserService(cache));
-        }
-        throw new IllegalArgumentException("Unsupported class: " + clazz);
+  @Override
+  public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
+    if (clazz == ShoppingCart.class) {
+      return (T) cache.getOrCreate(ShoppingCart.class, () -> createUserService(cache));
     }
+    throw new IllegalArgumentException("Unsupported class: " + clazz);
+  }
 };
+
 doComposition(svr); // paths, filters, endPoints added here.
-svr.start();
+svr.
+
+start();
 ```
 
 
