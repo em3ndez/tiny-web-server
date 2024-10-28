@@ -620,7 +620,7 @@ public static ShoppingCart createOrGetShoppingCart(TinyWeb.ComponentCache cache)
             new ShoppingCart(getOrCreateProductInventory(cache))
     );
 }
-
+    
 public static ProductInventory getOrCreateProductInventory(TinyWeb.ComponentCache cache) {
     return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
 }
