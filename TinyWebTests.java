@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 
+import static java.lang.Thread.sleep;
 import static okhttp3.Request.*;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -145,7 +146,7 @@ public class TinyWebTests {
                 });
                 it("returns 200 and serves a non-text file", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                    try (Response response = httpGet("http://localhost:8080/static/target/TinyWeb$Server.class")) {
+                    try (Response response = httpGet("http://localhost:8080/static/target/classes/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
                         // Expected: "application/java-vm"
                         //     but: was "text/plain; charset=UTF-8" TODO
@@ -426,7 +427,7 @@ public class TinyWebTests {
                                 String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
                                 sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
                                 try {
-                                    Thread.sleep(100);
+                                    sleep(100);
                                 } catch (InterruptedException e) {
                                 }
                             }
@@ -438,7 +439,7 @@ public class TinyWebTests {
 
                 it("echoes three messages plus -1 -2 -3 back to the client", () -> {
                     try {
-                        Thread.sleep(1000); // Wait for server startup
+                        sleep(1000); // Wait for server startup
                     } catch (InterruptedException e) {
                     }
 
@@ -485,7 +486,7 @@ public class TinyWebTests {
                                     String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
                                     sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
                                     try {
-                                        Thread.sleep(100);
+                                        sleep(100);
                                     } catch (InterruptedException e) {
                                     }
                                 }
@@ -496,7 +497,7 @@ public class TinyWebTests {
 
                 it("echoes three messages plus -1 -2 -3 back to the client", () -> {
                     try {
-                        Thread.sleep(1000); // Wait for server startup
+                        sleep(1000); // Wait for server startup
                     } catch (InterruptedException e) {
                     }
 
@@ -589,7 +590,7 @@ public class TinyWebTests {
                                 String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
                                 sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
                                 try {
-                                    Thread.sleep(100);
+                                    sleep(100);
                                 } catch (InterruptedException e) {
                                 }
                             }
@@ -611,7 +612,7 @@ public class TinyWebTests {
                         driver.get("http://localhost:8080/");
                         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
                         WebElement messageElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("messageDisplay")));
-
+                        sleep(500);
                         String expectedMessages = "Server sent: Hello WebSocket-1\n" +
                                 "Server sent: Hello WebSocket-2\n" +
                                 "Server sent: Hello WebSocket-3";
@@ -638,11 +639,11 @@ public class TinyWebTests {
                                 Authentication auth = IsEncryptedByUs.decrypt(allegedlyLoggedInCookie);
                                 if (auth.authentic == false) {
                                     res.write("Try logging in again", 403);
-                                    return false;
+                                    return TinyWeb.FilterResult.STOP;
                                 } else {
                                     ctx.setAttribute("user", auth.user);
                                 }
-                                return true; // Continue processing
+                                return TinyWeb.FilterResult.CONTINUE; // Continue processing
                             });
                             endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, ctx) -> {
                                 res.write("User Is logged in: " + ctx.getAttribute("user"));
