@@ -6,6 +6,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -157,6 +159,11 @@ public class TinyWeb {
             });
             return this;
         }
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface DependenciesContainer {
+        Dependencies[] value();
     }
 
     public static class PathContext extends ServerContext {
@@ -563,7 +570,8 @@ public class TinyWeb {
 
         public record FooBarDeps(StringBuilder gratuitousExampleDep) {}
 
-        @interface Dependencies extends Repeatable {
+        @Repeatable(DependenciesContainer.class)
+        @interface Dependencies {
             Class<?> clazz();
         }
 
