@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpServer;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.lang.annotation.Repeatable;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -562,10 +563,11 @@ public class TinyWeb {
 
         public record FooBarDeps(StringBuilder gratuitousExampleDep) {}
 
-        @interface Dependencies {
+        @interface Dependencies extends Repeatable {
             Class<?> clazz();
         }
 
+        @Dependencies(clazz=FooBarDeps.class)
         @Dependencies(clazz=FooBarDeps.class)
         public void foobar(Request req, Response res, RequestContext ctx) {
             res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
