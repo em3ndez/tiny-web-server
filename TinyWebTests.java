@@ -1,6 +1,5 @@
 //package com.paulhammant.tinywebserver;
 
-//import jakarta.websocket.*;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import org.mockito.Mockito;
@@ -25,6 +24,7 @@ import static okhttp3.Request.*;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+
 
 @Test
 public class TinyWebTests {
@@ -190,14 +190,14 @@ public class TinyWebTests {
             describe("and the endpoint can extract parameters", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
-                            path("/api", () -> {
-                                path("/v1", () -> {
-                                    endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
-                                        res.write("Parameter: " + ctx.getParam("1"));
-                                    });
+                        path("/api", () -> {
+                            path("/v1", () -> {
+                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
+                                    res.write("Parameter: " + ctx.getParam("1"));
                                 });
                             });
-                        }}.start();
+                        });
+                    }}.start();
                 });
                 it("extracts parameters correctly from the path", () -> {
                     try (Response response = httpGet("http://localhost:8080/api/v1/test/123")) {
@@ -239,12 +239,7 @@ public class TinyWebTests {
             });
             describe("and endpoint and filters can depend on components", () -> {
                 before(() -> {
-
-                    //TinyWeb.ComponentCache cache = new TinyWeb.DefaultComponentCache();
-
                     svr = new TinyWeb.Server(8080, 8081) {
-
-                        ProductInventory productInventory = new ProductInventory();
                         @Override
                         public <T> T instantiateDep(Class<T> clazz, TinyWeb.ComponentCache cache) {
                             if (clazz == ShoppingCart.class) {
@@ -275,13 +270,12 @@ public class TinyWebTests {
                 final StringBuilder se = new StringBuilder();
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
-                        path("/api", () -> {
-                            endPoint(TinyWeb.Method.GET, "/error", (req, res, ctx) -> {
-                                throw new RuntimeException("Deliberate exception");
+                            path("/api", () -> {
+                                endPoint(TinyWeb.Method.GET, "/error", (req, res, ctx) -> {
+                                    throw new RuntimeException("Deliberate exception");
+                                });
                             });
-                        });
-                    }
-
+                        }
                         @Override
                         protected void appHandlingException(Exception e) {
                             se.append("appHandlingException exception: " + e.getMessage());
