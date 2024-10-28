@@ -615,16 +615,14 @@ public static class ShoppingCart {
   }
 }
 
-public static ShoppingCart createShoppingCart(TinyWeb.ComponentCache cache) {
-  return cache.getOrCreate(ShoppingCart.class, () ->
-          new ShoppingCart(createProductInventory(cache))
-  );
+public static ShoppingCart createOrGetShoppingCart(TinyWeb.ComponentCache cache) {
+    return cache.getOrCreate(ShoppingCart.class, () ->
+            new ShoppingCart(getOrCreateProductInventory(cache))
+    );
 }
 
-public static ProductInventory createProductInventory(TinyWeb.ComponentCache cache) {
-  return cache.getOrCreate(ProductInventory.class, () ->
-          new ProductInventory() // in reality there would likely be a dependency on a database
-  );
+public static ProductInventory getOrCreateProductInventory(TinyWeb.ComponentCache cache) {
+    return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
 }
 
 private static void doComposition(TinyWeb.Server svr) {
