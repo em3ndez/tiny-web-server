@@ -1,7 +1,9 @@
-//package com.paulhammant.tinywebserver;
+package com.paulhammant.tnywb.tests;
 
+import com.paulhammant.tnywb.TinyWeb.Request;
+import com.paulhammant.tnywb.TinyWeb.Response;
 import okhttp3.OkHttpClient;
-import okhttp3.Response;
+
 import org.mockito.Mockito;
 import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.Test;
@@ -26,6 +28,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 
+import com.paulhammant.tnywb.TinyWeb;
+import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
+import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
+import static com.paulhammant.tnywb.TinyWeb.Method.GET;
+
 @Test
 public class TinyWebTests {
     TinyWeb.ExampleApp mockApp;
@@ -40,12 +47,12 @@ public class TinyWebTests {
                     svr.start();
                 });
                 it("returns the user profile for Jimmy", () -> {
-                    try (Response response = httpGet("http://localhost:8080/users/Jimmy")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/users/Jimmy")) {
                         assertThat(response.body().string(), equalTo("User profile: Jimmy"));
                     }
                 });
                 it("returns the user profile for Thelma", () -> {
-                    try (Response response = httpGet("http://localhost:8080/users/Thelma")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/users/Thelma")) {
                         assertThat(response.body().string(), equalTo("User profile: Thelma"));
                     }
                 });
@@ -63,7 +70,7 @@ public class TinyWebTests {
                             sb.append("/api->"); // called once only while composing webapp
                             path("/v1", () -> {
                                 sb.append("/v1->"); // called once only while composing webapp
-                                endPoint(TinyWeb.Method.GET, "/items/(\\w+)/details/(\\w+)", (req, res, ctx) -> {
+                                endPoint(GET, "/items/(\\w+)/details/(\\w+)", (req, res, ctx) -> {
                                     sb.append("itemz."); // called while handling request
                                     res.write("Item: " + ctx.getParam("1") + ", Detail: " + ctx.getParam("2") + "\n" + sb);
                                 });
@@ -73,18 +80,18 @@ public class TinyWebTests {
                 });
 
                 it("extracts parameters correctly from the nested path", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/v1/items/123/details/456")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/items/123/details/456")) {
                         assertThat(response.body().string(), equalTo("Item: 123, Detail: 456\n/api->/v1->itemz."));
                         assertThat(response.code(), equalTo(200));
                     }
-                    try (Response response = httpGet("http://localhost:8080/api/v1/items/abc/details/def")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/items/abc/details/def")) {
                         assertThat(response.body().string(), equalTo("Item: abc, Detail: def\n/api->/v1->itemz.itemz."));
                         assertThat(response.code(), equalTo(200));
                     }
                 });
 
                 it("returns 404 for an incorrect nested path", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/v1/items/123/456")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/items/123/456")) {
                         assertThat(response.body().string(), equalTo("Not found"));
                         assertThat(response.code(), equalTo(404));
                     }
@@ -101,13 +108,13 @@ public class TinyWebTests {
                     svr.start();
                 });
                 it("allows access when the 'sucks' header is absent", () -> {
-                    try (Response response = httpGet("http://localhost:8080/foo/bar")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/foo/bar")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), equalTo("Hello, World!"));
                     }
                 });
                 it("denies access when the 'sucks' header is present", () -> {
-                    try (Response response = httpGet("http://localhost:8080/foo/bar", "sucks", "true")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/foo/bar", "sucks", "true")) {
                         assertThat(response.body().string(), equalTo("Access Denied"));
                         assertThat(response.code(), equalTo(403));
                     }
@@ -124,21 +131,21 @@ public class TinyWebTests {
                     svr.start();
                 });
                 it("returns 200 and serves a text file", () -> {
-                    try (Response response = httpGet("http://localhost:8080/static/README.md")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().contentType().toString(), equalTo("text/markdown"));
                         assertThat(response.body().string(), containsString("GPT estimates the path coverage for the TinyWeb class to be around 85-90%"));
                     }
                 });
                 it("returns 404 for non-existent files", () -> {
-                    try (Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
                         assertThat(response.code(), equalTo(404));
                         assertThat(response.body().string(), containsString("Not found"));
                     }
                 });
                 it("returns 200 and serves a file from a subdirectory", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                    try (Response response = httpGet("http://localhost:8080/static/TinyWeb.java")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/TinyWeb.java")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().contentType().toString(), equalTo("text/x-java"));
                         assertThat(response.body().string(), containsString("class"));
@@ -146,7 +153,7 @@ public class TinyWebTests {
                 });
                 it("returns 200 and serves a non-text file", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                    try (Response response = httpGet("http://localhost:8080/static/target/classes/TinyWeb$Server.class")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/target/classes/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
                         // Expected: "application/java-vm"
                         //     but: was "text/plain; charset=UTF-8" TODO
@@ -171,16 +178,16 @@ public class TinyWebTests {
                     Mockito.doAnswer(invocation -> {
                         invocation.<TinyWeb.Response>getArgument(1).write("invoked");
                         return null;
-                    }).when(mockApp).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<TinyWeb.RequestContext>any());
+                    }).when(mockApp).foobar(Mockito.any(Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<TinyWeb.RequestContext>any());
                 });
                 it("invokes the ExampleApp foobar method", () -> {
-                    try (Response response = httpGet("http://localhost:8080/greeting/A/B")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/greeting/A/B")) {
                         assertThat(response.body().string(), equalTo("invoked"));
                     }
                 });
                 after(() -> {
                     svr.stop();
-                    Mockito.verify(mockApp).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<TinyWeb.RequestContext>any());
+                    Mockito.verify(mockApp).foobar(Mockito.any(Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<TinyWeb.RequestContext>any());
                     svr = null;
                 });
             });
@@ -192,7 +199,7 @@ public class TinyWebTests {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
                             path("/v1", () -> {
-                                endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
+                                endPoint(GET, "/test/(\\w+)", (req, res, ctx) -> {
                                     res.write("Parameter: " + ctx.getParam("1"));
                                 });
                             });
@@ -200,13 +207,13 @@ public class TinyWebTests {
                     }}.start();
                 });
                 it("extracts parameters correctly from the path", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/v1/test/123")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/test/123")) {
                         assertThat(response.body().string(), equalTo("Parameter: 123"));
                         assertThat(response.code(), equalTo(200));
                     }
                 });
                 it("returns 404 when two parameters are provided for a one-parameter path", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/v1/test/123/456")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/test/123/456")) {
                         assertThat(response.body().string(), equalTo("Not found"));
                         assertThat(response.code(), equalTo(404));
                     }
@@ -220,14 +227,14 @@ public class TinyWebTests {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api2", () -> {
-                            endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
+                            endPoint(GET, "/test/(\\w+)", (req, res, ctx) -> {
                                 res.write("Parameter: " + ctx.getParam("1") + " " + req.getQueryParams());
                             });
                         });
                     }}.start();
                 });
                 it("handles query parameters correctly", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api2/test/123?a=1&b=2")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api2/test/123?a=1&b=2")) {
                         assertThat(response.body().string(), equalTo("Parameter: 123 {a=1, b=2}"));
                         assertThat(response.code(), equalTo(200));
                     }
@@ -254,7 +261,7 @@ public class TinyWebTests {
 
                 });
                 it("extracts parameters correctly from the path", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/howManyOrderInBook")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/howManyOrderInBook")) {
                         assertThat(response.body().string(), equalTo("Cart Items before: 0\n" +
                                 "apple picked: true\n" +
                                 "Cart Items after: 1\n"));
@@ -271,7 +278,7 @@ public class TinyWebTests {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                             path("/api", () -> {
-                                endPoint(TinyWeb.Method.GET, "/error", (req, res, ctx) -> {
+                                endPoint(GET, "/error", (req, res, ctx) -> {
                                     throw new RuntimeException("Deliberate exception");
                                 });
                             });
@@ -284,7 +291,7 @@ public class TinyWebTests {
                 });
 
                 it("returns 500 and an error message for a runtime exception", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/error")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/error")) {
                         assertThat(response.code(), equalTo(500));
                         assertThat(response.body().string(), containsString("Server error"));
                         assertThat(se.toString(), containsString("appHandlingException exception: Deliberate exception"));
@@ -300,7 +307,7 @@ public class TinyWebTests {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
-                            endPoint(TinyWeb.Method.GET, "/query", (req, res, ctx) -> {
+                            endPoint(GET, "/query", (req, res, ctx) -> {
                                 res.write("Query Params: " + req.getQueryParams());
                             });
                         });
@@ -308,7 +315,7 @@ public class TinyWebTests {
                 });
 
                 it("parses query parameters correctly", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/query?name=John&age=30")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/query?name=John&age=30")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), equalTo("Query Params: {name=John, age=30}"));
                     }
@@ -324,7 +331,7 @@ public class TinyWebTests {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, -1) {{
                         path("/api", () -> {
-                            endPoint(TinyWeb.Method.GET, "/header-test", (req, res, ctx) -> {
+                            endPoint(GET, "/header-test", (req, res, ctx) -> {
                                 res.setHeader("X-Custom-Header", "HeaderValue");
                                 res.write("Header set");
                             });
@@ -333,7 +340,7 @@ public class TinyWebTests {
                 });
 
                 it("sets the custom header correctly", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/header-test")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/header-test")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.header("X-Custom-Header"), equalTo("HeaderValue"));
                         assertThat(response.body().string(), equalTo("Header set"));
@@ -351,10 +358,10 @@ public class TinyWebTests {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
-                            filter(TinyWeb.Method.GET, "/error", (req, res, ctx) -> {
+                            filter(GET, "/error", (req, res, ctx) -> {
                                 throw new RuntimeException("Deliberate exception in filter");
                             });
-                            endPoint(TinyWeb.Method.GET, "/error", (req, res, ctx) -> {
+                            endPoint(GET, "/error", (req, res, ctx) -> {
                                 res.write("This should not be reached");
                             });
                         });
@@ -368,7 +375,7 @@ public class TinyWebTests {
                 });
 
                 it("returns 500 and an error message for a runtime exception in a filter", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/error")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/error")) {
                         assertThat(response.body().string(), containsString("Server Error"));
                         assertThat(response.code(), equalTo(500));
                         assertThat(se.toString(), containsString("appHandlingException exception: Deliberate exception in filter"));
@@ -389,21 +396,21 @@ public class TinyWebTests {
                 });
 
                 it("serves a static file correctly", () -> {
-                    try (Response response = httpGet("http://localhost:8080/static/README.md")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), containsString("Cuppa-Framework"));
                     }
                 });
 
                 it("returns 404 for a non-existent static file", () -> {
-                    try (Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
                         assertThat(response.code(), equalTo(404));
                         assertThat(response.body().string(), containsString("Not found"));
                     }
                 });
 
                 it("prevents directory traversal attacks", () -> {
-                    try (Response response = httpGet("http://localhost:8080/static/../../anythingt.java")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/../../anythingt.java")) {
                         assertThat(response.code(), equalTo(404));
                         assertThat(response.body().string(), containsString("Not found"));
                     }
@@ -473,7 +480,7 @@ public class TinyWebTests {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         path("/foo", () -> {
-                            endPoint(TinyWeb.Method.GET, "/bar", (req, res, ctx) -> {
+                            endPoint(GET, "/bar", (req, res, ctx) -> {
                                 res.write("OK");
                             });
 
@@ -497,7 +504,7 @@ public class TinyWebTests {
                     } catch (InterruptedException e) {
                     }
 
-                    try (Response response = httpGet("http://localhost:8080/foo/bar")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/foo/bar")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), equalTo("OK"));
                     }
@@ -534,9 +541,9 @@ public class TinyWebTests {
 
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
-                        endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.JavascriptSocketClient());
+                        endPoint(GET, "/javascriptWebSocketClient.js", new TinyWeb.JavascriptSocketClient());
 
-                        endPoint(TinyWeb.Method.GET, "/", (req, res, ctx) -> {
+                        endPoint(GET, "/", (req, res, ctx) -> {
                             res.setHeader("Content-Type", "text/html");
                             res.sendResponse("""
                                 <!DOCTYPE html>
@@ -635,13 +642,13 @@ public class TinyWebTests {
                                 Authentication auth = IsEncryptedByUs.decrypt(allegedlyLoggedInCookie);
                                 if (auth.authentic == false) {
                                     res.write("Try logging in again", 403);
-                                    return TinyWeb.FilterResult.STOP;
+                                    return STOP;
                                 } else {
                                     ctx.setAttribute("user", auth.user);
                                 }
-                                return TinyWeb.FilterResult.CONTINUE; // Continue processing
+                                return CONTINUE; // Continue processing
                             });
-                            endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, ctx) -> {
+                            endPoint(GET, "/attribute-test", (req, res, ctx) -> {
                                 res.write("User Is logged in: " + ctx.getAttribute("user"));
                             });
                         });
@@ -650,14 +657,14 @@ public class TinyWebTests {
                 });
 
                 it("attribute user was passed from filter to endPoint for authentic user", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=7C65o6I2>A=6]4@>")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=7C65o6I2>A=6]4@>")) {
                         assertThat(response.body().string(), equalTo("User Is logged in: fred@example.com"));
                         assertThat(response.code(), equalTo(200));
                     }
                 });
 
                 it("attribute user was not passed from filter to endPoint for inauthentic user", () -> {
-                    try (Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=aeiouaeiou;")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=aeiouaeiou;")) {
                         assertThat(response.body().string(), equalTo("Try logging in again"));
                         assertThat(response.code(), equalTo(403));
                     }
@@ -672,13 +679,13 @@ public class TinyWebTests {
             describe("and the composition can happen on a previously instantiated TinyWeb.Server", () -> {
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
-                        endPoint(TinyWeb.Method.GET, "/foo", (req, res, ctx) -> {
+                        endPoint(GET, "/foo", (req, res, ctx) -> {
                             res.write("Hello1");
                         });
                     }};
                     new TinyWeb.AdditionalServerContexts(svr) {{
                         path("/bar", () -> {
-                            endPoint(TinyWeb.Method.GET, "/baz", (req, res, ctx) -> {
+                            endPoint(GET, "/baz", (req, res, ctx) -> {
                                 res.write("Hello2");
                             });
                         });
@@ -686,10 +693,10 @@ public class TinyWebTests {
                     svr.start();
                 });
                 it("both endpoints can be GET", () -> {
-                    try (Response response = httpGet("http://localhost:8080/foo")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/foo")) {
                         assertThat(response.body().string(), equalTo("Hello1"));
                     }
-                    try (Response response = httpGet("http://localhost:8080/bar/baz")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/bar/baz")) {
                         assertThat(response.body().string(), equalTo("Hello2"));
                     }
                 });
@@ -706,7 +713,7 @@ public class TinyWebTests {
         new TinyWeb.AdditionalServerContexts(svr) {{
             path("/api", () -> {
                 //deps([OrderBook.class]);
-                endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, ctx) -> {
+                endPoint(GET, "/howManyOrderInBook", (req, res, ctx) -> {
                     ShoppingCart sc = ctx.dep(ShoppingCart.class);
                     res.write("Cart Items before: " + sc.cartCount() + "\n" +
                             "apple picked: " + sc.pickItem("apple") + "\n" +
@@ -717,13 +724,13 @@ public class TinyWebTests {
         }};
     }
 
-    private static @NotNull Response httpGet(String url) throws IOException {
+    private static @NotNull okhttp3.Response httpGet(String url) throws IOException {
         return new OkHttpClient().newCall(new Builder()
                 .url(url)
                 .get().build()).execute();
     }
 
-    private static @NotNull Response httpGet(String url, String hdrKey, String hdrVal) throws IOException {
+    private static @NotNull okhttp3.Response httpGet(String url, String hdrKey, String hdrVal) throws IOException {
         return new OkHttpClient().newCall(new Builder()
                 .url(url).addHeader(hdrKey, hdrVal)
                 .get().build()).execute();

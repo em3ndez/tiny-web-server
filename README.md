@@ -870,7 +870,7 @@ That's it - no deps.
 That makes:
 
 ``` 
-ls target/classes/com/paulhammant/tinywebserver
+ls target/classes/com/paulhammant/tnywb
 
 TinyWeb$ServerContext.class  TinyWeb$Filter.class  TinyWeb$PathContext.class  
 TinyWeb$Server.class  TinyWeb$SocketServer$SocketMessageHandler.class 
@@ -945,7 +945,7 @@ javac -d target/test-classes -cp "$(find test_libs -name '*.jar' | tr '\n' ':')t
 To run the main method of `TinyWebTests.java`, which executes the tests using the Cuppa framework, use the following command:
 
 ```bash
-java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" com.paulhammant.tinywebserver.TinyWebTests
+java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" com.paulhammant.tinywebserver.tests.TinyWebTests
 ```
 
 ## TinyWeb's own test results

@@ -1,4 +1,4 @@
-//package com.paulhammant.tinywebserver;
+package com.paulhammant.tnywb;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -34,9 +34,9 @@ public class TinyWeb {
 
     public static class ServerContext {
 
-        protected Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
-        protected Map<Pattern, SocketMessageHandler> wsRoutes = new HashMap<>();
-        protected Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
+        Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
+        Map<Pattern, SocketMessageHandler> wsRoutes = new HashMap<>();
+        Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
 
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
@@ -385,7 +385,7 @@ public class TinyWeb {
         }
     }
 
-    interface RequestContext {
+    public interface RequestContext {
         String getParam(String key);
         @SuppressWarnings("unchecked")
         <T> T dep(Class<T> clazz);
@@ -520,9 +520,7 @@ public class TinyWeb {
             exchange.getResponseHeaders().set(name, value);
         }
 
-
-
-        protected void sendResponse(String content, int statusCode) {
+        public void sendResponse(String content, int statusCode) {
             byte[] bytes = content.getBytes();
             try {
                 exchange.sendResponseHeaders(statusCode, bytes.length);
