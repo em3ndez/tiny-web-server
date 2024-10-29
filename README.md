@@ -659,7 +659,24 @@ svr.
 
 start();
 ```
+If you wanted to mock of of the depended-on components, you would do via instantiateDep()
 
+```java
+// test logic - setup() or before() methods
+svr = new TinyWeb.Server(8080, -1) {
+  @Override
+  public <T > T instantiateDep(Class < T > clazz, TinyWeb.ComponentCache cache) {
+    // MOCKS utilized here
+  }
+}
+
+
+new TinyWeb.AdditionalServerContexts(svr) {{
+    // paths, filters, endPoints.. in a static method from the prod codebase.
+}};
+svr.start();
+// do test methods
+```
 
 ### ORM Technologies
 
