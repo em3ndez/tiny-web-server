@@ -422,7 +422,7 @@ public class TinyWeb {
         private final String body;
 
         // TODO why unused?
-        private final Map<String, String> queryParams;
+        private Map<String, String> queryParams;
 
         public Request(HttpExchange exchange, Server server) {
             this.exchange = exchange;
@@ -430,14 +430,12 @@ public class TinyWeb {
             if (exchange != null) {
                 try {
                     this.body = new String(exchange.getRequestBody().readAllBytes());
-                    this.queryParams = parseQueryParams(exchange.getRequestURI().getQuery());
 
                 } catch (IOException e) {
                     throw new ServerException("Internal request error, for " + exchange.getRequestURI(), e);
                 }
             } else {
                 this.body = null;
-                this.queryParams = null;
             }
         }
         public String getCookie(String name) {
@@ -463,32 +461,20 @@ public class TinyWeb {
             if (exchange != null) {
                 return exchange.getRequestURI().getQuery();
             }
-            return null;
-        }
-
-        protected Map<String, String> parseQueryParams(String query) {
-            if (query == null || query.isEmpty()) {
-                return Collections.emptyMap();
-            }
-            Map<String, String> queryParams = new HashMap<>();
-            String[] pairs = query.split("&");
-            for (String pair : pairs) {
-                String[] keyValue = pair.split("=");
-                if (keyValue.length == 2) {
-                    queryParams.put(keyValue[0], keyValue[1]);
-                }
-            }
-            return queryParams;
+            return "";
         }
 
 
         // TODO: NEEDED
         public Map<String, String> getQueryParams() {
+            if (queryParams != null) {
+                return queryParams;
+            }
             String query = getQuery();
             if (query == null || query.isEmpty()) {
                 return Collections.emptyMap();
             }
-            Map<String, String> queryParams = new HashMap<>();
+            this.queryParams = new HashMap<>();
             String[] pairs = query.split("&");
             for (String pair : pairs) {
                 String[] keyValue = pair.split("=");

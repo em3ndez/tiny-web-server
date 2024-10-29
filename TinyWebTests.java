@@ -153,7 +153,7 @@ public class TinyWebTests {
                 });
                 it("returns 200 and serves a non-text file", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/target/classes/TinyWeb$Server.class")) {
+                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tnywb/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
                         // Expected: "application/java-vm"
                         //     but: was "text/plain; charset=UTF-8" TODO
