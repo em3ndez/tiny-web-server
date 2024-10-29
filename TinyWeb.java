@@ -35,6 +35,7 @@ public class TinyWeb {
     public static class ServerContext {
 
         Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
+        protected boolean isStarted = false;
         Map<Pattern, SocketMessageHandler> wsRoutes = new HashMap<>();
         Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
 
@@ -213,7 +214,6 @@ public class TinyWeb {
     public static class Server extends ServerContext {
 
         private final HttpServer httpServer;
-        private boolean isStarted = false;
         private final SocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
         protected ComponentCache applicationScopeCache = new DefaultComponentCache(null);
