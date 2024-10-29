@@ -999,7 +999,7 @@ When using the ExampleApp server via sockets
       ✓ echoes three messages plus -1 -2 -3 back to the client
 ```
 
-ChatGPT estimates the path coverage for the TinyWeb class to be around 85-90%
+ChatGPT estimates the path coverage for the TinyWeb class to be around 90-95%
 
 I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll raise that feature request.
 
