@@ -40,6 +40,9 @@ public class TinyWeb {
 
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
+            if (isStarted) {
+                throw new IllegalStateException("Cannot modify routes after the server has started.");
+            }
             Map<Method, Map<Pattern, EndPoint>> previousRoutes = this.routes;
             Map<Pattern, SocketMessageHandler> previousWsRoutes = this.wsRoutes;
             Map<Method, List<FilterEntry>> previousFilters = this.filters;
@@ -116,18 +119,27 @@ public class TinyWeb {
         }
 
         public ServerContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
+            if (isStarted) {
+                throw new IllegalStateException("Cannot add endpoints after the server has started.");
+            }
             routes.computeIfAbsent(method, k -> new HashMap<>())
                     .put(Pattern.compile("^" + path + "$"), endPoint);
             return this;
         }
 
         public ServerContext webSocket(String path, SocketMessageHandler wsHandler) {
+            if (isStarted) {
+                throw new IllegalStateException("Cannot add WebSocket handlers after the server has started.");
+            }
             wsRoutes.put(Pattern.compile("^" + path + "$"), wsHandler);
             return this;
         }
 
 
         public ServerContext filter(TinyWeb.Method method, String path, Filter filter) {
+            if (isStarted) {
+                throw new IllegalStateException("Cannot add filters after the server has started.");
+            }
             filters.computeIfAbsent(method, k -> new ArrayList<>())
                     .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
             return this;
@@ -201,6 +213,7 @@ public class TinyWeb {
     public static class Server extends ServerContext {
 
         private final HttpServer httpServer;
+        private boolean isStarted = false;
         private final SocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
         protected ComponentCache applicationScopeCache = new DefaultComponentCache(null);
@@ -363,7 +376,11 @@ public class TinyWeb {
         }
 
         public TinyWeb.Server start() {
+            if (isStarted) {
+                throw new IllegalStateException("Server has already been started.");
+            }
             httpServer.start();
+            isStarted = true;
             if (socketServer != null) {
                 simpleWebSocketServerThread = new Thread(socketServer::start);
                 simpleWebSocketServerThread.start();
