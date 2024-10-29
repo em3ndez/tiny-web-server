@@ -1001,17 +1001,24 @@ When using the ExampleApp server via sockets
 ChatGPT estimates the path coverage for the TinyWeb class to be around 85-90%
 
 I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll raise that feature request.
-## Repository and Project Layout
+
+## Project & Source Repository
 
 The project is organized as follows:
 
-- **`TinyWeb.java`**: The main source file containing the implementation of the TinyWeb server and related classes.
-- **`TinyWebTests.java`**: Contains tests for the TinyWeb server using the Cuppa framework.
+- **`TinyWeb.java`**: The main source file containing the implementation of the TinyWeb server and related classes. No deps outside the JDK.
+- **`TinyWebTests.java`**: Contains tests for the TinyWeb server using the Cuppa framework. Package is different to the TinyWeb class in order to not accidentally take advantage of public/package/private visibility mistakes which can't neatly be tested for otherwise.
 - **`README.md`**: This file, providing an overview and documentation of the project.
-- **`test_libs/`**: Directory containing dependencies required for running tests.
-- **`target/classes/`**: Directory where compiled classes are stored.
+- **`test_libs/`**: Directory containing dependencies required for running tests - built by curl scripts in this README
+- **`target/classes/`**: Directory where compiled classes are stored. 
 - **`target/test-classes/`**: Directory where compiled test classes are stored.
 
-## Codebase Overview
+Notes:
 
-- `TinyWeb.java`: Approximately 918 lines of consequential code, including all logic and structure.
+1. `target` is what Maven would use, but we're not using Maven for this repo (we did to discover the dependency tree)
+2. Both Java sources have packages. While it is conventional to have sources in a dir tree that represents the package, you don't have to
+
+Stats:
+
+Source file `TinyWeb.java` has Approximately 918 lines of consequential code, including all logic and structure. The 
+README and tests are heading toward that size but are still under.
