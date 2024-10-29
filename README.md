@@ -1001,6 +1001,17 @@ When using the ExampleApp server via sockets
 ChatGPT estimates the path coverage for the TinyWeb class to be around 85-90%
 
 I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll raise that feature request.
+## Repository and Project Layout
+
+The project is organized as follows:
+
+- **`TinyWeb.java`**: The main source file containing the implementation of the TinyWeb server and related classes.
+- **`TinyWebTests.java`**: Contains tests for the TinyWeb server using the Cuppa framework.
+- **`README.md`**: This file, providing an overview and documentation of the project.
+- **`test_libs/`**: Directory containing dependencies required for running tests.
+- **`target/classes/`**: Directory where compiled classes are stored.
+- **`target/test-classes/`**: Directory where compiled test classes are stored.
+
 ## Codebase Overview
 
 - `TinyWeb.java`: Approximately 918 lines of consequential code, including all logic and structure.
