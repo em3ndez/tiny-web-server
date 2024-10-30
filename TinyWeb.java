@@ -597,7 +597,7 @@ public class TinyWeb {
         }
 
         @Override
-        public void put(Class<T> clazz, Object<T> instance) {
+        public <T> void put(Class<T> clazz, T instance) {
             cache.put(clazz, instance);
         }
 
