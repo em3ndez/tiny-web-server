@@ -250,7 +250,12 @@ public class TinyWeb {
         private final HttpServer httpServer;
         private final SocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
+        private final DependencyManager dependencyManager;
         protected ComponentCache applicationScopeCache = new DefaultComponentCache(null);
+
+        public Server(int httpPort, int webSocketPort) {
+            super(new ServerState());
+            this.dependencyManager = new DependencyManager(applicationScopeCache);
 
         public Server(int httpPort, int webSocketPort) {
             super(new ServerState());
@@ -382,7 +387,7 @@ public class TinyWeb {
                 @Override
                 @SuppressWarnings("unchecked")
                 public <T> T dep(Class<T> clazz) {
-                    return (T) instantiateDep(clazz, cache);
+                    return dependencyManager.getDependency(clazz);
                 }
 
                 public void setAttribute(String key, Object value) {
@@ -431,9 +436,6 @@ public class TinyWeb {
             return this;
         }
 
-        public <T> T instantiateDep(Class<T> clazz, TinyWeb.ComponentCache cache) {
-            throw new TinyWeb.ServerException("not implemented - you need to override getRequestScopedDependency()");
-        }
     }
 
     public interface RequestContext {
