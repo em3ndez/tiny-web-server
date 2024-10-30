@@ -59,8 +59,8 @@ public class TinyWebTests {
     TinyWeb.SocketServer webSocketServer;
 
     {
-        describe("Simple cases", () -> {
-            describe("and accessing the Echoing GET endpoint", () -> {
+        describe("Given a running TinyWeb server", () -> {
+            describe("When accessing the Echoing GET endpoint", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         endPoint(GET, "/users/(\\w+)", (req, res, ctx) -> {
@@ -69,12 +69,12 @@ public class TinyWebTests {
                     }};
                     webServer.start();
                 });
-                it("returns the user profile for Jimmy", () -> {
+                it("Then it should return the user profile for Jimmy", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/users/Jimmy"),
                             "User profile: Jimmy", 200);
 
                 });
-                it("returns the user profile for Thelma", () -> {
+                it("Then it should return the user profile for Thelma", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/users/Thelma"),
                             "User profile: Thelma", 200);
                 });
@@ -84,7 +84,7 @@ public class TinyWebTests {
                 });
             });
 
-            describe("and accessing a nested path with parameters", () -> {
+            describe("When accessing a nested path with parameters", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         final StringBuilder sb = new StringBuilder();  // don't do this - one sv instance for all incoming connections
@@ -101,7 +101,7 @@ public class TinyWebTests {
                     }}.start();
                 });
 
-                it("extracts parameters correctly from the nested path", () -> {
+                it("Then it should extract parameters correctly from the nested path", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/v1/items/123/details/456"),
                             "Item: 123, Detail: 456\n" +
                                     "/api->/v1->itemz.", 200);
@@ -110,7 +110,7 @@ public class TinyWebTests {
                                     "/api->/v1->itemz.itemz.", 200);
                 });
 
-                it("returns 404 for an incorrect nested path", () -> {
+                it("Then it should return 404 for an incorrect nested path", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/v1/items/123/456"),
                             "Not found", 404);
                 });
@@ -120,7 +120,7 @@ public class TinyWebTests {
                     webServer = null;
                 });
             });
-            describe("and applying filters", () -> {
+            describe("When applying filters", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         path("/foo", () -> {
@@ -139,12 +139,12 @@ public class TinyWebTests {
                     }};
                     webServer.start();
                 });
-                it("allows access when the 'sucks' header is absent", () -> {
+                it("Then it should allow access when the 'sucks' header is absent", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/foo/bar"),
                             "Hello, World!", 200);
 
                 });
-                it("denies access when the 'sucks' header is present", () -> {
+                it("Then it should deny access when the 'sucks' header is present", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/foo/bar", "sucks", "true"),
                             "Access Denied", 403);
                 });
@@ -154,26 +154,26 @@ public class TinyWebTests {
                 });
             });
 
-            describe("and serving static files", () -> {
+            describe("When serving static files", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         serveStaticFiles("/static", new File(".").getAbsolutePath());
                     }};
                     webServer.start();
                 });
-                it("returns 200 and serves a text file", () -> {
+                it("Then it should return 200 and serve a text file", () -> {
                     try (okhttp3.Response response = httpGet("/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().contentType().toString(), equalTo("text/markdown"));
                         assertThat(response.body().string(), containsString("Directory where compiled classes are stored"));
                     }
                 });
-                it("returns 404 for non-existent files", () -> {
+                it("Then it should return 404 for non-existent files", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/static/nonexistent.txt"),
                             "Not found", 404);
 
                 });
-                it("returns 200 and serves a file from a subdirectory", () -> {
+                it("Then it should return 200 and serve a file from a subdirectory", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
                     try (okhttp3.Response response = httpGet("/static/TinyWeb.java")) {
                         assertThat(response.code(), equalTo(200));
@@ -181,7 +181,7 @@ public class TinyWebTests {
                         assertThat(response.body().string(), containsString("class"));
                     }
                 });
-                it("returns 200 and serves a non-text file", () -> {
+                it("Then it should return 200 and serve a non-text file", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
                     try (okhttp3.Response response = httpGet("/static/target/classes/com/paulhammant/tnywb/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
@@ -196,8 +196,8 @@ public class TinyWebTests {
             });
         });
 
-        describe("Examples with Mockito", () -> {
-            describe("and accessing the Greeting GET endpoint", () -> {
+        describe("Given a mocked ExampleApp", () -> {
+            describe("When accessing the Greeting GET endpoint", () -> {
                 before(() -> {
                     exampleApp = Mockito.mock(ExampleApp.class);
                     webServer = new TinyWeb.Server(8080, 8081) {{
@@ -211,7 +211,7 @@ public class TinyWebTests {
                         return null;
                     }).when(exampleApp).foobar(Mockito.any(Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<TinyWeb.RequestContext>any());
                 });
-                it("invokes the ExampleApp foobar method", () -> {
+                it("Then it should invoke the ExampleApp foobar method", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/greeting/A/B"),
                             "invoked", 200);
 
@@ -226,8 +226,8 @@ public class TinyWebTests {
             });
         });
 
-        describe("When testing the application inlined in Cuppa", () -> {
-            describe("and the endpoint can extract parameters", () -> {
+        describe("Given an inlined Cuppa application", () -> {
+            describe("When the endpoint can extract parameters", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
@@ -239,10 +239,10 @@ public class TinyWebTests {
                         });
                     }}.start();
                 });
-                it("extracts parameters correctly from the path", () -> {
+                it("Then it should extract parameters correctly from the path", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/v1/test/123"), "Parameter: 123", 200);
                 });
-                it("returns 404 when two parameters are provided for a one-parameter path", () -> {
+                it("Then it should return 404 when two parameters are provided for a one-parameter path", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/v1/test/123/456"), "Not found", 404);
                 });
                 after(() -> {
@@ -250,7 +250,7 @@ public class TinyWebTests {
                     webServer = null;
                 });
             });
-            describe("and the endpoint can extract query parameters", () -> {
+            describe("When the endpoint can extract query parameters", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         path("/api2", () -> {
@@ -260,7 +260,7 @@ public class TinyWebTests {
                         });
                     }}.start();
                 });
-                it("handles query parameters correctly", () -> {
+                it("Then it should handle query parameters correctly", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api2/test/123?a=1&b=2"), "Parameter: 123 {a=1, b=2}", 200);
                 });
                 after(() -> {
@@ -268,7 +268,7 @@ public class TinyWebTests {
                     webServer = null;
                 });
             });
-            describe("and endpoint and filters can depend on components", () -> {
+            describe("When endpoint and filters can depend on components", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(new TinyWeb.DefaultComponentCache(){{
                         this.put(ProductInventory.class, new ProductInventory());
@@ -287,7 +287,7 @@ public class TinyWebTests {
                     webServer.start();
 
                 });
-                it("extracts parameters correctly from the path", () -> {
+                it("Then it should extract parameters correctly from the path", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/howManyOrderInBook"),
                             "Cart Items before: 0\n" +
                             "apple picked: true\n" +
@@ -298,7 +298,7 @@ public class TinyWebTests {
                     webServer = null;
                 });
             });
-            describe("and an application exception is thrown from an endpoint", () -> {
+            describe("When an application exception is thrown from an endpoint", () -> {
                 final StringBuilder appHandlingExceptions = new StringBuilder();
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
@@ -315,7 +315,7 @@ public class TinyWebTests {
                     }.start();
                 });
 
-                it("returns 500 and an error message for a runtime exception", () -> {
+                it("Then it should return 500 and an error message for a runtime exception", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/error"),
                         "Server error", 500);
                     assertThat(appHandlingExceptions.toString(),
@@ -327,7 +327,7 @@ public class TinyWebTests {
                     webServer = null;
                 });
             });
-            describe("and the endpoint has query-string parameters", () -> {
+            describe("When the endpoint has query-string parameters", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
@@ -338,7 +338,7 @@ public class TinyWebTests {
                     }}.start();
                 });
 
-                it("parses query parameters correctly", () -> {
+                it("Then it should parse query parameters correctly", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/query?name=John&age=30"),
                             "Query Params: {name=John, age=30}", 200);
                 });
@@ -349,7 +349,7 @@ public class TinyWebTests {
                 });
             });
 
-            describe("and response headers are sent to the client", () -> {
+            describe("When response headers are sent to the client", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, -1) {{
                         path("/api", () -> {
@@ -361,7 +361,7 @@ public class TinyWebTests {
                     }}.start();
                 });
 
-                it("sets the custom header correctly", () -> {
+                it("Then it should set the custom header correctly", () -> {
                     try (okhttp3.Response response = httpGet("/api/header-test")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.header("X-Custom-Header"), equalTo("HeaderValue"));
@@ -375,7 +375,7 @@ public class TinyWebTests {
                 });
             });
 
-            describe("and an exception is thrown from a filter", () -> {
+            describe("When an exception is thrown from a filter", () -> {
                 final StringBuilder appHandlingExceptions = new StringBuilder();
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
@@ -397,7 +397,7 @@ public class TinyWebTests {
                     }.start();
                 });
 
-                it("returns 500 and an error message for a runtime exception in a filter", () -> {
+                it("Then it should return 500 and an error message for a runtime exception in a filter", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/error"),
                                 "Server Error", 500);
                     assertThat(appHandlingExceptions.toString(),
@@ -410,26 +410,26 @@ public class TinyWebTests {
                 });
             });
 
-            describe("and testing static file serving", () -> {
+            describe("When testing static file serving", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         serveStaticFiles("/static", ".");
                     }}.start();
                 });
 
-                it("serves a static file correctly", () -> {
+                it("Then it should serve a static file correctly", () -> {
                     try (okhttp3.Response response = httpGet("/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), containsString("Cuppa-Framework"));
                     }
                 });
 
-                it("returns 404 for a non-existent static file", () -> {
+                it("Then it should return 404 for a non-existent static file", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/static/nonexistent.txt"),
                             "Not found", 404);
                 });
 
-                it("prevents directory traversal attacks", () -> {
+                it("Then it should prevent directory traversal attacks", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/static/../../anything.java"),
                             "Not found", 404); //TODO 404?
                 });
@@ -439,7 +439,7 @@ public class TinyWebTests {
                     webServer = null;
                 });
             });
-            describe("and using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
+            describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
                 before(() -> {
                     webSocketServer = new TinyWeb.SocketServer(8081) {{
@@ -458,7 +458,7 @@ public class TinyWebTests {
                     serverThread.start();
                 });
 
-                it("echoes three messages plus -1 -2 -3 back to the client", () -> {
+                it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
                     try {
                         sleep(1000); // Wait for server startup
                     } catch (InterruptedException e) {
@@ -493,7 +493,7 @@ public class TinyWebTests {
                 });
             });
 
-            describe("and using TinyWeb.SocketServer with TinyWeb.Server", () -> {
+            describe("When using TinyWeb.SocketServer with TinyWeb.Server", () -> {
 
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
@@ -516,7 +516,7 @@ public class TinyWebTests {
                     }}.start();
                 });
 
-                it("echoes three messages plus -1 -2 -3 back to the client", () -> {
+                it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
                     try {
                         sleep(1000); // Wait for server startup
                     } catch (InterruptedException e) {}
@@ -549,7 +549,7 @@ public class TinyWebTests {
                     webServer = null;
                 });
             });
-            describe("and using Selenium to subscribe in a browser", () -> {
+            describe("When using Selenium to subscribe in a browser", () -> {
 
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
@@ -613,7 +613,7 @@ public class TinyWebTests {
                     }}.start();
                 });
 
-                it("echoes three messages plus -1 -2 -3 back to the client", () -> {
+                it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
 
                     // To play with the wee browser app, uncomment this, and go to localhost:8080
                     // after kicking off the test suite
@@ -643,7 +643,7 @@ public class TinyWebTests {
                 });
             });
 
-            describe("and passing attributes from filter to endpoint", () -> {
+            describe("When passing attributes from filter to endpoint", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, -1) {{
                         path("/api", () -> {
@@ -668,11 +668,11 @@ public class TinyWebTests {
                     }};
                 });
 
-                it("attribute user was passed from filter to endPoint for authentic user", () -> {
+                it("Then the attribute user should be passed from filter to endPoint for authentic user", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/attribute-test", "Cookie", "logged-in=7C65o6I2>A=6]4@>"), "User Is logged in: fred@example.com", 200);
                 });
 
-                it("attribute user was not passed from filter to endPoint for inauthentic user", () -> {
+                it("Then the attribute user should not be passed from filter to endPoint for inauthentic user", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/attribute-test", "Cookie", "logged-in=aeiouaeiou;"), "Try logging in again", 403);
                 });
 
@@ -682,7 +682,7 @@ public class TinyWebTests {
                 });
             });
 
-            describe("and the composition can happen on a previously instantiated TinyWeb.Server", () -> {
+            describe("When the composition can happen on a previously instantiated TinyWeb.Server", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         endPoint(GET, "/foo", (req, res, ctx) -> {
@@ -698,7 +698,7 @@ public class TinyWebTests {
                     }};
                     webServer.start();
                 });
-                it("both endpoints can be GET", () -> {
+                it("Then both endpoints should be accessible via GET", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/foo"),
                             "Hello1", 200);
                     bodyAndResponseCodeShouldBe(httpGet("/bar/baz"),
