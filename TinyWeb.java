@@ -43,6 +43,24 @@ public class TinyWeb {
         }
     }
 
+    public static class DependencyManager {
+        private final ComponentCache cache;
+
+        public DependencyManager(ComponentCache cache) {
+            this.cache = cache;
+        }
+
+        public <T> T getDependency(Class<T> clazz) {
+            // Implement logic to instantiate or retrieve the dependency
+            // For example, using the cache to manage instances
+            return cache.getOrCreate(clazz, () -> {
+                // Add instantiation logic here
+                throw new IllegalArgumentException("Unsupported class: " + clazz);
+            });
+        }
+    }
+
+
     public static class ServerContext {
 
         Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
