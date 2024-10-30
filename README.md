@@ -73,10 +73,13 @@ capabilities. TinyWeb.SocketServer can be run separately.
 I wanted to make something that:
 
 1. Had nested `path( .. )` lambda functions to group endpoints together. This approach allows for a clean and intuitive way to define complex routing structures within the server. By nesting `path()` functions, developers can easily manage and organize routes, making the codebase more maintainable and scalable.
-2. Could take a series of multiple such registrations of nested paths/filter/endPoints.
-3. Attempted to coerce websockets into the same nested path organization.
-3. Could maybe be exist in a single source file and have no dependencies at all
-3. Does not itself pollute sydout, and has not picked a logging framework, but laves that open as an implementation detail. I wrote much of https://cwiki.apache.org/confluence/display/avalon/AvalonNoLogging back in 2003 or so.
+2. Could take a series of multiple such registrations of nested paths/filter/endPoints - for web-module separation
+3. No shared static state
+4. Loosely follows Inversion of Control (IoC) idioms.
+4. Attempted to coerce websockets into the same nested path organization.
+3. Be a single source file solution
+4. Have no dependencies at all, outside the JDK
+3. Does not itself pollute stdout, and has not picked a logging framework, but laves that open as an implementation detail. I wrote much of https://cwiki.apache.org/confluence/display/avalon/AvalonNoLogging back in 2003 or so.
 
 # Quick user guide
 
@@ -1021,5 +1024,5 @@ Notes:
 
 Stats:
 
-Source file `TinyWeb.java` has Approximately 918 lines of consequential code, including all logic and structure. The 
+Source file `TinyWeb.java` has Approximately 898 lines of consequential code, including all logic and structure. The 
 README and tests are heading toward that size but are still under.

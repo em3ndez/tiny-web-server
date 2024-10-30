@@ -17,6 +17,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
@@ -32,10 +33,12 @@ import com.paulhammant.tnywb.TinyWeb;
 import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
 import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
+import static com.paulhammant.tnywb.TinyWeb.Method.POST;
+import static com.paulhammant.tnywb.TinyWeb.Method.PUT;
 
 @Test
 public class TinyWebTests {
-    TinyWeb.ExampleApp mockApp;
+    ExampleApp mockApp;
     TinyWeb.Server svr;
     TinyWeb.SocketServer webSocketServer;
 
@@ -43,7 +46,7 @@ public class TinyWebTests {
         describe("When using the ExampleApp server via sockets", () -> {
             describe("and accessing the Echoing GET endpoint", () -> {
                 before(() -> {
-                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], new TinyWeb.ExampleApp());
+                    svr =  ExampleApp.exampleComposition(new String[0], new ExampleApp());
                     svr.start();
                 });
                 it("returns the user profile for Jimmy", () -> {
@@ -104,7 +107,7 @@ public class TinyWebTests {
             });
             describe("and applying filters", () -> {
                 before(() -> {
-                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], new TinyWeb.ExampleApp());
+                    svr =  ExampleApp.exampleComposition(new String[0], new ExampleApp());
                     svr.start();
                 });
                 it("allows access when the 'sucks' header is absent", () -> {
@@ -127,14 +130,14 @@ public class TinyWebTests {
 
             describe("and serving static files", () -> {
                 before(() -> {
-                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], new TinyWeb.ExampleApp());
+                    svr =  ExampleApp.exampleComposition(new String[0], new ExampleApp());
                     svr.start();
                 });
                 it("returns 200 and serves a text file", () -> {
                     try (okhttp3.Response response = httpGet("http://localhost:8080/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().contentType().toString(), equalTo("text/markdown"));
-                        assertThat(response.body().string(), containsString("GPT estimates the path coverage for the TinyWeb class to be around 85-90%"));
+                        assertThat(response.body().string(), containsString("Directory where compiled classes are stored"));
                     }
                 });
                 it("returns 404 for non-existent files", () -> {
@@ -171,8 +174,8 @@ public class TinyWebTests {
         describe("When using the ExampleApp with Mockito", () -> {
             describe("and accessing the Greeting GET endpoint", () -> {
                 before(() -> {
-                    mockApp = Mockito.mock(TinyWeb.ExampleApp.class);
-                    svr =  TinyWeb.ExampleApp.exampleComposition(new String[0], mockApp);
+                    mockApp = Mockito.mock(ExampleApp.class);
+                    svr =  ExampleApp.exampleComposition(new String[0], mockApp);
                     //waitForPortToBeClosed("localhost",8080, 8081);
                     svr.start();
                     Mockito.doAnswer(invocation -> {
@@ -491,6 +494,7 @@ public class TinyWebTests {
                                     try {
                                         sleep(100);
                                     } catch (InterruptedException e) {
+
                                     }
                                 }
                             });
@@ -709,6 +713,72 @@ public class TinyWebTests {
         });
     }
 
+    public static class ExampleApp {
+
+        public record FooBarDeps(StringBuilder gratuitousExampleDep) {}
+
+        public void foobar(Request req, Response res, TinyWeb.RequestContext ctx) {
+            res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
+        }
+
+        public static TinyWeb.Server exampleComposition(String[] args, ExampleApp app) {
+            TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+
+                path("/foo", () -> {
+                    filter(GET, "/.*", (req, res, ctx) -> {
+                        if (req.getHeaders().containsKey("sucks")) {
+                            res.write("Access Denied", 403);
+                            return STOP; // don't proceed
+                        }
+                        return CONTINUE; // proceed
+                    });
+                    endPoint(GET, "/bar", (req, res, ctx) -> {
+                        res.write("Hello, World!");
+                        // This endpoint is /foo/bar if that wasn't obvious
+                    });
+                    webSocket("/eee", (message, sender) -> {
+                        for (int i = 1; i <= 3; i++) {
+                            String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                            }
+                        }
+                    });
+                });
+
+                serveStaticFiles("/static", new File(".").getAbsolutePath());
+
+                endPoint(GET, "/users/(\\w+)", (req, res, ctx) -> {
+                    res.write("User profile: " + ctx.getParam("1"));
+                });
+
+
+                endPoint(POST, "/echo", (req, res, ctx) -> {
+                    res.write("You sent: " + req.getBody(), 201);
+                });
+
+                endPoint(GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
+
+                endPoint(PUT, "/update", (req, res, ctx) -> {
+                    res.write("Updated data: " + req.getBody(), 200);
+                });
+
+                path("/api", () -> {
+                    endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
+                        res.write("Parameter: " + ctx.getParam("1"));
+                    });
+                });
+
+            }};
+
+
+            return server;
+        }
+    }
+    
+    
     private static void doCompositionForOneTest(TinyWeb.Server svr) {
         new TinyWeb.AdditionalServerContexts(svr) {{
             path("/api", () -> {

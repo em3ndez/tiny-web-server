@@ -32,16 +32,31 @@ public class TinyWeb {
         CONTINUE, STOP
     }
 
+    public static class ServerState {
+        private boolean isStarted;
+        public boolean isStarted() {
+            return isStarted;
+        }
+
+        public void start() {
+            isStarted = true;
+        }
+    }
+
     public static class ServerContext {
 
         Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
-        protected boolean isStarted = false;
         Map<Pattern, SocketMessageHandler> wsRoutes = new HashMap<>();
         Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
+        protected final ServerState serverState;
+
+        public ServerContext(ServerState serverState) {
+            this.serverState = serverState;
+        }
 
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
-            if (isStarted) {
+            if (serverState.isStarted()) {
                 throw new IllegalStateException("Cannot modify routes after the server has started.");
             }
             Map<Method, Map<Pattern, EndPoint>> previousRoutes = this.routes;
@@ -112,7 +127,7 @@ public class TinyWeb {
             this.wsRoutes = previousWsRoutes;
             this.filters = previousFilters;
 
-            return new PathContext(basePath, this);
+            return new PathContext(basePath, this, serverState);
         }
 
         protected void sendError(HttpExchange exchange, int code, String message) {
@@ -120,7 +135,7 @@ public class TinyWeb {
         }
 
         public ServerContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
-            if (isStarted) {
+            if (serverState.isStarted()) {
                 throw new IllegalStateException("Cannot add endpoints after the server has started.");
             }
             routes.computeIfAbsent(method, k -> new HashMap<>())
@@ -129,7 +144,7 @@ public class TinyWeb {
         }
 
         public ServerContext webSocket(String path, SocketMessageHandler wsHandler) {
-            if (isStarted) {
+            if (serverState.isStarted()) {
                 throw new IllegalStateException("Cannot add WebSocket handlers after the server has started.");
             }
             wsRoutes.put(Pattern.compile("^" + path + "$"), wsHandler);
@@ -138,7 +153,7 @@ public class TinyWeb {
 
 
         public ServerContext filter(TinyWeb.Method method, String path, Filter filter) {
-            if (isStarted) {
+            if (serverState.isStarted()) {
                 throw new IllegalStateException("Cannot add filters after the server has started.");
             }
             filters.computeIfAbsent(method, k -> new ArrayList<>())
@@ -179,7 +194,8 @@ public class TinyWeb {
         private final String basePath;
         private final ServerContext parentContext;
 
-        public PathContext(String basePath, ServerContext parentContext) {
+        public PathContext(String basePath, ServerContext parentContext, ServerState serverState) {
+            super(serverState);
             this.basePath = basePath;
             this.parentContext = parentContext;
         }
@@ -219,6 +235,7 @@ public class TinyWeb {
         protected ComponentCache applicationScopeCache = new DefaultComponentCache(null);
 
         public Server(int httpPort, int webSocketPort) {
+            super(new ServerState());
             try {
                 httpServer = HttpServer.create(new InetSocketAddress(httpPort), 0);
             } catch (IOException e) {
@@ -242,7 +259,6 @@ public class TinyWeb {
                     }
                 };
             } else {
-
                 socketServer = null;
             }
 
@@ -376,11 +392,11 @@ public class TinyWeb {
         }
 
         public TinyWeb.Server start() {
-            if (isStarted) {
+            if (serverState.isStarted()) {
                 throw new IllegalStateException("Server has already been started.");
             }
             httpServer.start();
-            isStarted = true;
+            serverState.start();
             if (socketServer != null) {
                 simpleWebSocketServerThread = new Thread(socketServer::start);
                 simpleWebSocketServerThread.start();
@@ -560,84 +576,11 @@ public class TinyWeb {
         }
     }
 
-    /*
-     * An inline example of composing (Tiny) WebServer.(
-     * If anyone was using this tech for their own solution they would
-     * not use these two methods, even if they were inspired by them.
-     */
-    public static void main(String[] args) {
-        ExampleApp.exampleComposition(args, new ExampleApp()).start();
-    }
-
-    public static class ExampleApp {
-
-        public record FooBarDeps(StringBuilder gratuitousExampleDep) {}
-
-        public void foobar(Request req, Response res, RequestContext ctx) {
-            res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
-        }
-
-        public static TinyWeb.Server exampleComposition(String[] args, ExampleApp app) {
-            TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-
-                path("/foo", () -> {
-                    filter(Method.GET, "/.*", (req, res, ctx) -> {
-                        if (req.getHeaders().containsKey("sucks")) {
-                            res.write("Access Denied", 403);
-                            return FilterResult.STOP; // don't proceed
-                        }
-                        return FilterResult.CONTINUE; // proceed
-                    });
-                    endPoint(Method.GET, "/bar", (req, res, ctx) -> {
-                        res.write("Hello, World!");
-                        // This endpoint is /foo/bar if that wasn't obvious
-                    });
-                    webSocket("/eee", (message, sender) -> {
-                        for (int i = 1; i <= 3; i++) {
-                            String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                            }
-                        }
-                    });
-                });
-
-                serveStaticFiles("/static", new File(".").getAbsolutePath());
-
-                endPoint(Method.GET, "/users/(\\w+)", (req, res, ctx) -> {
-                    res.write("User profile: " + ctx.getParam("1"));
-                });
-
-
-                endPoint(Method.POST, "/echo", (req, res, ctx) -> {
-                    res.write("You sent: " + req.getBody(), 201);
-                });
-
-                endPoint(Method.GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
-
-                endPoint(Method.PUT, "/update", (req, res, ctx) -> {
-                    res.write("Updated data: " + req.getBody(), 200);
-                });
-
-                path("/api", () -> {
-                    endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
-                        res.write("Parameter: " + ctx.getParam("1"));
-                    });
-                });
-
-            }};
-
-
-            return server;
-        }
-    }
-
     public static class AdditionalServerContexts extends ServerContext {
         private final Server server;
 
         public AdditionalServerContexts(Server server) {
+            super(server.serverState);
             this.server = server;
         }
 
@@ -711,7 +654,7 @@ public class TinyWeb {
             this.wsRoutes = previousWsRoutes;
             this.filters = previousFilters;
 
-            return new PathContext(basePath, server);
+            return new PathContext(basePath, server, serverState);
         }
     }
 
