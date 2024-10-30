@@ -49,6 +49,10 @@ import java.util.regex.Pattern;
 
 public class TinyWeb {
 
+    /* ==========================
+     * Enums
+     * ==========================
+     */
     public enum Method { ALL, GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE, LINK, UNLINK, LOCK, UNLOCK,
         PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, REPORT, SEARCH, PURGE, REBIND, UNBIND , ACL}
 
@@ -56,6 +60,10 @@ public class TinyWeb {
         CONTINUE, STOP
     }
 
+    /* ==========================
+     * Core Classes
+     * ==========================
+     */
     public static class ServerState {
         private boolean isStarted;
         public boolean isStarted() {
@@ -532,6 +540,10 @@ public class TinyWeb {
         }
     }
 
+    /* ==========================
+     * Interfaces
+     * ==========================
+     */
     public interface RequestContext {
         String getParam(String key);
         @SuppressWarnings("unchecked")
@@ -557,6 +569,10 @@ public class TinyWeb {
         void handleMessage(byte[] message, TinyWeb.MessageSender sender) throws IOException;
     }
 
+    /* ==========================
+     * Supporting Classes
+     * ==========================
+     */
     public static class FilterEntry {
         public final Pattern pattern;
         public final Filter filter;
@@ -717,6 +733,10 @@ public class TinyWeb {
         }
     }
 
+    /* ==========================
+     * WebSocket Classes
+     * ==========================
+     */
     public static class SocketServer {
 
         private final int port;
@@ -1073,6 +1093,10 @@ public class TinyWeb {
         }
     }
 
+    /* ==========================
+     * Miscellaneous
+     * ==========================
+     */
     public static class JavascriptSocketClient implements EndPoint {
         @Override
         public void handle(Request request, Response response, RequestContext context) {
