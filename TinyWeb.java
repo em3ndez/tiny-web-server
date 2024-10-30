@@ -1,5 +1,6 @@
 package com.paulhammant.tnywb;
 
+import com.paulhammant.tnywb.tests.TinyWebTests;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
@@ -44,16 +45,16 @@ public class TinyWeb {
     }
 
     public static class DependencyManager {
-        private final ComponentCache cache;
+        protected final ComponentCache cache;
 
         public DependencyManager(ComponentCache cache) {
             this.cache = cache;
         }
 
-        public <T> T getDependency(Class<T> clazz) {
+        public <T> T instantiateDep(Class<T> clazz, ComponentCache requestCache) {
             // Implement logic to instantiate or retrieve the dependency
             // For example, using the cache to manage instances
-            return cache.getOrCreate(clazz, () -> {
+            return requestCache.getOrCreate(clazz, () -> {
                 // Add instantiation logic here
                 throw new IllegalArgumentException("Unsupported class: " + clazz);
             });
@@ -251,14 +252,14 @@ public class TinyWeb {
         private final SocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
         private final DependencyManager dependencyManager;
-        protected ComponentCache applicationScopeCache = new DefaultComponentCache(null);
 
         public Server(int httpPort, int webSocketPort) {
-            super(new ServerState());
-            this.dependencyManager = new DependencyManager(applicationScopeCache);
+            this(httpPort, webSocketPort, new DependencyManager(new DefaultComponentCache(null)));
+        }
 
-        public Server(int httpPort, int webSocketPort) {
+        public Server(int httpPort, int webSocketPort, DependencyManager dependencyManager) {
             super(new ServerState());
+            this.dependencyManager = dependencyManager;
             try {
                 httpServer = HttpServer.create(new InetSocketAddress(httpPort), 0);
             } catch (IOException e) {
@@ -315,8 +316,8 @@ public class TinyWeb {
 
                         final Request request = new Request(exchange, this);
                         final Response response = new Response(exchange);
-                        final TinyWeb.ComponentCache cache = new DefaultComponentCache(applicationScopeCache);
                         final Map<String, Object> attributes  = new HashMap<>();
+                        final ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
 
                         // Apply filters
                         List<FilterEntry> methodFilters = filters.get(method);
@@ -335,7 +336,7 @@ public class TinyWeb {
                                 try {
                                     FilterResult result;
                                     try {
-                                        result = filterEntry.filter.filter(request, response, makeCtx(filterParams, cache, attributes));
+                                        result = filterEntry.filter.filter(request, response, makeCtx(filterParams, attributes, requestCache));
                                     } catch (Exception e) {
                                         appHandlingException(e);
                                         sendError(exchange, 500, "Server Error");
@@ -355,7 +356,7 @@ public class TinyWeb {
                         try {
 
                             try {
-                                route.getValue().handle(request, response, makeCtx(params, cache, attributes));
+                                route.getValue().handle(request, response, makeCtx(params, attributes, requestCache));
                             } catch (Exception e) {
                                 appHandlingException(e);
                                 sendError(exchange, 500, "Server error");
@@ -376,7 +377,7 @@ public class TinyWeb {
             });
         }
 
-        private RequestContext makeCtx(Map<String, String> params, TinyWeb.ComponentCache cache, Map<String, Object> attributes) {
+        private RequestContext makeCtx(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache) {
             return new RequestContext() {
 
                 @Override
@@ -387,7 +388,7 @@ public class TinyWeb {
                 @Override
                 @SuppressWarnings("unchecked")
                 public <T> T dep(Class<T> clazz) {
-                    return dependencyManager.getDependency(clazz);
+                    return dependencyManager.instantiateDep(clazz, requestCache);
                 }
 
                 public void setAttribute(String key, Object value) {
@@ -575,10 +576,16 @@ public class TinyWeb {
         <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier);
 
         ComponentCache getParent();
+
+        void put(Class<T> clazz, Object<T> instance);
     }
     public static class DefaultComponentCache implements ComponentCache {
         private final Map<Class<?>, Object> cache = new ConcurrentHashMap<>();
         private final ComponentCache parentCache;
+
+        public DefaultComponentCache() {
+            this(null);
+        }
 
         public DefaultComponentCache(ComponentCache parentCache) {
             this.parentCache = parentCache;
@@ -590,10 +597,16 @@ public class TinyWeb {
         }
 
         @Override
+        public void put(Class<T> clazz, Object<T> instance) {
+            cache.put(clazz, instance);
+        }
+
+        @Override
         public <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier) {
             System.out.println("Cache: " + clazz.getName() + " being sought");
             return (T) cache.computeIfAbsent(clazz, key -> supplier.get());
         }
+        // direct put of instance here
     }
 
     public static class AdditionalServerContexts extends ServerContext {

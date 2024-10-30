@@ -249,15 +249,18 @@ public class TinyWebTests {
             });
             describe("and endpoint and filters can depend on components", () -> {
                 before(() -> {
-                    svr = new TinyWeb.Server(8080, 8081) {
+                    svr = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(new TinyWeb.DefaultComponentCache(){{
+                        this.put(ProductInventory.class, new ProductInventory());
+                    }}){
                         @Override
-                        public <T> T instantiateDep(Class<T> clazz, TinyWeb.ComponentCache cache) {
+                        public <T> T  instantiateDep(Class<T> clazz, TinyWeb.ComponentCache requestCache) {
                             if (clazz == ShoppingCart.class) {
-                                return (T) createOrGetShoppingCart(cache);
+                                return (T) createOrGetShoppingCart(requestCache);
                             }
                             throw new IllegalArgumentException("Unsupported class: " + clazz);
                         }
-                    };
+
+                    });
                     //svr.applicationScopeCache.put()
                     doCompositionForOneTest(svr);
                     svr.start();
@@ -366,6 +369,7 @@ public class TinyWebTests {
                             });
                             endPoint(GET, "/error", (req, res, ctx) -> {
                                 res.write("This should not be reached");
+
                             });
                         });
                     }
@@ -892,7 +896,6 @@ public class TinyWebTests {
     public static ProductInventory getOrCreateProductInventory(TinyWeb.ComponentCache cache) {
         return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
     }
-
 
     public static void main(String[] args) {
         Runner runner = new Runner();

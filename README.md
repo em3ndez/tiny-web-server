@@ -1024,5 +1024,5 @@ Notes:
 
 Stats:
 
-Source file `TinyWeb.java` has Approximately 898 lines of consequential code, including all logic and structure. The 
+Source file `TinyWeb.java` has Approximately 910 lines of consequential code, including all logic and structure. The 
 README and tests are heading toward that size but are still under.
