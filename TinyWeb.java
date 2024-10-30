@@ -84,7 +84,6 @@ public class TinyWeb {
         }
     }
 
-
     public static class ServerContext {
 
         Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
@@ -256,16 +255,6 @@ public class TinyWeb {
             parentContext.filters.computeIfAbsent(method, k -> new ArrayList<>())
                     .add(new TinyWeb.FilterEntry(Pattern.compile("^" + fullPath + "$"), filter));
             return this;
-        }
-    }
-
-    public static class ServerException extends RuntimeException {
-        public ServerException(String message, Throwable cause) {
-            super(message, cause);
-        }
-
-        public ServerException(String message) {
-            super(message);
         }
     }
 
@@ -459,7 +448,88 @@ public class TinyWeb {
             }
             return this;
         }
+    }
 
+    public static class AdditionalServerContexts extends ServerContext {
+        private final Server server;
+
+        public AdditionalServerContexts(Server server) {
+            super(server.serverState);
+            this.server = server;
+        }
+
+        @Override
+        public PathContext path(String basePath, Runnable routes) {
+            // Save current routes and filters
+            Map<Method, Map<Pattern, EndPoint>> previousRoutes = server.routes;
+            Map<Pattern, SocketMessageHandler> previousWsRoutes = server.wsRoutes;
+            Map<Method, List<FilterEntry>> previousFilters = server.filters;
+
+            // Create new maps to collect routes and filters within this path
+            this.routes = new HashMap<>();
+            this.wsRoutes = new HashMap<>();
+            this.filters = new HashMap<>();
+
+            // Initialize empty maps for all methods
+            for (Method method : Method.values()) {
+                this.routes.put(method, new HashMap<>());
+                this.filters.put(method, new ArrayList<>());
+            }
+
+            // Run the routes Runnable, which will populate this.routes and this.filters
+            routes.run();
+
+            // Prefix basePath to routes
+            for (Method method : Method.values()) {
+                Map<Pattern, EndPoint> methodRoutes = this.routes.get(method);
+                if (methodRoutes != null && !methodRoutes.isEmpty()) {
+                    Map<Pattern, EndPoint> prefixedRoutes = new HashMap<>();
+                    for (Map.Entry<Pattern, EndPoint> entry : methodRoutes.entrySet()) {
+                        Pattern pattern = entry.getKey();
+                        EndPoint endPoint = entry.getValue();
+                        Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
+                        prefixedRoutes.put(newPattern, endPoint);
+                    }
+                    previousRoutes.get(method).putAll(prefixedRoutes);
+                }
+            }
+
+            // Prefix basePath to WebSocket handlers
+            for (Map.Entry<Pattern, SocketMessageHandler> entry : this.wsRoutes.entrySet()) {
+                Pattern pattern = entry.getKey();
+                SocketMessageHandler wsHandler = entry.getValue();
+                Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
+                previousWsRoutes.put(newPattern, wsHandler);
+            }
+
+            // Prefix basePath to filters
+            for (Method method : Method.values()) {
+                List<FilterEntry> methodFilters = this.filters.get(method);
+                if (methodFilters != null && !methodFilters.isEmpty()) {
+                    List<FilterEntry> prefixedFilters = new ArrayList<>();
+                    for (FilterEntry filterEntry : methodFilters) {
+                        Pattern pattern = filterEntry.pattern;
+                        Filter filter = filterEntry.filter;
+                        Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
+                        prefixedFilters.add(new FilterEntry(newPattern, filter));
+                    }
+                    // Ensure previousFilters has a non-null list for this method
+                    List<FilterEntry> previousMethodFilters = previousFilters.get(method);
+                    if (previousMethodFilters == null) {
+                        previousMethodFilters = new ArrayList<>();
+                        previousFilters.put(method, previousMethodFilters);
+                    }
+                    previousMethodFilters.addAll(prefixedFilters);
+                }
+            }
+
+            // Restore routes and filters
+            this.routes = previousRoutes;
+            this.wsRoutes = previousWsRoutes;
+            this.filters = previousFilters;
+
+            return new PathContext(basePath, server, serverState);
+        }
     }
 
     public interface RequestContext {
@@ -477,10 +547,14 @@ public class TinyWeb {
         void handle(Request request, Response response, RequestContext ctx);
     }
 
-
     @FunctionalInterface
     public interface Filter {
         FilterResult filter(Request request, Response response, RequestContext ctx);
+    }
+
+    @FunctionalInterface
+    public interface SocketMessageHandler {
+        void handleMessage(byte[] message, TinyWeb.MessageSender sender) throws IOException;
     }
 
     public static class FilterEntry {
@@ -602,6 +676,7 @@ public class TinyWeb {
 
         <T> void put(Class<T> clazz, T instance);
     }
+
     public static class DefaultComponentCache implements ComponentCache {
         private final Map<Class<?>, Object> cache = new ConcurrentHashMap<>();
         private final ComponentCache parentCache;
@@ -632,91 +707,14 @@ public class TinyWeb {
         // direct put of instance here
     }
 
-    public static class AdditionalServerContexts extends ServerContext {
-        private final Server server;
-
-        public AdditionalServerContexts(Server server) {
-            super(server.serverState);
-            this.server = server;
+    public static class ServerException extends RuntimeException {
+        public ServerException(String message, Throwable cause) {
+            super(message, cause);
         }
 
-        @Override
-        public PathContext path(String basePath, Runnable routes) {
-            // Save current routes and filters
-            Map<Method, Map<Pattern, EndPoint>> previousRoutes = server.routes;
-            Map<Pattern, SocketMessageHandler> previousWsRoutes = server.wsRoutes;
-            Map<Method, List<FilterEntry>> previousFilters = server.filters;
-
-            // Create new maps to collect routes and filters within this path
-            this.routes = new HashMap<>();
-            this.wsRoutes = new HashMap<>();
-            this.filters = new HashMap<>();
-
-            // Initialize empty maps for all methods
-            for (Method method : Method.values()) {
-                this.routes.put(method, new HashMap<>());
-                this.filters.put(method, new ArrayList<>());
-            }
-
-            // Run the routes Runnable, which will populate this.routes and this.filters
-            routes.run();
-
-            // Prefix basePath to routes
-            for (Method method : Method.values()) {
-                Map<Pattern, EndPoint> methodRoutes = this.routes.get(method);
-                if (methodRoutes != null && !methodRoutes.isEmpty()) {
-                    Map<Pattern, EndPoint> prefixedRoutes = new HashMap<>();
-                    for (Map.Entry<Pattern, EndPoint> entry : methodRoutes.entrySet()) {
-                        Pattern pattern = entry.getKey();
-                        EndPoint endPoint = entry.getValue();
-                        Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
-                        prefixedRoutes.put(newPattern, endPoint);
-                    }
-                    previousRoutes.get(method).putAll(prefixedRoutes);
-                }
-            }
-
-            // Prefix basePath to WebSocket handlers
-            for (Map.Entry<Pattern, SocketMessageHandler> entry : this.wsRoutes.entrySet()) {
-                Pattern pattern = entry.getKey();
-                SocketMessageHandler wsHandler = entry.getValue();
-                Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
-                previousWsRoutes.put(newPattern, wsHandler);
-            }
-
-            // Prefix basePath to filters
-            for (Method method : Method.values()) {
-                List<FilterEntry> methodFilters = this.filters.get(method);
-                if (methodFilters != null && !methodFilters.isEmpty()) {
-                    List<FilterEntry> prefixedFilters = new ArrayList<>();
-                    for (FilterEntry filterEntry : methodFilters) {
-                        Pattern pattern = filterEntry.pattern;
-                        Filter filter = filterEntry.filter;
-                        Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
-                        prefixedFilters.add(new FilterEntry(newPattern, filter));
-                    }
-                    // Ensure previousFilters has a non-null list for this method
-                    List<FilterEntry> previousMethodFilters = previousFilters.get(method);
-                    if (previousMethodFilters == null) {
-                        previousMethodFilters = new ArrayList<>();
-                        previousFilters.put(method, previousMethodFilters);
-                    }
-                    previousMethodFilters.addAll(prefixedFilters);
-                }
-            }
-
-            // Restore routes and filters
-            this.routes = previousRoutes;
-            this.wsRoutes = previousWsRoutes;
-            this.filters = previousFilters;
-
-            return new PathContext(basePath, server, serverState);
+        public ServerException(String message) {
+            super(message);
         }
-    }
-
-    @FunctionalInterface
-    public interface SocketMessageHandler {
-        void handleMessage(byte[] message, TinyWeb.MessageSender sender) throws IOException;
     }
 
     public static class SocketServer {
