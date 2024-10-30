@@ -428,7 +428,7 @@ public class TinyWebTests {
                     svr = null;
                 });
             });
-            describe("and using TinyWeb.SocketServer without TinyWeb.Server", () -> {
+            describe("and using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
                 before(() -> {
                     webSocketServer = new TinyWeb.SocketServer(8081) {{
@@ -841,6 +841,7 @@ public class TinyWebTests {
 
     public static class ProductInventory {
 
+        // We sould not hard code cart contents in real life - see note about database below.
         Map<String, Integer> stockItems = new HashMap<>() {{
             put("apple", 100);
             put("orange", 50);
@@ -858,6 +859,10 @@ public class TinyWebTests {
         }
     }
 
+    /*
+      Most likely the real version of this would use a database to go get the shopping cart contents
+      for the user. Or some database-like solution, that aids quick "session" re-acquisition.
+     */
     public static class ShoppingCart {
 
         private final ProductInventory inv;
