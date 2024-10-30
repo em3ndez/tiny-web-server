@@ -65,13 +65,13 @@ public class TinyWeb {
      * ==========================
      */
     public static class ServerState {
-        private boolean isStarted;
-        public boolean isStarted() {
-            return isStarted;
+        private boolean hasStarted;
+        public boolean hasStarted() {
+            return hasStarted;
         }
 
         public void start() {
-            isStarted = true;
+            hasStarted = true;
         }
     }
 
@@ -105,7 +105,7 @@ public class TinyWeb {
 
         public PathContext path(String basePath, Runnable routes) {
             // Save current routes and filters
-            if (serverState.isStarted()) {
+            if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot modify routes after the server has started.");
             }
             Map<Method, Map<Pattern, EndPoint>> previousRoutes = this.routes;
@@ -179,12 +179,12 @@ public class TinyWeb {
             return new PathContext(basePath, this, serverState);
         }
 
-        protected void sendError(HttpExchange exchange, int code, String message) {
+        protected void sendErrorResponse(HttpExchange exchange, int code, String message) {
                 new Response(exchange).write(message, code);
         }
 
         public ServerContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
-            if (serverState.isStarted()) {
+            if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add endpoints after the server has started.");
             }
             routes.computeIfAbsent(method, k -> new HashMap<>())
@@ -193,7 +193,7 @@ public class TinyWeb {
         }
 
         public ServerContext webSocket(String path, SocketMessageHandler wsHandler) {
-            if (serverState.isStarted()) {
+            if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add WebSocket handlers after the server has started.");
             }
             wsRoutes.put(Pattern.compile("^" + path + "$"), wsHandler);
@@ -202,7 +202,7 @@ public class TinyWeb {
 
 
         public ServerContext filter(TinyWeb.Method method, String path, Filter filter) {
-            if (serverState.isStarted()) {
+            if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add filters after the server has started.");
             }
             filters.computeIfAbsent(method, k -> new ArrayList<>())
@@ -231,7 +231,7 @@ public class TinyWeb {
                         throw new ServerException("Internal Static File Serving error for " + path, e);
                     }
                 } else {
-                    sendError(res.exchange, 404, "Not found");
+                    sendErrorResponse(res.exchange, 404, "Not found");
                 }
             });
             return this;
@@ -317,7 +317,7 @@ public class TinyWeb {
 
                 Map<Pattern, EndPoint> methodRoutes = routes.get(method);
                 if (methodRoutes == null) {
-                    sendError(exchange, 405, "Method not allowed");
+                    sendErrorResponse(exchange, 405, "Method not allowed");
                     return;
                 }
 
@@ -356,10 +356,10 @@ public class TinyWeb {
                                 try {
                                     FilterResult result;
                                     try {
-                                        result = filterEntry.filter.filter(request, response, makeCtx(filterParams, attributes, requestCache));
+                                        result = filterEntry.filter.filter(request, response, createRequestContext(filterParams, attributes, requestCache));
                                     } catch (Exception e) {
-                                        appHandlingException(e);
-                                        sendError(exchange, 500, "Server Error");
+                                        exceptionDuringHandling(e);
+                                        sendErrorResponse(exchange, 500, "Server Error");
                                         return;
                                     }
                                     if (result == FilterResult.STOP) {
@@ -367,7 +367,7 @@ public class TinyWeb {
                                     }
                                 } catch (ServerException e) {
                                     serverException(e);
-                                    sendError(exchange, 500, "Internal server error: " + e.getMessage());
+                                    sendErrorResponse(exchange, 500, "Internal server error: " + e.getMessage());
                                     return;
                                 }
                             }
@@ -376,15 +376,15 @@ public class TinyWeb {
                         try {
 
                             try {
-                                route.getValue().handle(request, response, makeCtx(params, attributes, requestCache));
+                                route.getValue().handle(request, response, createRequestContext(params, attributes, requestCache));
                             } catch (Exception e) {
-                                appHandlingException(e);
-                                sendError(exchange, 500, "Server error");
+                                exceptionDuringHandling(e);
+                                sendErrorResponse(exchange, 500, "Server error");
                                 return;
                             }
                         } catch (ServerException e) {
                             serverException(e);
-                            sendError(exchange, 500,"Internal server error: " + e.getMessage());
+                            sendErrorResponse(exchange, 500,"Internal server error: " + e.getMessage());
                             return;
                         }
                         return;
@@ -392,12 +392,12 @@ public class TinyWeb {
                 }
 
                 if (!routeMatched) {
-                    sendError(exchange, 404, "Not found");
+                    sendErrorResponse(exchange, 404, "Not found");
                 }
             });
         }
 
-        private RequestContext makeCtx(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache) {
+        private RequestContext createRequestContext(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache) {
             return new RequestContext() {
 
                 @Override
@@ -430,13 +430,13 @@ public class TinyWeb {
         /**
          * Most likely a RuntimeException or Error in a endPoint() or filter() code block
          */
-        protected void appHandlingException(Exception e) {
+        protected void exceptionDuringHandling(Exception e) {
             System.err.println(e.getMessage() + "\nStack Trace:");
             e.printStackTrace(System.err);
         }
 
         public TinyWeb.Server start() {
-            if (serverState.isStarted()) {
+            if (serverState.hasStarted()) {
                 throw new IllegalStateException("Server has already been started.");
             }
             httpServer.start();

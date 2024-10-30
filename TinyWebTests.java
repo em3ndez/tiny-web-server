@@ -309,7 +309,7 @@ public class TinyWebTests {
                             });
                         }
                         @Override
-                        protected void appHandlingException(Exception e) {
+                        protected void exceptionDuringHandling(Exception e) {
                             appHandlingExceptions.append("appHandlingException exception: " + e.getMessage());
                         }
                     }.start();
@@ -391,7 +391,7 @@ public class TinyWebTests {
                     }
 
                         @Override
-                        protected void appHandlingException(Exception e) {
+                        protected void exceptionDuringHandling(Exception e) {
                             appHandlingExceptions.append("appHandlingException exception: " + e.getMessage());
                         }
                     }.start();
