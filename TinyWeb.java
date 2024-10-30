@@ -577,7 +577,7 @@ public class TinyWeb {
 
         ComponentCache getParent();
 
-        void put(Class<T> clazz, Object<T> instance);
+        <T> void put(Class<T> clazz, T instance);
     }
     public static class DefaultComponentCache implements ComponentCache {
         private final Map<Class<?>, Object> cache = new ConcurrentHashMap<>();
