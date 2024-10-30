@@ -1,8 +1,7 @@
 /*
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
+ * the Free Software Foundation, either version 2 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -12,7 +11,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
- * Copyright (c) Paul Hammant
+ * Copyright (c) Paul Hammant, 2024
  */
 
 package com.paulhammant.tnywb.tests;
@@ -67,14 +66,13 @@ public class TinyWebTests {
                     svr.start();
                 });
                 it("returns the user profile for Jimmy", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/users/Jimmy")) {
-                        assertThat(response.body().string(), equalTo("User profile: Jimmy"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/users/Jimmy"),
+                            "User profile: Jimmy", 200);
+
                 });
                 it("returns the user profile for Thelma", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/users/Thelma")) {
-                        assertThat(response.body().string(), equalTo("User profile: Thelma"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/users/Thelma"),
+                            "User profile: Thelma", 200);
                 });
                 after(() -> {
                     svr.stop();
@@ -100,21 +98,17 @@ public class TinyWebTests {
                 });
 
                 it("extracts parameters correctly from the nested path", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/items/123/details/456")) {
-                        assertThat(response.body().string(), equalTo("Item: 123, Detail: 456\n/api->/v1->itemz."));
-                        assertThat(response.code(), equalTo(200));
-                    }
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/items/abc/details/def")) {
-                        assertThat(response.body().string(), equalTo("Item: abc, Detail: def\n/api->/v1->itemz.itemz."));
-                        assertThat(response.code(), equalTo(200));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/v1/items/123/details/456"),
+                            "Item: 123, Detail: 456\n" +
+                                    "/api->/v1->itemz.", 200);
+                    bodyAndResponseCodeShouldBe(httpGet("/api/v1/items/abc/details/def"),
+                            "Item: abc, Detail: def\n" +
+                                    "/api->/v1->itemz.itemz.", 200);
                 });
 
                 it("returns 404 for an incorrect nested path", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/items/123/456")) {
-                        assertThat(response.body().string(), equalTo("Not found"));
-                        assertThat(response.code(), equalTo(404));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/v1/items/123/456"),
+                            "Not found", 404);
                 });
 
                 after(() -> {
@@ -128,16 +122,13 @@ public class TinyWebTests {
                     svr.start();
                 });
                 it("allows access when the 'sucks' header is absent", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/foo/bar")) {
-                        assertThat(response.code(), equalTo(200));
-                        assertThat(response.body().string(), equalTo("Hello, World!"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/foo/bar"),
+                            "Hello, World!", 200);
+
                 });
                 it("denies access when the 'sucks' header is present", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/foo/bar", "sucks", "true")) {
-                        assertThat(response.body().string(), equalTo("Access Denied"));
-                        assertThat(response.code(), equalTo(403));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/foo/bar", "sucks", "true"),
+                            "Access Denied", 403);
                 });
                 after(() -> {
                     svr.stop();
@@ -151,21 +142,20 @@ public class TinyWebTests {
                     svr.start();
                 });
                 it("returns 200 and serves a text file", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/README.md")) {
+                    try (okhttp3.Response response = httpGet("/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().contentType().toString(), equalTo("text/markdown"));
                         assertThat(response.body().string(), containsString("Directory where compiled classes are stored"));
                     }
                 });
                 it("returns 404 for non-existent files", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
-                        assertThat(response.code(), equalTo(404));
-                        assertThat(response.body().string(), containsString("Not found"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/static/nonexistent.txt"),
+                            "Not found", 404);
+
                 });
                 it("returns 200 and serves a file from a subdirectory", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/TinyWeb.java")) {
+                    try (okhttp3.Response response = httpGet("/static/TinyWeb.java")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().contentType().toString(), equalTo("text/x-java"));
                         assertThat(response.body().string(), containsString("class"));
@@ -173,10 +163,8 @@ public class TinyWebTests {
                 });
                 it("returns 200 and serves a non-text file", () -> {
                     // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/target/classes/com/paulhammant/tnywb/TinyWeb$Server.class")) {
+                    try (okhttp3.Response response = httpGet("/static/target/classes/com/paulhammant/tnywb/TinyWeb$Server.class")) {
                         assertThat(response.code(), equalTo(200));
-                        // Expected: "application/java-vm"
-                        //     but: was "text/plain; charset=UTF-8" TODO
                         assertThat(response.body().contentType().toString(), equalTo("application/java-vm"));
                         assertThat(response.body().string(), containsString("(Lcom/sun/net/httpserver/HttpExchange;ILjava/lang/String;)V"));
                     }
@@ -201,13 +189,15 @@ public class TinyWebTests {
                     }).when(mockApp).foobar(Mockito.any(Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<TinyWeb.RequestContext>any());
                 });
                 it("invokes the ExampleApp foobar method", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/greeting/A/B")) {
-                        assertThat(response.body().string(), equalTo("invoked"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/greeting/A/B"),
+                            "invoked", 200);
+
                 });
                 after(() -> {
                     svr.stop();
-                    Mockito.verify(mockApp).foobar(Mockito.any(Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<TinyWeb.RequestContext>any());
+                    Mockito.verify(mockApp).foobar(Mockito.any(Request.class),
+                            Mockito.any(TinyWeb.Response.class),
+                            Mockito.<TinyWeb.RequestContext>any());
                     svr = null;
                 });
             });
@@ -227,16 +217,10 @@ public class TinyWebTests {
                     }}.start();
                 });
                 it("extracts parameters correctly from the path", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/test/123")) {
-                        assertThat(response.body().string(), equalTo("Parameter: 123"));
-                        assertThat(response.code(), equalTo(200));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/v1/test/123"), "Parameter: 123", 200);
                 });
                 it("returns 404 when two parameters are provided for a one-parameter path", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/v1/test/123/456")) {
-                        assertThat(response.body().string(), equalTo("Not found"));
-                        assertThat(response.code(), equalTo(404));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/v1/test/123/456"), "Not found", 404);
                 });
                 after(() -> {
                     svr.stop();
@@ -254,10 +238,7 @@ public class TinyWebTests {
                     }}.start();
                 });
                 it("handles query parameters correctly", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api2/test/123?a=1&b=2")) {
-                        assertThat(response.body().string(), equalTo("Parameter: 123 {a=1, b=2}"));
-                        assertThat(response.code(), equalTo(200));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api2/test/123?a=1&b=2"), "Parameter: 123 {a=1, b=2}", 200);
                 });
                 after(() -> {
                     svr.stop();
@@ -284,12 +265,10 @@ public class TinyWebTests {
 
                 });
                 it("extracts parameters correctly from the path", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/howManyOrderInBook")) {
-                        assertThat(response.body().string(), equalTo("Cart Items before: 0\n" +
-                                "apple picked: true\n" +
-                                "Cart Items after: 1\n"));
-                        assertThat(response.code(), equalTo(200));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/howManyOrderInBook"),
+                            "Cart Items before: 0\n" +
+                            "apple picked: true\n" +
+                            "Cart Items after: 1\n", 200);
                 });
                 after(() -> {
                     svr.stop();
@@ -297,7 +276,7 @@ public class TinyWebTests {
                 });
             });
             describe("and an application exception is thrown from an endpoint", () -> {
-                final StringBuilder se = new StringBuilder();
+                final StringBuilder appHandlingExceptions = new StringBuilder();
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                             path("/api", () -> {
@@ -308,17 +287,16 @@ public class TinyWebTests {
                         }
                         @Override
                         protected void appHandlingException(Exception e) {
-                            se.append("appHandlingException exception: " + e.getMessage());
+                            appHandlingExceptions.append("appHandlingException exception: " + e.getMessage());
                         }
                     }.start();
                 });
 
                 it("returns 500 and an error message for a runtime exception", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/error")) {
-                        assertThat(response.code(), equalTo(500));
-                        assertThat(response.body().string(), containsString("Server error"));
-                        assertThat(se.toString(), containsString("appHandlingException exception: Deliberate exception"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/error"),
+                        "Server error", 500);
+                    assertThat(appHandlingExceptions.toString(),
+                            equalTo("appHandlingException exception: Deliberate exception"));
                 });
 
                 after(() -> {
@@ -338,10 +316,8 @@ public class TinyWebTests {
                 });
 
                 it("parses query parameters correctly", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/query?name=John&age=30")) {
-                        assertThat(response.code(), equalTo(200));
-                        assertThat(response.body().string(), equalTo("Query Params: {name=John, age=30}"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/query?name=John&age=30"),
+                            "Query Params: {name=John, age=30}", 200);
                 });
 
                 after(() -> {
@@ -363,7 +339,7 @@ public class TinyWebTests {
                 });
 
                 it("sets the custom header correctly", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/header-test")) {
+                    try (okhttp3.Response response = httpGet("/api/header-test")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.header("X-Custom-Header"), equalTo("HeaderValue"));
                         assertThat(response.body().string(), equalTo("Header set"));
@@ -377,7 +353,7 @@ public class TinyWebTests {
             });
 
             describe("and an exception is thrown from a filter", () -> {
-                final StringBuilder se = new StringBuilder();
+                final StringBuilder appHandlingExceptions = new StringBuilder();
                 before(() -> {
                     svr = new TinyWeb.Server(8080, 8081) {{
                         path("/api", () -> {
@@ -393,17 +369,16 @@ public class TinyWebTests {
 
                         @Override
                         protected void appHandlingException(Exception e) {
-                            se.append("appHandlingException exception: " + e.getMessage());
+                            appHandlingExceptions.append("appHandlingException exception: " + e.getMessage());
                         }
                     }.start();
                 });
 
                 it("returns 500 and an error message for a runtime exception in a filter", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/error")) {
-                        assertThat(response.body().string(), containsString("Server Error"));
-                        assertThat(response.code(), equalTo(500));
-                        assertThat(se.toString(), containsString("appHandlingException exception: Deliberate exception in filter"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/error"),
+                                "Server Error", 500);
+                    assertThat(appHandlingExceptions.toString(),
+                            equalTo("appHandlingException exception: Deliberate exception in filter"));
                 });
 
                 after(() -> {
@@ -420,24 +395,20 @@ public class TinyWebTests {
                 });
 
                 it("serves a static file correctly", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/README.md")) {
+                    try (okhttp3.Response response = httpGet("/static/README.md")) {
                         assertThat(response.code(), equalTo(200));
                         assertThat(response.body().string(), containsString("Cuppa-Framework"));
                     }
                 });
 
                 it("returns 404 for a non-existent static file", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/nonexistent.txt")) {
-                        assertThat(response.code(), equalTo(404));
-                        assertThat(response.body().string(), containsString("Not found"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/static/nonexistent.txt"),
+                            "Not found", 404);
                 });
 
                 it("prevents directory traversal attacks", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/static/../../anythingt.java")) {
-                        assertThat(response.code(), equalTo(404));
-                        assertThat(response.body().string(), containsString("Not found"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/static/../../anything.java"),
+                            "Not found", 404); //TODO 404?
                 });
 
                 after(() -> {
@@ -475,16 +446,16 @@ public class TinyWebTests {
                         client.performHandshake();
                         client.sendMessage("/foo/baz", "Hello WebSocket");
 
-                        StringBuilder sb = new StringBuilder();
+                        StringBuilder messages = new StringBuilder();
 
                         // Read all three response frames
                         for (int i = 0; i < 3; i++) {
                             String response = client.receiveMessage();
                             if (response != null) {
-                                sb.append(response);
+                                messages.append(response);
                             }
                         }
-                        assertThat(sb.toString(), equalTo(
+                        assertThat(messages.toString(), equalTo(
                                 "Server sent: Hello WebSocket-1" +
                                         "Server sent: Hello WebSocket-2" +
                                         "Server sent: Hello WebSocket-3"));
@@ -515,7 +486,6 @@ public class TinyWebTests {
                                     try {
                                         sleep(100);
                                     } catch (InterruptedException e) {
-
                                     }
                                 }
                             });
@@ -526,37 +496,31 @@ public class TinyWebTests {
                 it("echoes three messages plus -1 -2 -3 back to the client", () -> {
                     try {
                         sleep(1000); // Wait for server startup
-                    } catch (InterruptedException e) {
-                    }
+                    } catch (InterruptedException e) {}
 
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/foo/bar")) {
-                        assertThat(response.code(), equalTo(200));
-                        assertThat(response.body().string(), equalTo("OK"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/foo/bar"),
+                            "OK", 200);
 
                     // Example client usage
                     try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
                         client.performHandshake();
                         client.sendMessage("/foo/baz", "Hello WebSocket");
 
-                        StringBuilder sb = new StringBuilder();
+                        StringBuilder messages = new StringBuilder();
 
                         // Read all three response frames
                         for (int i = 0; i < 3; i++) {
                             String response = client.receiveMessage();
                             if (response != null) {
-                                sb.append(response);
+                                messages.append(response);
                             }
                         }
-                        assertThat(sb.toString(), equalTo(
+                        assertThat(messages.toString(), equalTo(
                                 "Server sent: Hello WebSocket-1" +
                                         "Server sent: Hello WebSocket-2" +
                                         "Server sent: Hello WebSocket-3"));
-
                     }
-
                 });
-
                 after(() -> {
                     svr.stop();
                     svr = null;
@@ -682,17 +646,11 @@ public class TinyWebTests {
                 });
 
                 it("attribute user was passed from filter to endPoint for authentic user", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=7C65o6I2>A=6]4@>")) {
-                        assertThat(response.body().string(), equalTo("User Is logged in: fred@example.com"));
-                        assertThat(response.code(), equalTo(200));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/attribute-test", "Cookie", "logged-in=7C65o6I2>A=6]4@>"), "User Is logged in: fred@example.com", 200);
                 });
 
                 it("attribute user was not passed from filter to endPoint for inauthentic user", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/api/attribute-test", "Cookie", "logged-in=aeiouaeiou;")) {
-                        assertThat(response.body().string(), equalTo("Try logging in again"));
-                        assertThat(response.code(), equalTo(403));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/api/attribute-test", "Cookie", "logged-in=aeiouaeiou;"), "Try logging in again", 403);
                 });
 
                 after(() -> {
@@ -718,12 +676,10 @@ public class TinyWebTests {
                     svr.start();
                 });
                 it("both endpoints can be GET", () -> {
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/foo")) {
-                        assertThat(response.body().string(), equalTo("Hello1"));
-                    }
-                    try (okhttp3.Response response = httpGet("http://localhost:8080/bar/baz")) {
-                        assertThat(response.body().string(), equalTo("Hello2"));
-                    }
+                    bodyAndResponseCodeShouldBe(httpGet("/foo"),
+                            "Hello1", 200);
+                    bodyAndResponseCodeShouldBe(httpGet("/bar/baz"),
+                            "Hello2", 200);
                 });
                 after(() -> {
                     svr.stop();
@@ -732,6 +688,13 @@ public class TinyWebTests {
             });
 
         });
+    }
+
+    private static void bodyAndResponseCodeShouldBe(okhttp3.Response response, String bodyShouldBe, int rcShouldBe) throws IOException {
+        try (response) {
+            assertThat(response.body().string(), equalTo(bodyShouldBe));
+            assertThat(response.code(), equalTo(rcShouldBe));
+        }
     }
 
     public static class ExampleApp {
@@ -791,14 +754,10 @@ public class TinyWebTests {
                         res.write("Parameter: " + ctx.getParam("1"));
                     });
                 });
-
             }};
-
-
             return server;
         }
     }
-    
     
     private static void doCompositionForOneTest(TinyWeb.Server svr) {
         new TinyWeb.AdditionalServerContexts(svr) {{
@@ -817,13 +776,13 @@ public class TinyWebTests {
 
     private static @NotNull okhttp3.Response httpGet(String url) throws IOException {
         return new OkHttpClient().newCall(new Builder()
-                .url(url)
+                .url("http://localhost:8080" + url)
                 .get().build()).execute();
     }
 
     private static @NotNull okhttp3.Response httpGet(String url, String hdrKey, String hdrVal) throws IOException {
         return new OkHttpClient().newCall(new Builder()
-                .url(url).addHeader(hdrKey, hdrVal)
+                .url("http://localhost:8080" + url).addHeader(hdrKey, hdrVal)
                 .get().build()).execute();
     }
 
