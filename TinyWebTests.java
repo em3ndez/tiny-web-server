@@ -184,52 +184,7 @@ public class TinyWebTests {
 
                         // some of these are not used by the it() tests
 
-                        path("/foo", () -> {
-                            filter(GET, "/.*", (req, res, ctx) -> {
-                                if (req.getHeaders().containsKey("sucks")) {
-                                    res.write("Access Denied", 403);
-                                    return STOP; // don't proceed
-                                }
-                                return CONTINUE; // proceed
-                            });
-                            endPoint(GET, "/bar", (req, res, ctx) -> {
-                                res.write("Hello, World!");
-                                // This endpoint is /foo/bar if that wasn't obvious
-                            });
-                            webSocket("/eee", (message, sender) -> {
-                                for (int i = 1; i <= 3; i++) {
-                                    String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                                    sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
-                                    try {
-                                        Thread.sleep(100);
-                                    } catch (InterruptedException e) {
-                                    }
-                                }
-                            });
-                        });
-
-                        serveStaticFiles("/static", new File(".").getAbsolutePath());
-
-                        endPoint(GET, "/users/(\\w+)", (req, res, ctx) -> {
-                            res.write("User profile: " + ctx.getParam("1"));
-                        });
-
-
-                        endPoint(POST, "/echo", (req, res, ctx) -> {
-                            res.write("You sent: " + req.getBody(), 201);
-                        });
-
                         endPoint(GET, "/greeting/(\\w+)/(\\w+)", mockApp::foobar);
-
-                        endPoint(PUT, "/update", (req, res, ctx) -> {
-                            res.write("Updated data: " + req.getBody(), 200);
-                        });
-
-                        path("/api", () -> {
-                            endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
-                                res.write("Parameter: " + ctx.getParam("1"));
-                            });
-                        });
                     }};
                     //waitForPortToBeClosed("localhost",8080, 8081);
                     svr.start();
