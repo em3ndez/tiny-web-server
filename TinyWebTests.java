@@ -693,11 +693,16 @@ public class TinyWebTests {
                             res.write("Hello1");
                         });
                     }};
-                    new TinyWeb.AdditionalServerContexts(webServer) {{
+                    new TinyWeb.ServerComposition(webServer) {{
                         path("/bar", () -> {
                             endPoint(GET, "/baz", (req, res, ctx) -> {
                                 res.write("Hello2");
                             });
+                        });
+                    }};
+                    new TinyWeb.ServerComposition(webServer) {{
+                        endPoint(GET, "/bar2/baz2", (req, res, ctx) -> {
+                            res.write("Hello3");
                         });
                     }};
                     webServer.start();
@@ -707,6 +712,8 @@ public class TinyWebTests {
                             "Hello1", 200);
                     bodyAndResponseCodeShouldBe(httpGet("/bar/baz"),
                             "Hello2", 200);
+                    bodyAndResponseCodeShouldBe(httpGet("/bar2/baz2"),
+                            "Hello3", 200);
                 });
                 after(() -> {
                     webServer.stop();
@@ -785,7 +792,7 @@ public class TinyWebTests {
     }
     
     private static void doCompositionForOneTest(TinyWeb.Server svr) {
-        new TinyWeb.AdditionalServerContexts(svr) {{
+        new TinyWeb.ServerComposition(svr) {{
             path("/api", () -> {
                 //deps([OrderBook.class]);
                 endPoint(GET, "/howManyOrderInBook", (req, res, ctx) -> {
