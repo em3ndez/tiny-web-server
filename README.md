@@ -17,7 +17,6 @@ A tiny web Server and SocketServer that depend only on JDK classes and are in a 
     - [Connecting to a WebSocket using JavaScript Source File Endpoint](#connecting-to-a-websocket-using-javascript-source-file-endpoint)
     - [Two WebSockets with Different Paths](#two-websockets-with-different-paths)
 - [Thoughts on WebSockets](#thoughts-on-websockets)
-  - [Short Messages with Follow-up GET Requests](#short-messages-with-follow-up-get-requests)
 - [Secure Channels](#secure-channels)
   - [Securing HTTP Channels](#securing-http-channels)
   - [Securing WebSocket Channels](#securing-websocket-channels)
@@ -25,7 +24,6 @@ A tiny web Server and SocketServer that depend only on JDK classes and are in a 
 - [Error Handling](#error-handling)
   - [In EndPoints Themselves](#in-endpoints-themselves)
   - [TinyWeb's Overridable Exception Methods](#tinywebs-overridable-exception-methods)
-  - [Input Validation](#input-validation)
 - [Integrating Other Frameworks](#integrating-other-frameworks)
   - [Dependency Injection](#dependency-injection)
   - [Database/ ORM Technologies](#database-orm-technologies)
@@ -371,7 +369,7 @@ four concurrently connected channels.
 
 #### Thoughts on WebSockets
 
-**Short Messages with Follow-up GET Requests**
+Guideline: Short async messages with a follow-up via a regular GET Requests
 
 One school of thought says WebSockets (and messaging systems generally) should send short notifications from the server 
 to the client. These notifications can inform the client that an event has occurred or that new data is available. 
@@ -456,30 +454,6 @@ Understanding common HTTP response codes is essential for effectively communicat
 - **404 Not Found**: The server cannot find the requested resource.
 - **500 Internal Server Error**: The server encountered an unexpected condition that prevented it from fulfilling the request.
 
-#### Example: Handling Different Scenarios
-
-Here's an example of how you might handle different scenarios in an endpoint:
-
-TODO keep or delete this?
-
-```java
-endPoint(TinyWeb.Method.POST, "/submit", (req, res, context) -> {
-    if (req.getBody().isEmpty()) {
-        // Respond with 400 Bad Request if the body is empty
-        res.write("Request body cannot be empty", 400);
-    } else {
-        // Process the request and respond with 201 Created
-        res.write("Resource created successfully", 201);
-    }
-});
-```
-
-In this example, the endpoint checks if the request body is empty. If it is, it responds with a 400 Bad Request status 
-code. Otherwise, it processes the request and responds with a 201 Created status code.
-
-By understanding and using HTTP response codes effectively, you can provide clear and meaningful feedback to clients 
-interacting with your `TinyWeb` server.
-
 ### TinyWeb's Overridable Exception Methods
 
 In `TinyWeb`, exception handling is an important aspect of managing server and application errors. The framework 
@@ -526,7 +500,7 @@ svr = new TinyWeb.Server(8080, -1) {
     }
 
     @Override
-    protected void appHandlingException (Exception e){
+    protected void appHandlingException (Exception e) {
         // Custom application error handling
         System.err.println("Custom Application Exception: " + e.getMessage());
         e.printStackTrace(System.err);
@@ -536,31 +510,6 @@ svr = new TinyWeb.Server(8080, -1) {
 
 By overriding these methods, you can tailor the exception handling behavior of your `TinyWeb` server to meet your 
 application's specific needs, ensuring that errors are managed effectively and transparently.
-
-### Input Validation
-
-Input validation is crucial for ensuring the security and reliability of your `TinyWeb` application. While `TinyWeb` 
-does not provide built-in input validation, developers should implement their own validation logic to protect against 
-common vulnerabilities such as XSS (Cross-Site Scripting) and CSRF (Cross-Site Request Forgery).
-
-#### Example: Basic Input Validation
-
-Here's an example of how you might implement basic input validation in an endpoint:
-
-```java
-endPoint(TinyWeb.Method.POST, "/submit", (req, res, params) -> {
-    String input = req.getBody();
-    
-    // Simple validation: check if input is not empty and does not contain malicious scripts
-    if (input == null || input.trim().isEmpty() || input.contains("<script>")) {
-        res.write("Invalid input", 400);
-        return;
-    }
-    
-    // Proceed with processing the valid input
-    res.write("Input accepted", 200);
-});
-```
 
 #### Security Best Practices
 
@@ -576,10 +525,10 @@ from common web vulnerabilities.
 
 ### Dependency Injection
 
-We can't automate dependency injection with TinyWeb. The reason for that is handlers don't take strongly typed 
-dependencies in the (req, resp, context) functional interfaces, nor do they have constructors associated. 
+We can't integrate dependency injection with TinyWeb. The reason for that is handlers don't take strongly typed 
+dependencies in the `(req, resp, context)` functional interfaces, nor do they have constructors associated. 
 
-For it to be Dependency Injection of say a ShoppingCart into a handler, you would something like:
+For it to be true Dependency Injection capable - for say a ShoppingCart into a handler - you would something like:
 ```java
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     endPoint(GET, "/users", /*ShoppingCart*/ cart, (req, res, context) -> {
@@ -589,37 +538,43 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 }};
 ```
 
-The problem is that method `endPoint(..)` has a fixed param list. It can't be extended to suit each specific use of `endPoint` in 
-an app. You could have "Object[] deps" as an arg directly and do casting, but we have chosen to have a `getDep(..)` method on context (RequestContext) object.
+The problem is that method `endPoint(..)` has a fixed param list. It can't be extended to suit each specific use 
+of `endPoint` in an app. You could maybe have "Object[] deps" as an arg directly and do casting, but we have chosen 
+to have a `getDep(..)` method on context (RequestContext) object. We acknowledge this is no longer Dependency 
+Injection.
 
+Thus we are follow **Inversion of Control** (IoC) idioms with a lookup-style (interface injection) way of getting 
+dependencies into a endpoint (or filter). I contrast the differences 21 years ago - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf, 
+and I've built something rudimentary into TinyWeb that fits interface injection. The debate on Dependency Injection 
+(DI) vs a possibly global-static Service Locator (that was popular before it) was popularized by Martin Fowler 
+in https://www.martinfowler.com/articles/injection.html (I get a mention in the footnotes, but people occasionally 
+tell me to read it).
 
-Thus we are follow Inversion of Control (IoC) with a lookup-style (interface injection) style. I talk about that 21 years ago 
-here - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf, and we've built something rudimentary in. The 
-Dependency Injection (DI) vs a possibly global-static Service Locator (that was popular before it) was popularized months later by Martin Fowler 
-with https://www.martinfowler.com/articles/injection.html. I get a mention in the footnotes.
-
-Here's an example. Again, this is not D.I., but is IoC:
+Here's an example. Again, this is not D.I., but is IoC from the pre-DI style.
 
 ```java
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
     ShoppingCart sc = ctx.dep(ShoppingCart.class);
-    res.write("Cart item count: " + sc.cartCount() + "\n" +
+    res.write("Cart item count: " + sc.cartCount());
 });
 ```
 
-This is not Dependency injection, nor is it IoC, but you could this way if really wanted to:
+This below is not Dependency injection, nor is it IoC, but you could this way if really wanted to:
 
 ```java
+
+// classic service locator style - should not do this IMO
+
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
     ShoppingCart sc = GlobalServiceLocator.getDepndency(ShoppingCart.class);
-    res.write("Cart items count: " + sc.cartCount() + "\n");
+    res.write("Cart items count: " + sc.cartCount());
 });
     
-// nor this (classic singleton pattern)
+// classic singleton design-pattern style - should not do this IMO
 
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
     ShoppingCart sc = ShoppingCart.getInstance();
-    res.write("Cart items count: " + sc.cartCount() + "\n");
+    res.write("Cart items count: " + sc.cartCount());
 });
 ```
 
@@ -628,7 +583,7 @@ This one again is not Dependency injection, but could be IoC depending on implem
 ```java
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
     ShoppingCart sc = getInstance(ShoppingCart.class); // from some scope outside than the endPoint() lambda
-    res.write("Cart items count: " + sc.cartCount() + "\n");
+    res.write("Cart items count: " + sc.cartCount());
 });
 ```
 
@@ -709,8 +664,8 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 
 ## Testing Your Web App
 
-Testing is a critical part of developing reliable web applications. `TinyWeb` can be tested using various frameworks, 
-each offering unique features. Here are some suggestions:
+Testing is a critical part of developing reliable web applications. `TinyWeb` is just a library. You can write tests
+using it in JUnit, TestNG, JBehave.
 
 ### Cuppa-Framework
 
@@ -733,48 +688,38 @@ public class MyWebAppTest {
 }
 ```
 
-### JUnit and TestNG
+[See the tests that use Cuppa](TinyWebTests.java)
 
-JUnit and TestNG are popular testing frameworks that provide extensive features for unit and integration testing. They 
-are well-suited for testing individual components and overall application behavior.
-
-Example with JUnit:
-
-```java
-import org.junit.Test;
-import static org.junit.Assert.*;
-
-public class MyWebAppTest {
-    @Test
-    public void testGreetingEndpoint() {
-        // Test logic here
-    }
-}
-```
-
-### Mockito
+### Mockito and similar
 
 Mockito is a powerful mocking framework that can be used to create mock objects for testing. It is particularly useful 
 for isolating components and testing interactions.
 
-Example with Mockito:
+Consider the following code:
 
 ```java
-import static org.mockito.Mockito.*;
+public static class MyApp {
 
-public class MyWebAppTest {
-    @Test
-    public void testWithMock() {
-        MyService mockService = mock(MyService.class);
-        when(mockService.getData()).thenReturn("Mock Data");
-        
-        // Test logic using mockService
+        public void foobar(Request req, Response res, TinyWeb.RequestContext ctx) {
+            res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
+        }
+
+        public static TinyWeb.Server composeApplication(String[] args, MyApp app) {
+            TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+                endPoint(GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
+            }};
+            return server;
+        }
+    }
+
+    public static void main(String[] args) {
+        MyApp.composeApplication(args, new MyApp()).start();
     }
 }
 ```
 
-By leveraging these testing frameworks, you can ensure that your `TinyWeb` application is robust, reliable, and ready 
-for production.
+In your tests, you could ignore the main() method, and call `composeApplication` with a mock `MyApp` instance. All 
+your when(), verify() logic will work as you expect it to.
 
 # Build and Test of TinyWeb itself
 
