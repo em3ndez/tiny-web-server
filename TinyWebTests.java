@@ -694,6 +694,11 @@ public class TinyWebTests {
                         });
                     }};
                     new TinyWeb.ServerComposition(webServer) {{
+                        path("/bar2", () -> {
+                            endPoint(GET, "/baz2", (req, res, ctx) -> {
+                                res.write("Hello3");
+                            });
+                        });
                         path("/bar", () -> {
                             endPoint(GET, "/baz", (req, res, ctx) -> {
                                 res.write("Hello2");
