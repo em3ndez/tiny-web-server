@@ -899,12 +899,18 @@ public class TinyWeb {
                         // Extract message
                         byte[] messagePayload = Arrays.copyOfRange(payload, pathLength + 1, payload.length);
 
-                        SocketMessageHandler handler = getHandler(path);
-                        if (handler != null) {
-                            handler.handleMessage(messagePayload, sender);
-                        } else {
-                            System.err.println("No handler found for path: " + path + " keys:" + messageHandlers.keySet());
-                        }
+                        CompletableFuture.runAsync(() -> {
+                            SocketMessageHandler handler = getHandler(path);
+                            if (handler != null) {
+                                try {
+                                    handler.handleMessage(messagePayload, sender);
+                                } catch (IOException e) {
+                                    System.err.println("Error handling WebSocket message: " + e.getMessage());
+                                }
+                            } else {
+                                System.err.println("No handler found for path: " + path + " keys:" + messageHandlers.keySet());
+                            }
+                        });
                     }
                 }
                 // Other control frames (ping/pong) could be handled here
