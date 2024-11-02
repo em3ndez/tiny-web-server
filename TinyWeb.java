@@ -223,11 +223,11 @@ public class TinyWeb {
                 if (Files.exists(path) && !Files.isDirectory(path)) {
                     CompletableFuture.supplyAsync(() -> {
                         try {
-                            return Files.readString(path);
+                            return Files.readAllBytes(path);
                         } catch (IOException e) {
                             throw new ServerException("Internal Static File Serving error for " + path, e);
                         }
-                    }).thenAccept(content -> {
+                    }).thenAccept(fileBytes -> {
                         String contentType;
                         try {
                             contentType = Files.probeContentType(path);
@@ -238,7 +238,7 @@ public class TinyWeb {
                             contentType = "application/octet-stream";
                         }
                         res.setHeader("Content-Type", contentType);
-                        res.write(content, 200);
+                        res.write(new String(fileBytes, StandardCharsets.UTF_8), 200);
                     }).exceptionally(ex -> {
                         sendErrorResponse(res.exchange, 500, "Internal server error");
                         return null;
