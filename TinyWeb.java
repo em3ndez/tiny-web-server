@@ -216,22 +216,33 @@ public class TinyWeb {
             return filter(Method.ALL, path, filter);
         }
 
-        public ServerContext serveStaticFiles(String basePath, String directory) {
+        public ServerContext serveStaticFilesAsync(String basePath, String directory) {
             endPoint(Method.GET, basePath + "/(.*)", (req, res, ctx) -> {
                 String filePath = ctx.getParam("1");
                 Path path = Paths.get(directory, filePath);
                 if (Files.exists(path) && !Files.isDirectory(path)) {
-                    try {
-                        String contentType = Files.probeContentType(path);
-                        if (contentType == null) {
+                    CompletableFuture.supplyAsync(() -> {
+                        try {
+                            return Files.readString(path);
+                        } catch (IOException e) {
+                            throw new ServerException("Internal Static File Serving error for " + path, e);
+                        }
+                    }).thenAccept(content -> {
+                        String contentType;
+                        try {
+                            contentType = Files.probeContentType(path);
+                            if (contentType == null) {
+                                contentType = "application/octet-stream";
+                            }
+                        } catch (IOException e) {
                             contentType = "application/octet-stream";
                         }
                         res.setHeader("Content-Type", contentType);
-                        byte[] fileBytes = Files.readAllBytes(path);
-                        res.write(new String(fileBytes), 200);
-                    } catch (IOException e) {
-                        throw new ServerException("Internal Static File Serving error for " + path, e);
-                    }
+                        res.write(content, 200);
+                    }).exceptionally(ex -> {
+                        sendErrorResponse(res.exchange, 500, "Internal server error");
+                        return null;
+                    });
                 } else {
                     sendErrorResponse(res.exchange, 404, "Not found");
                 }
