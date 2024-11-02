@@ -943,5 +943,14 @@ Notes:
 
 Stats:
 
-Source file `TinyWeb.java` has Approximately 910 lines of consequential code, including all logic and structure. The 
-README and tests are heading toward that size but are still under.
+Source file `TinyWeb.java` has Approximately 666 lines of consequential code. 
+
+``` 
+# `cloc` counts lines of code
+# don't count } on their own on a line, or }); or }};
+cat TinyWeb.java | sed '/\w*}\w*/d' | sed '/\w*}];\w*/d' | sed '/\w*});\w*/d' > tmpfile.java
+cloc tmpfile.java
+rm tempfile.java
+```
+
+The README and tests are heading toward that size but are still under.

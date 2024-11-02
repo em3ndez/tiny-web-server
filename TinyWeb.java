@@ -177,11 +177,10 @@ public class TinyWeb {
             this.routes = previousRoutes;
             this.wsRoutes = previousWsRoutes;
             this.filters = previousFilters;
-
             return new PathContext(basePath, this, serverState);
         }
 
-        // TODO was protected
+        // TODO was protected - could be static?
         public void sendErrorResponse(HttpExchange exchange, int code, String message) {
                 new Response(exchange).write(message, code);
         }
@@ -461,22 +460,6 @@ public class TinyWeb {
         }
     }
 
-    public interface ServerContext {
-        PathContext path(String basePath, Runnable routes);
-
-        void sendErrorResponse(HttpExchange exchange, int code, String message);
-
-        ServerContext endPoint(Method method, String path, EndPoint endPoint);
-
-        ServerContext webSocket(String path, SocketMessageHandler wsHandler);
-
-        ServerContext filter(Method method, String path, Filter filter);
-
-        ServerContext filter(String path, Filter filter);
-
-        ServerContext serveStaticFiles(String basePath, String directory);
-    }
-
     public static class ServerComposition implements ServerContext {
         private final Server server;
 
@@ -524,6 +507,17 @@ public class TinyWeb {
      * Interfaces
      * ==========================
      */
+
+    public interface ServerContext {
+        PathContext path(String basePath, Runnable routes);
+        ServerContext endPoint(Method method, String path, EndPoint endPoint);
+        ServerContext webSocket(String path, SocketMessageHandler wsHandler);
+        ServerContext filter(Method method, String path, Filter filter);
+        ServerContext filter(String path, Filter filter);
+        ServerContext serveStaticFiles(String basePath, String directory);
+        void sendErrorResponse(HttpExchange exchange, int code, String message);
+    }
+
     public interface RequestContext {
         String getParam(String key);
         @SuppressWarnings("unchecked")
