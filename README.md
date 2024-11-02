@@ -93,7 +93,7 @@ Here's a basic example of defining a GET endpoint using TinyWeb:
 
 ```java 
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-    endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+    endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
         res.write("Hello, World!");
         // req gives access to headers, etc
     });
@@ -111,7 +111,7 @@ Here's an example of using a filter with an endpoint in TinyWeb:
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 
     // Apply a filter to check for a custom header
-    filter(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
+    filter(TinyWeb.Method.GET, "/secure", (req, res, context) -> {
         if (!req.getHeaders().containsKey("X-Auth-Token")) {
             res.write("Unauthorized", 401);
             return FilterResult.STOP; // Stop processing if unauthorized
@@ -120,7 +120,7 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     });
 
     // Define a GET endpoint
-    endPoint(TinyWeb.Method.GET, "/secure", (req, res, params) -> {
+    endPoint(TinyWeb.Method.GET, "/secure", (req, res, context) -> {
         res.write("Welcome to the secure endpoint!");
     });
         
@@ -139,12 +139,12 @@ Here's an example of defining two endpoints within a single path using TinyWeb:
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     path("/api", () -> {
         // Define the first GET endpoint
-        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+        endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
             res.write("Hello from the first endpoint!");
         });
 
         // Define the second GET endpoint
-        endPoint(TinyWeb.Method.GET, "/goodbye", (req, res, params) -> {
+        endPoint(TinyWeb.Method.GET, "/goodbye", (req, res, context) -> {
             res.write("Goodbye from the second endpoint!");
         });
     });
@@ -165,7 +165,7 @@ using TinyWeb:
 ```java
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     path("/api", () -> {
-        filter(TinyWeb.Method.GET, ".*", (req, res, params) -> {
+        filter(TinyWeb.Method.GET, ".*", (req, res, context) -> {
             String allegedlyLoggedInCookie = req.getCookie("logged-in");
             // This test class only performs rot47 on the cookie passed in.
             // That's not secure in the slightest. See https://rot47.net/
@@ -178,7 +178,7 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
             }
             return FilterResult.CONTINUE; // Continue processing
         });
-        endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, params) -> {
+        endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, context) -> {
             res.write("User Is logged in: " + req.getAttribute("user"));
         });
     });
@@ -234,7 +234,7 @@ Here's an example of defining both a WebSocket and an HTTP endpoint within a sin
 TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
     path("/api", () -> {
         // Define a GET endpoint
-        endPoint(TinyWeb.Method.GET, "/status", (req, res, params) -> {
+        endPoint(TinyWeb.Method.GET, "/status", (req, res, context) -> {
             res.write("API is running");
         });
 
@@ -433,7 +433,7 @@ In `TinyWeb`, you can set the HTTP response code by using the `write` method of 
 method allows you to specify both the response content and the status code. Here's an example:
 
 ```java
-endPoint(TinyWeb.Method.GET, "/example", (req, res, params) -> {
+endPoint(TinyWeb.Method.GET, "/example", (req, res, context) -> {
     // Set a 200 OK response
     res.write("Request was successful", 200);
 });
@@ -457,8 +457,10 @@ Understanding common HTTP response codes is essential for effectively communicat
 
 Here's an example of how you might handle different scenarios in an endpoint:
 
+TODO keep or delete this?
+
 ```java
-endPoint(TinyWeb.Method.POST, "/submit", (req, res, params) -> {
+endPoint(TinyWeb.Method.POST, "/submit", (req, res, context) -> {
     if (req.getBody().isEmpty()) {
         // Respond with 400 Bad Request if the body is empty
         res.write("Request body cannot be empty", 400);
@@ -572,138 +574,76 @@ from common web vulnerabilities.
 ### Dependency Injection
 
 We can't automate dependency injection with TinyWeb. The reason for that is handlers don't take strongly typed 
-dependencies in the (req, resp, context) functional interfaces, nor do they have constructors associated. The nested
-grammar is felt to me more important than making the tech directly compatible with DI. We can follow Inversion of 
-Control (IoC) with a lookup-style container, and we've built something rudimentary in. Here's an example
+dependencies in the (req, resp, context) functional interfaces, nor do they have constructors associated. 
 
+For it to be Dependency Injection of say a ShoppingCart into a handler, you would something like:
 ```java
-public static class ProductInventory {
-
-  Map<String, Integer> stockItems = new HashMap<>() {{
-    put("apple", 100);
-    put("orange", 50);
-    put("bagged banana", 33);
-  }};
-
-  public boolean customerReserves(String item) {
-    if (stockItems.containsKey(item)) {
-      if (stockItems.get(item) > 0) {
-        stockItems.put(item, stockItems.get(item) - 1);
-        return true;
-      }
-    }
-    return false;
-  }
-}
-
-public static class ShoppingCart {
-
-  private final ProductInventory inv;
-  private final Map<String, Integer> items = new HashMap<>();
-
-  public ShoppingCart(ProductInventory inv) {
-    this.inv = inv;
-  }
-
-  public int cartCount() {
-    return items.values().stream().mapToInt(Integer::intValue).sum();
-  }
-
-  public boolean pickItem(String item) {
-    boolean gotIt = inv.customerReserves(item);
-    if (!gotIt) {
-      return false;
-    }
-    items.put(item, items.getOrDefault(item, 0) + 1);
-    return true;
-  }
-}
-
-public static ShoppingCart createOrGetShoppingCart(TinyWeb.ComponentCache cache) {
-    return cache.getOrCreate(ShoppingCart.class, () ->
-            new ShoppingCart(getOrCreateProductInventory(cache))
-    );
-}
-    
-public static ProductInventory getOrCreateProductInventory(TinyWeb.ComponentCache cache) {
-    return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
-}
-
-private static void doComposition(TinyWeb.Server svr) {
-  new TinyWeb.AdditionalServerContexts(svr) {{
-
-    // Code in any of these paths can't interact with the ComponentCache directly. 
-    // Only through ctx.dep(Class)
-    path("/api", () -> {
-      //deps([OrderBook.class]);
-      endPoint(TinyWeb.Method.GET, "/howManyOrderInBook", (req, res, ctx) -> {
-        ShoppingCart sc = ctx.dep(ShoppingCart.class);
-        res.write("Cart Items before: " + sc.cartCount() + "\n" +
-                "apple picked: " + sc.pickItem("apple") + "\n" +
-                "Cart Items after: " + sc.cartCount() + "\n");
-      });
+TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+    endPoint(GET, "/users", /*ShoppingCart*/ cart, (req, res, context) -> {
+        // do something with "cart" var
+        res.write("some response");
     });
-  }};
-}
-
-TinyWeb.ComponentCache cache = new TinyWeb.DefaultComponentCache();
-
-TinyWeb.Server svr = new TinyWeb.Server(8080, 8081) {
-  @Override
-  public <T> T instantiateDep(Class<T> clazz, Map<Class<?>, Object> deps) {
-    if (clazz == ShoppingCart.class) {
-      return (T) cache.getOrCreate(ShoppingCart.class, () -> createUserService(cache));
-    }
-    throw new IllegalArgumentException("Unsupported class: " + clazz);
-  }
-};
-
-doComposition(svr); // paths, filters, endPoints added here.
-svr.
-
-start();
+}};
 ```
-If you wanted to mock of the depended-on components, you would do via instantiateDep()
+
+The problem is that method `endPoint(..)` has a fixed param list. It can't be extended to suit each specific use of `endPoint` in 
+an app. You could have "Object[] deps" as an arg directly and do casting, but we have chosen to have a `getDep(..)` method on context (RequestContext) object.
+
+
+Thus we are follow Inversion of Control (IoC) with a lookup-style (interface injection) style. I talk about that 21 years ago 
+here - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf, and we've built something rudimentary in. The 
+Dependency Injection (DI) vs a possibly global-static Service Locator (that was popular before it) was popularized months later by Martin Fowler 
+with https://www.martinfowler.com/articles/injection.html. I get a mention in the footnotes.
+
+Here's an example. Again, this is not D.I., but is IoC:
 
 ```java
-// test logic - setup() or before() methods
-svr = new TinyWeb.Server(8080, -1) {
-  @Override
-  public <T > T instantiateDep(Class < T > clazz, TinyWeb.ComponentCache cache) {
-    // MOCKS utilized here
-  }
-}
-
-new TinyWeb.AdditionalServerContexts(svr) {{
-    // paths, filters, endPoints.. in a static method from the prod codebase.
-}};
-svr.start();
-// do test methods
+endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
+    ShoppingCart sc = ctx.dep(ShoppingCart.class);
+    res.write("Cart item count: " + sc.cartCount() + "\n" +
+});
 ```
 
-### ORM Technologies
+This is not Dependency injection, nor is it IoC, but you could this way if really wanted to:
 
-Object-Relational Mapping (ORM) is a technique that allows developers to interact with a database using objects, 
-rather than writing raw SQL queries. JDBI is a lightweight ORM library that can be easily integrated with `TinyWeb` 
-for database operations.
+```java
+endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
+    ShoppingCart sc = GlobalServiceLocator.getDepndency(ShoppingCart.class);
+    res.write("Cart items count: " + sc.cartCount() + "\n");
+});
+    
+// nor this (classic singleton pattern)
 
-Here's a basic example of using JDBI with `TinyWeb`:
-
-1. Add JDBI to your project dependencies (e.g., in `pom.xml` for Maven):
-
-```xml
-<dependency>
-    <groupId>org.jdbi</groupId>
-    <artifactId>jdbi3-core</artifactId>
-    <version>3.25.0</version>
-</dependency>
+endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
+    ShoppingCart sc = ShoppingCart.getInstance();
+    res.write("Cart items count: " + sc.cartCount() + "\n");
+});
 ```
 
-2. Use JDBI to interact with the database in your application. JDBI provides transaction management capabilities, 
-3. allowing you to execute multiple operations within a single transaction. The JDBI instance is typically created 
-4. at a global scope and shared across the application to manage database connections efficiently.
+This one again is not Dependency injection, but could be IoC depending on implementation:
 
-Here's an example of using JDBI with transaction management:
+```java
+endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
+    ShoppingCart sc = getInstance(ShoppingCart.class); // from some scope outside than the endPoint() lambda
+    res.write("Cart items count: " + sc.cartCount() + "\n");
+});
+```
+
+Say `ShoppingCart` depends on `ProductInventory`, but because you're following Inversion of Control you do not
+want the `ProductInventory` instance directly used in any `endPoint(..)`. You would hide its instantiation in a scope of execution
+that would not be accessible to the `endPoint(..)` lambdas. Of course, if it is in the classpath, any code could do
+`new ProductInventory(..)` but we presume there are some secrets passed in through the constructor that ALSO are
+hidden from `endPoint(..)` lambdas making that pointless.
+
+If you were using SprintFrameWork, you would have `ProductInventory` as `@Singleton` scope (an idiom, not the Gang-of-Four 
+design pattern). You would also have `ShoppingCart` as `@Scope("request")`
+
+In [TinyWebTests](TinyWebTests.java), we have an example of use that features `endPoint(..)`, `ShoppingCart` 
+and `ProductInventory`
+
+### Database/ ORM Technologies
+
+Picking JDBI to do Object-Relational Mapping (ORM) for the sake of an example (GAV: org.jdbi:jdbi3-core:3.25.0):
 
 ```java
 import org.jdbi.v3.core.Jdbi;
@@ -711,22 +651,21 @@ import org.jdbi.v3.core.transaction.TransactionIsolationLevel;
 
 public class MyDatabaseApp {
     private final Jdbi jdbi;
-
+    private TinyWeb.Server server;
+          
     public MyDatabaseApp() {
-        this.jdbi = Jdbi.create("jdbc:h2:mem:test");
-    }
+        jdbi = Jdbi.create("jdbc:h2:mem:test");
 
-    public void start() {
-        TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-            endPoint(TinyWeb.Method.GET, "/users", (req, res, params) -> {
-                List<String> users = jdbi.inTransaction(handle -> 
+        server = new TinyWeb.Server(8080, -1) {{
+            endPoint(GET, "/users", (req, res, context) -> {
+                List<String> users = jdbi.inTransaction(handle ->
                     handle.createQuery("SELECT name FROM users")
-                          .mapTo(String.class)
-                          .list());
+                            .mapTo(String.class)
+                            .list());
                 res.write(String.join(", ", users));
             });
-
-            endPoint(TinyWeb.Method.POST, "/addUser", (req, res, params) -> {
+  
+            endPoint(POST, "/addUser", (req, res, context) -> {
                 jdbi.useTransaction(TransactionIsolationLevel.SERIALIZABLE, handle -> {
                     handle.execute("INSERT INTO users (name) VALUES (?)", req.getBody());
                 });
@@ -734,41 +673,18 @@ public class MyDatabaseApp {
             });
         }}.start();
     }
-}
-```
 
-In this example, the JDBI instance is used to manage transactions for both reading and writing operations. The 
-`inTransaction` method is used to execute a query within a transaction, and the `useTransaction` method is used 
-to perform an insert operation with a specified transaction isolation level.
-
-```java
-import org.jdbi.v3.core.Jdbi;
-
-public class MyDatabaseApp {
-    private final Jdbi jdbi;
-
-    public MyDatabaseApp() {
-        this.jdbi = Jdbi.create("jdbc:h2:mem:test");
-    }
-
-    public void start() {
-        TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-            endPoint(TinyWeb.Method.GET, "/users", (req, res, params) -> {
-                List<String> users = jdbi.withHandle(handle ->
-                    handle.createQuery("SELECT name FROM users")
-                          .mapTo(String.class)
-                          .list());
-                res.write(String.join(", ", users));
-            });
-        }}.start();
+    public static void main(String[] args) {
+        new MyDatabaseApp();
     }
 }
 ```
 
-In this example, JDBI is used to query a list of users from an H2 in-memory database and return the results via 
-a `TinyWeb` endpoint.
+We could have used the `ctx.getDep(..)` way of depending on JDBI, but in the above example, we just have an
+instance `jdbi` that is visible to all the filters and endpoints duly composed. It is up to you which way you develop
+with TinyWeb
 
-## Don't do this
+## Pitfalls
 
 When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such
 as `path()`, `endPoint()`, or `filter()`) is executed only once during the server's instantiation. This
@@ -781,7 +697,7 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     path("/api", () -> {
         code().thatYouThink("is per to /api invocation, but it is not");
         // This code runs per request to /api
-        endPoint(TinyWeb.Method.GET, "/hello", (req, res, params) -> {
+        endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
             res.write("Code must be in lambda blocks");
         });
     });

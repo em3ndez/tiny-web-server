@@ -271,8 +271,12 @@ public class TinyWebTests {
             describe("When endpoint and filters can depend on components", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(new TinyWeb.DefaultComponentCache(){{
-                        this.put(ProductInventory.class, new ProductInventory());
+                        this.put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
                     }}){
+
+                        // This is not Dependency Injection
+                        // This also does not use reflection so is fast.
+
                         @Override
                         public <T> T  instantiateDep(Class<T> clazz, TinyWeb.ComponentCache requestCache) {
                             if (clazz == ShoppingCart.class) {
@@ -785,6 +789,7 @@ public class TinyWebTests {
             path("/api", () -> {
                 //deps([OrderBook.class]);
                 endPoint(GET, "/howManyOrderInBook", (req, res, ctx) -> {
+
                     ShoppingCart sc = ctx.dep(ShoppingCart.class);
                     res.write("Cart Items before: " + sc.cartCount() + "\n" +
                             "apple picked: " + sc.pickItem("apple") + "\n" +
@@ -838,7 +843,7 @@ public class TinyWebTests {
 
     public static class ProductInventory {
 
-        // We sould not hard code cart contents in real life - see note about database below.
+        // We should not hard code cart contents in real life - see note about database below.
         Map<String, Integer> stockItems = new HashMap<>() {{
             put("apple", 100);
             put("orange", 50);
