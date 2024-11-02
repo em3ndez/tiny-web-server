@@ -151,7 +151,7 @@ public class TinyWebTests {
                     bodyAndResponseCodeShouldBe(httpGet("/foo/bar", "sucks", "true"),
                             "Access Denied", 403);
                 });
-                only().it("Then it can access items outside the path", () -> {
+                it("Then it can access items outside the path", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/baz/baz/baz"),
                             "Hello, World 2!", 200);
 
