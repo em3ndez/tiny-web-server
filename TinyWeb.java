@@ -216,7 +216,7 @@ public class TinyWeb {
             return filter(Method.ALL, path, filter);
         }
 
-        public ServerContext serveStaticFilesAsync(String basePath, String directory) {
+        public ServerContext serveStaticFiles(String basePath, String directory) {
             endPoint(Method.GET, basePath + "/(.*)", (req, res, ctx) -> {
                 String filePath = ctx.getParam("1");
                 Path path = Paths.get(directory, filePath);
