@@ -458,10 +458,10 @@ public class TinyWeb {
         }
     }
 
-    public static class AdditionalServerContexts extends ServerContext {
+    public static class ServerComposition extends ServerContext {
         private final Server server;
 
-        public AdditionalServerContexts(Server server) {
+        public ServerComposition(Server server) {
             super(server.serverState);
             this.server = server;
         }
