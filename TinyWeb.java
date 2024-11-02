@@ -94,14 +94,14 @@ public class TinyWeb {
         }
     }
 
-    public static class ServerContext implements IServerContext {
+    public static abstract class AbstractServerContext implements IServerContext {
 
         Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
         Map<Pattern, SocketMessageHandler> wsRoutes = new HashMap<>();
         Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
         protected final ServerState serverState;
 
-        public ServerContext(ServerState serverState) {
+        public AbstractServerContext(ServerState serverState) {
             this.serverState = serverState;
         }
 
@@ -241,12 +241,12 @@ public class TinyWeb {
         }
     }
 
-    public static class PathContext extends ServerContext {
+    public static class PathContext extends AbstractServerContext {
 
         private final String basePath;
-        private final ServerContext parentContext;
+        private final AbstractServerContext parentContext;
 
-        public PathContext(String basePath, ServerContext parentContext, ServerState serverState) {
+        public PathContext(String basePath, AbstractServerContext parentContext, ServerState serverState) {
             super(serverState);
             this.basePath = basePath;
             this.parentContext = parentContext;
@@ -269,7 +269,7 @@ public class TinyWeb {
         }
     }
 
-    public static class Server extends ServerContext {
+    public static class Server extends AbstractServerContext {
 
         private final HttpServer httpServer;
         private final SocketServer socketServer;
