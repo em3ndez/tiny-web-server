@@ -509,8 +509,8 @@ public class TinyWeb {
         }
 
         @Override
-        public ServerContext serveStaticFiles(String basePath, String directory) {
-            return server.serveStaticFiles(basePath, directory);
+        public ServerContext serveStaticFilesAsync(String basePath, String directory) {
+            return server.serveStaticFilesAsync(basePath, directory);
         }
     }
 
@@ -525,7 +525,7 @@ public class TinyWeb {
         ServerContext webSocket(String path, SocketMessageHandler wsHandler);
         ServerContext filter(Method method, String path, Filter filter);
         ServerContext filter(String path, Filter filter);
-        ServerContext serveStaticFiles(String basePath, String directory);
+        ServerContext serveStaticFilesAsync(String basePath, String directory);
         void sendErrorResponse(HttpExchange exchange, int code, String message);
     }
 

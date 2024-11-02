@@ -777,7 +777,7 @@ public class TinyWebTests {
                     });
                 });
 
-                serveStaticFiles("/static", new File(".").getAbsolutePath());
+                serveStaticFilesAsync("/static", new File(".").getAbsolutePath());
 
                 endPoint(GET, "/users/(\\w+)", (req, res, ctx) -> {
                     res.write("User profile: " + ctx.getParam("1"));
