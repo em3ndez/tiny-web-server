@@ -49,6 +49,8 @@ import java.util.regex.Pattern;
 
 public class TinyWeb {
 
+    public static final String VERSION = "1.0.0";
+
     /* ==========================
      * Enums
      * ==========================
