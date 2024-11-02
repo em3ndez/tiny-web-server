@@ -136,6 +136,9 @@ public class TinyWebTests {
                                 // This endpoint is /foo/bar if that wasn't obvious
                             });
                         });
+                        endPoint(GET, "/baz/baz/baz", (req, res, ctx) -> {
+                            res.write("Hello, World 2!");
+                        });
                     }};
                     webServer.start();
                 });
@@ -147,6 +150,11 @@ public class TinyWebTests {
                 it("Then it should deny access when the 'sucks' header is present", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/foo/bar", "sucks", "true"),
                             "Access Denied", 403);
+                });
+                only().it("Then it can access items outside the path", () -> {
+                    bodyAndResponseCodeShouldBe(httpGet("/baz/baz/baz"),
+                            "Hello, World 2!", 200);
+
                 });
                 after(() -> {
                     webServer.stop();
