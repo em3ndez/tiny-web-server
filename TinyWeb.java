@@ -94,7 +94,7 @@ public class TinyWeb {
         }
     }
 
-    public static class ServerContext {
+    public static class ServerContext implements IServerContext {
 
         Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
         Map<Pattern, SocketMessageHandler> wsRoutes = new HashMap<>();
@@ -181,11 +181,12 @@ public class TinyWeb {
             return new PathContext(basePath, this, serverState);
         }
 
-        protected void sendErrorResponse(HttpExchange exchange, int code, String message) {
+        // TODO was protected
+        public void sendErrorResponse(HttpExchange exchange, int code, String message) {
                 new Response(exchange).write(message, code);
         }
 
-        public ServerContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
+        public IServerContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add endpoints after the server has started.");
             }
@@ -194,7 +195,7 @@ public class TinyWeb {
             return this;
         }
 
-        public ServerContext webSocket(String path, SocketMessageHandler wsHandler) {
+        public IServerContext webSocket(String path, SocketMessageHandler wsHandler) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add WebSocket handlers after the server has started.");
             }
@@ -203,7 +204,7 @@ public class TinyWeb {
         }
 
 
-        public ServerContext filter(TinyWeb.Method method, String path, Filter filter) {
+        public IServerContext filter(TinyWeb.Method method, String path, Filter filter) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add filters after the server has started.");
             }
@@ -212,11 +213,11 @@ public class TinyWeb {
             return this;
         }
 
-        public ServerContext filter(String path, Filter filter) {
+        public IServerContext filter(String path, Filter filter) {
             return filter(Method.ALL, path, filter);
         }
 
-        public ServerContext serveStaticFiles(String basePath, String directory) {
+        public IServerContext serveStaticFiles(String basePath, String directory) {
             endPoint(Method.GET, basePath + "/(.*)", (req, res, ctx) -> {
                 String filePath = ctx.getParam("1");
                 Path path = Paths.get(directory, filePath);
@@ -460,11 +461,26 @@ public class TinyWeb {
         }
     }
 
-    public static class ServerComposition extends ServerContext {
+    public interface IServerContext {
+        PathContext path(String basePath, Runnable routes);
+
+        void sendErrorResponse(HttpExchange exchange, int code, String message);
+
+        IServerContext endPoint(Method method, String path, EndPoint endPoint);
+
+        IServerContext webSocket(String path, SocketMessageHandler wsHandler);
+
+        IServerContext filter(Method method, String path, Filter filter);
+
+        IServerContext filter(String path, Filter filter);
+
+        IServerContext serveStaticFiles(String basePath, String directory);
+    }
+
+    public static class ServerComposition implements IServerContext {
         private final Server server;
 
         public ServerComposition(Server server) {
-            super(server.serverState);
             this.server = server;
         }
 
@@ -474,32 +490,32 @@ public class TinyWeb {
         }
 
         @Override
-        protected void sendErrorResponse(HttpExchange exchange, int code, String message) {
-            super.sendErrorResponse(exchange, code, message);
+        public void sendErrorResponse(HttpExchange exchange, int code, String message) {
+            server.sendErrorResponse(exchange, code, message);
         }
 
         @Override
-        public ServerContext endPoint(Method method, String path, EndPoint endPoint) {
+        public IServerContext endPoint(Method method, String path, EndPoint endPoint) {
             return server.endPoint(method, path, endPoint);
         }
 
         @Override
-        public ServerContext webSocket(String path, SocketMessageHandler wsHandler) {
+        public IServerContext webSocket(String path, SocketMessageHandler wsHandler) {
             return server.webSocket(path, wsHandler);
         }
 
         @Override
-        public ServerContext filter(Method method, String path, Filter filter) {
+        public IServerContext filter(Method method, String path, Filter filter) {
             return server.filter(method, path, filter);
         }
 
         @Override
-        public ServerContext filter(String path, Filter filter) {
+        public IServerContext filter(String path, Filter filter) {
             return server.filter(path, filter);
         }
 
         @Override
-        public ServerContext serveStaticFiles(String basePath, String directory) {
+        public IServerContext serveStaticFiles(String basePath, String directory) {
             return server.serveStaticFiles(basePath, directory);
         }
     }
