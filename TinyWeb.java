@@ -40,6 +40,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -201,7 +202,6 @@ public class TinyWeb {
             wsRoutes.put(Pattern.compile("^" + path + "$"), wsHandler);
             return this;
         }
-
 
         public ServerContext filter(TinyWeb.Method method, String path, Filter filter) {
             if (serverState.hasStarted()) {
