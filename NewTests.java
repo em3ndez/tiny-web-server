@@ -33,7 +33,7 @@ public class NewTests {
                     String responseBody = response.body().string();
                     // Remove chunk size headers and verify the content
                     String expectedResponse = "This is a chunked response.";
-                    assertThat(responseBody.replaceAll("(?i)\\r?\\n[0-9a-f]+\\r?\\n", "").replaceAll("\\r?\\n0\\r?\\n\\r?\\n", ""), equalTo(expectedResponse));
+                    assertThat(responseBody.replaceAll("(?i)\\r?\\n[0-9a-f]+\\r?\\n", "").replaceAll("\\r?\\n0\\r?\\n", ""), equalTo(expectedResponse));
                 }
             });
 
