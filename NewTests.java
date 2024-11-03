@@ -63,7 +63,7 @@ public class NewTests {
                     String responseBody = response.body().string();
                     // Split the response into chunks
                     System.out.println("Client: Received response body:\n" + responseBody);
-                    String[] parts = responseBody.split("\r\n|\n");
+                    String[] parts = responseBody.split("\r\n");
                     BigDecimal calculatedSum = BigDecimal.ZERO;
                     String sumPart = "";
 
@@ -72,13 +72,12 @@ public class NewTests {
                             sumPart = part.substring(4).trim();
                             System.out.println("Client: Received sum part " + sumPart);
                         } else if (!part.isEmpty()) {
-                            byte[] bytes = part.getBytes(StandardCharsets.ISO_8859_1);
-                            System.out.println("Client: Processing chunk " + part);
-                            if (bytes.length % Integer.BYTES == 0) {
-                                ByteBuffer buffer = ByteBuffer.wrap(bytes);
-                                while (buffer.hasRemaining()) {
-                                    calculatedSum = calculatedSum.add(BigDecimal.valueOf(buffer.getInt()));
-                                }
+                            try {
+                                int number = Integer.parseInt(part.trim());
+                                calculatedSum = calculatedSum.add(BigDecimal.valueOf(number));
+                                System.out.println("Client: Processing number " + number);
+                            } catch (NumberFormatException e) {
+                                System.out.println("Client: Skipping non-integer chunk " + part);
                             }
                         }
                     }
