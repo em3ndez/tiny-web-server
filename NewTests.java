@@ -42,7 +42,11 @@ public class NewTests {
                             for (int number : numbers) {
                                 buffer.putInt(number);
                             }
-                            writeChunk(out, buffer.array());
+                            try {
+                                writeChunk(out, buffer.array());
+                            } catch (IOException e) {
+                                throw new RuntimeException("IOE during chunk testing 1", e);
+                            }
                         }
 
                         // Send the total sum as the last chunk
@@ -51,7 +55,7 @@ public class NewTests {
                             writeChunk(out, new byte[0]); // End of chunks
                             out.close();
                         } catch (IOException e) {
-                            throw new RuntimeException("IOE during chunk testing", e);
+                            throw new RuntimeException("IOE during chunk testing 2", e);
                         }
                     });
                 }};
