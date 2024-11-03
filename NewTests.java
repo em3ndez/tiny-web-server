@@ -67,15 +67,20 @@ public class NewTests {
                 try (okhttp3.Response response = httpGet("/chunked")) {
                     assertThat(response.code(), equalTo(200));
                     String responseBody = response.body().string();
-                    // Remove chunk size headers and verify the content
-                    String[] parts = responseBody.split("SUM:");
-                    String dataPart = parts[0];
-                    String sumPart = parts[1].trim();
-
+                    // Split the response into chunks
+                    String[] parts = responseBody.split("\r\n");
                     BigDecimal calculatedSum = BigDecimal.ZERO;
-                    ByteBuffer buffer = ByteBuffer.wrap(dataPart.getBytes(StandardCharsets.ISO_8859_1));
-                    while (buffer.hasRemaining()) {
-                        calculatedSum = calculatedSum.add(BigDecimal.valueOf(buffer.getInt()));
+                    String sumPart = "";
+
+                    for (String part : parts) {
+                        if (part.startsWith("SUM:")) {
+                            sumPart = part.substring(4).trim();
+                        } else if (!part.isEmpty()) {
+                            ByteBuffer buffer = ByteBuffer.wrap(part.getBytes(StandardCharsets.ISO_8859_1));
+                            while (buffer.hasRemaining()) {
+                                calculatedSum = calculatedSum.add(BigDecimal.valueOf(buffer.getInt()));
+                            }
+                        }
                     }
 
                     assertThat(calculatedSum.toString(), equalTo(sumPart));
