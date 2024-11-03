@@ -42,7 +42,6 @@ public class NewTests {
                             for (int number : numbers) {
                                 buffer.putInt(number);
                             }
-                            chunkBuilder.append(new String(buffer.array(), StandardCharsets.ISO_8859_1));
                             writeChunk(out, buffer.array());
                         }
 
