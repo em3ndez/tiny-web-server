@@ -75,6 +75,7 @@ public class NewTests {
                             System.out.println("Client: Received sum part " + sumPart);
                         } else if (!part.isEmpty()) {
                             try {
+                                // Ensure the part is a valid integer
                                 int number = Integer.parseInt(part.trim());
                                 calculatedSum = calculatedSum.add(BigDecimal.valueOf(number));
                                 System.out.println("Client: Processing number " + number);
