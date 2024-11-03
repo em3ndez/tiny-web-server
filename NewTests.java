@@ -30,27 +30,28 @@ public class NewTests {
                         BigDecimal totalSum = BigDecimal.ZERO;
                         OutputStream out = res.getResponseBody();
                         res.setHeader("Transfer-Encoding", "chunked");
-                        res.exchange.sendResponseHeaders(200, 0);
 
-                        for (int i = 0; i < 100; i++) {
-                            int[] numbers = new int[256 * 1024]; // 1MB of integers
-                            for (int j = 0; j < numbers.length; j++) {
-                                numbers[j] = random.nextInt();
-                                totalSum = totalSum.add(BigDecimal.valueOf(numbers[j]));
-                            }
-                            ByteBuffer buffer = ByteBuffer.allocate(numbers.length * Integer.BYTES);
-                            for (int number : numbers) {
-                                buffer.putInt(number);
-                            }
-                            try {
-                                writeChunk(out, buffer.array());
-                            } catch (IOException e) {
-                                throw new RuntimeException("IOE during chunk testing 1", e);
-                            }
-                        }
-
-                        // Send the total sum as the last chunk
                         try {
+                            res.sendResponseHeaders(200, 0);
+
+                            for (int i = 0; i < 100; i++) {
+                                int[] numbers = new int[256 * 1024]; // 1MB of integers
+                                for (int j = 0; j < numbers.length; j++) {
+                                    numbers[j] = random.nextInt();
+                                    totalSum = totalSum.add(BigDecimal.valueOf(numbers[j]));
+                                }
+                                ByteBuffer buffer = ByteBuffer.allocate(numbers.length * Integer.BYTES);
+                                for (int number : numbers) {
+                                    buffer.putInt(number);
+                                }
+                                try {
+                                    writeChunk(out, buffer.array());
+                                } catch (IOException e) {
+                                    throw new RuntimeException("IOE during chunk testing 1", e);
+                                }
+                            }
+
+                            // Send the total sum as the last chunk
                             writeChunk(out, ("SUM:" + totalSum.toString()).getBytes(StandardCharsets.UTF_8));
                             writeChunk(out, new byte[0]); // End of chunks
                             out.close();
