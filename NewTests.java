@@ -76,9 +76,12 @@ public class NewTests {
                         if (part.startsWith("SUM:")) {
                             sumPart = part.substring(4).trim();
                         } else if (!part.isEmpty()) {
-                            ByteBuffer buffer = ByteBuffer.wrap(part.getBytes(StandardCharsets.ISO_8859_1));
-                            while (buffer.hasRemaining()) {
-                                calculatedSum = calculatedSum.add(BigDecimal.valueOf(buffer.getInt()));
+                            byte[] bytes = part.getBytes(StandardCharsets.ISO_8859_1);
+                            if (bytes.length % Integer.BYTES == 0) {
+                                ByteBuffer buffer = ByteBuffer.wrap(bytes);
+                                while (buffer.hasRemaining()) {
+                                    calculatedSum = calculatedSum.add(BigDecimal.valueOf(buffer.getInt()));
+                                }
                             }
                         }
                     }
