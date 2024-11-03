@@ -75,11 +75,12 @@ public class NewTests {
                             sumPart = part.substring(4).trim();
                             System.out.println("Client: Received sum part " + sumPart);
                         } else if (!part.isEmpty()) {
-                            try {
-                                int number = Integer.parseInt(part.trim());
+                            byte[] bytes = part.getBytes(StandardCharsets.ISO_8859_1);
+                            if (bytes.length == Integer.BYTES) {
+                                int number = ByteBuffer.wrap(bytes).getInt();
                                 calculatedSum = calculatedSum.add(BigDecimal.valueOf(number));
                                 System.out.println("Client: Processing number " + number);
-                            } catch (NumberFormatException e) {
+                            } else {
                                 System.out.println("Client: Skipping non-integer chunk " + part);
                             }
                         }
