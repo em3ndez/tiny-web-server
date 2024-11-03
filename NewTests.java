@@ -10,7 +10,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.Random;
 
 @Test
 public class NewTests {
@@ -21,7 +24,27 @@ public class NewTests {
             before(() -> {
                 webServer = new TinyWeb.Server(8080, -1) {{
                     endPoint(TinyWeb.Method.GET, "/chunked", (req, res, ctx) -> {
-                        res.sendResponseChunked("This is a chunked response.", 200);
+                        Random random = new Random();
+                        BigDecimal totalSum = BigDecimal.ZERO;
+                        StringBuilder chunkBuilder = new StringBuilder();
+
+                        for (int i = 0; i < 100; i++) {
+                            int[] numbers = new int[256 * 1024]; // 1MB of integers
+                            for (int j = 0; j < numbers.length; j++) {
+                                numbers[j] = random.nextInt();
+                                totalSum = totalSum.add(BigDecimal.valueOf(numbers[j]));
+                            }
+                            ByteBuffer buffer = ByteBuffer.allocate(numbers.length * Integer.BYTES);
+                            for (int number : numbers) {
+                                buffer.putInt(number);
+                            }
+                            chunkBuilder.append(new String(buffer.array(), StandardCharsets.ISO_8859_1));
+                            res.sendResponseChunked(chunkBuilder.toString(), 200);
+                            chunkBuilder.setLength(0); // Clear the builder for the next chunk
+                        }
+
+                        // Send the total sum as the last chunk
+                        res.sendResponseChunked("SUM:" + totalSum.toString(), 200);
                     });
                 }};
                 webServer.start();
@@ -32,8 +55,17 @@ public class NewTests {
                     assertThat(response.code(), equalTo(200));
                     String responseBody = response.body().string();
                     // Remove chunk size headers and verify the content
-                    String expectedResponse = "This is a chunked response.";
-                    assertThat(responseBody.replaceAll("(?i)\\r?\\n[0-9a-f]+\\r?\\n", "").replaceAll("\\r?\\n0\\r?\\n\\r?\\n", ""), equalTo(expectedResponse));
+                    String[] parts = responseBody.split("SUM:");
+                    String dataPart = parts[0];
+                    String sumPart = parts[1].trim();
+
+                    BigDecimal calculatedSum = BigDecimal.ZERO;
+                    ByteBuffer buffer = ByteBuffer.wrap(dataPart.getBytes(StandardCharsets.ISO_8859_1));
+                    while (buffer.hasRemaining()) {
+                        calculatedSum = calculatedSum.add(BigDecimal.valueOf(buffer.getInt()));
+                    }
+
+                    assertThat(calculatedSum.toString(), equalTo(sumPart));
                 }
             });
 
