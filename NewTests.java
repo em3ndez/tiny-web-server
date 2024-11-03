@@ -78,7 +78,7 @@ public class NewTests {
                                 int number = Integer.parseInt(part.trim());
                                 calculatedSum = calculatedSum.add(BigDecimal.valueOf(number));
                                 System.out.println("Client: Processing number " + number);
-                            } else {
+                            } catch (NumberFormatException e) {
                                 System.out.println("Client: Skipping non-integer chunk " + part);
                             }
                         }
