@@ -52,7 +52,7 @@ public class NewTests {
                             }
 
                             // Send the total sum as the last chunk
-                            writeChunk(out, ("SUM:" + totalSum.toString()).getBytes(StandardCharsets.UTF_8));
+                            writeChunk(out, ("SUM:" + totalSum.toPlainString()).getBytes(StandardCharsets.UTF_8));
                             writeChunk(out, new byte[0]); // End of chunks
                             out.close();
                         } catch (IOException e) {
