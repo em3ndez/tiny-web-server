@@ -691,6 +691,10 @@ public class TinyWeb {
             out.write(chunk);
             out.write("\r\n".getBytes(StandardCharsets.US_ASCII));
         }
+
+        public OutputStream getResponseBody() {
+            return this.exchange.getResponseBody();
+        }
     }
 
     public interface ComponentCache {
