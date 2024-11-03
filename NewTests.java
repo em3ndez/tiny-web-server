@@ -63,12 +63,15 @@ public class NewTests {
                     String responseBody = response.body().string();
                     // Split the response into chunks
                     System.out.println("Client: Received response body:\n" + responseBody);
-                    String[] parts = responseBody.split("\r\n");
+                    String[] parts = responseBody.split("\r\n|\n");
                     BigDecimal calculatedSum = BigDecimal.ZERO;
                     String sumPart = "";
 
                     for (String part : parts) {
-                        if (part.startsWith("SUM:")) {
+                        if (part.matches("^[0-9a-fA-F]+$")) {
+                            // Skip chunk size lines
+                            continue;
+                        } else if (part.startsWith("SUM:")) {
                             sumPart = part.substring(4).trim();
                             System.out.println("Client: Received sum part " + sumPart);
                         } else if (!part.isEmpty()) {
