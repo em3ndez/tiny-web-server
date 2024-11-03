@@ -12,6 +12,7 @@ import static org.hamcrest.Matchers.*;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Random;
 
