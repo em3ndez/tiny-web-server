@@ -10,6 +10,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -27,9 +28,9 @@ public class NewTests {
                     endPoint(TinyWeb.Method.GET, "/chunked", (req, res, ctx) -> {
                         Random random = new Random();
                         BigDecimal totalSum = BigDecimal.ZERO;
-                        OutputStream out = res.exchange.getResponseBody();
-                        res.exchange.getResponseHeaders().set("Transfer-Encoding", "chunked");
-                        res.exchange.sendResponseHeaders(200, 0);
+                        OutputStream out = res.getResponseBody();
+                        res.setHeader("Transfer-Encoding", "chunked");
+                        res.setHeader("200", "0");
 
                         for (int i = 0; i < 100; i++) {
                             int[] numbers = new int[256 * 1024]; // 1MB of integers
@@ -46,9 +47,13 @@ public class NewTests {
                         }
 
                         // Send the total sum as the last chunk
-                        writeChunk(out, ("SUM:" + totalSum.toString()).getBytes(StandardCharsets.UTF_8));
-                        writeChunk(out, new byte[0]); // End of chunks
-                        out.close();
+                        try {
+                            writeChunk(out, ("SUM:" + totalSum.toString()).getBytes(StandardCharsets.UTF_8));
+                            writeChunk(out, new byte[0]); // End of chunks
+                            out.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException("IOE during chunk testing", e);
+                        }
                     });
                 }};
                 webServer.start();
