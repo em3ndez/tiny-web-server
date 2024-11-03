@@ -68,7 +68,7 @@ public class NewTests {
                     assertThat(response.code(), equalTo(200));
                     String responseBody = response.body().string();
                     // Split the response into chunks
-                    String[] parts = responseBody.split("\r\n|\n");
+                    String[] parts = responseBody.split("\r\n");
                     BigDecimal calculatedSum = BigDecimal.ZERO;
                     String sumPart = "";
 
@@ -76,7 +76,7 @@ public class NewTests {
                         if (part.startsWith("SUM:")) {
                             sumPart = part.substring(4).trim();
                         } else if (!part.isEmpty()) {
-                            byte[] bytes = part.getBytes(StandardCharsets.UTF_8);
+                            byte[] bytes = part.getBytes(StandardCharsets.ISO_8859_1);
                             if (bytes.length % Integer.BYTES == 0) {
                                 ByteBuffer buffer = ByteBuffer.wrap(bytes);
                                 while (buffer.hasRemaining()) {
@@ -86,7 +86,7 @@ public class NewTests {
                         }
                     }
 
-                    assertThat(calculatedSum.stripTrailingZeros().toPlainString(), equalTo(sumPart));
+                    assertThat(calculatedSum.toString(), equalTo(sumPart));
                 }
             });
 
