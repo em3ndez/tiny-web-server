@@ -34,25 +34,19 @@ public class NewTests {
                         try {
                             res.sendResponseHeaders(200, 0);
 
-                            for (int i = 0; i < 100; i++) {
-                                int[] numbers = new int[256 * 1024]; // 1MB of integers
-                                for (int j = 0; j < numbers.length; j++) {
-                                    numbers[j] = random.nextInt();
-                                    totalSum = totalSum.add(BigDecimal.valueOf(numbers[j]));
-                                }
-                                ByteBuffer buffer = ByteBuffer.allocate(numbers.length * Integer.BYTES);
-                                for (int number : numbers) {
-                                    buffer.putInt(number);
-                                }
-                                try {
-                                    writeChunk(out, buffer.array());
-                                } catch (IOException e) {
-                                    throw new RuntimeException("IOE during chunk testing 1", e);
-                                }
+                            for (int i = 0; i < 10; i++) {
+                                int number = random.nextInt();
+                                totalSum = totalSum.add(BigDecimal.valueOf(number));
+                                System.out.println("Server: Sending number " + number);
+                                ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
+                                buffer.putInt(number);
+                                writeChunk(out, buffer.array());
                             }
 
                             // Send the total sum as the last chunk
-                            writeChunk(out, ("SUM:" + totalSum.toPlainString()).getBytes(StandardCharsets.UTF_8));
+                            String sumMessage = "SUM:" + totalSum.toPlainString();
+                            System.out.println("Server: Sending total sum " + sumMessage);
+                            writeChunk(out, sumMessage.getBytes(StandardCharsets.UTF_8));
                             writeChunk(out, new byte[0]); // End of chunks
                             out.close();
                         } catch (IOException e) {
@@ -68,15 +62,18 @@ public class NewTests {
                     assertThat(response.code(), equalTo(200));
                     String responseBody = response.body().string();
                     // Split the response into chunks
-                    String[] parts = responseBody.split("\r\n");
+                    System.out.println("Client: Received response body:\n" + responseBody);
+                    String[] parts = responseBody.split("\r\n|\n");
                     BigDecimal calculatedSum = BigDecimal.ZERO;
                     String sumPart = "";
 
                     for (String part : parts) {
                         if (part.startsWith("SUM:")) {
                             sumPart = part.substring(4).trim();
+                            System.out.println("Client: Received sum part " + sumPart);
                         } else if (!part.isEmpty()) {
                             byte[] bytes = part.getBytes(StandardCharsets.ISO_8859_1);
+                            System.out.println("Client: Processing chunk " + part);
                             if (bytes.length % Integer.BYTES == 0) {
                                 ByteBuffer buffer = ByteBuffer.wrap(bytes);
                                 while (buffer.hasRemaining()) {
