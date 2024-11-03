@@ -659,14 +659,37 @@ public class TinyWeb {
         }
 
         public void sendResponse(String content, int statusCode) {
-            byte[] bytes = content.getBytes();
+            sendResponse(content.getBytes(StandardCharsets.UTF_8), statusCode, false);
+        }
+
+        public void sendResponseChunked(String content, int statusCode) {
+            sendResponse(content.getBytes(StandardCharsets.UTF_8), statusCode, true);
+        }
+
+        private void sendResponse(byte[] content, int statusCode, boolean chunked) {
             try {
-                exchange.sendResponseHeaders(statusCode, bytes.length);
-                exchange.getResponseBody().write(bytes);
-                exchange.getResponseBody().close();
+                if (chunked) {
+                    exchange.getResponseHeaders().set("Transfer-Encoding", "chunked");
+                    exchange.sendResponseHeaders(statusCode, 0);
+                    OutputStream out = exchange.getResponseBody();
+                    writeChunk(out, content);
+                    writeChunk(out, new byte[0]); // End of chunks
+                    out.close();
+                } else {
+                    exchange.sendResponseHeaders(statusCode, content.length);
+                    exchange.getResponseBody().write(content);
+                    exchange.getResponseBody().close();
+                }
             } catch (IOException e) {
                 throw new ServerException("Internal response error, for " + exchange.getRequestURI(), e);
             }
+        }
+
+        private void writeChunk(OutputStream out, byte[] chunk) throws IOException {
+            String chunkSize = Integer.toHexString(chunk.length) + "\r\n";
+            out.write(chunkSize.getBytes(StandardCharsets.US_ASCII));
+            out.write(chunk);
+            out.write("\r\n".getBytes(StandardCharsets.US_ASCII));
         }
     }
 
