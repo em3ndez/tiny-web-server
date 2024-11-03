@@ -27,7 +27,9 @@ public class NewTests {
                     endPoint(TinyWeb.Method.GET, "/chunked", (req, res, ctx) -> {
                         Random random = new Random();
                         BigDecimal totalSum = BigDecimal.ZERO;
-                        StringBuilder chunkBuilder = new StringBuilder();
+                        OutputStream out = res.exchange.getResponseBody();
+                        res.exchange.getResponseHeaders().set("Transfer-Encoding", "chunked");
+                        res.exchange.sendResponseHeaders(200, 0);
 
                         for (int i = 0; i < 100; i++) {
                             int[] numbers = new int[256 * 1024]; // 1MB of integers
@@ -40,12 +42,13 @@ public class NewTests {
                                 buffer.putInt(number);
                             }
                             chunkBuilder.append(new String(buffer.array(), StandardCharsets.ISO_8859_1));
-                            res.sendResponseChunked(chunkBuilder.toString(), 200);
-                            chunkBuilder.setLength(0); // Clear the builder for the next chunk
+                            writeChunk(out, buffer.array());
                         }
 
                         // Send the total sum as the last chunk
-                        res.sendResponseChunked("SUM:" + totalSum.toString(), 200);
+                        writeChunk(out, ("SUM:" + totalSum.toString()).getBytes(StandardCharsets.UTF_8));
+                        writeChunk(out, new byte[0]); // End of chunks
+                        out.close();
                     });
                 }};
                 webServer.start();
@@ -75,6 +78,13 @@ public class NewTests {
                 webServer = null;
             });
         });
+    }
+
+    private void writeChunk(OutputStream out, byte[] chunk) throws IOException {
+        String chunkSize = Integer.toHexString(chunk.length) + "\r\n";
+        out.write(chunkSize.getBytes(StandardCharsets.US_ASCII));
+        out.write(chunk);
+        out.write("\r\n".getBytes(StandardCharsets.US_ASCII));
     }
 
     private okhttp3.Response httpGet(String url) throws IOException {
