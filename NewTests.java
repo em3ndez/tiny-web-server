@@ -30,7 +30,7 @@ public class NewTests {
                         BigDecimal totalSum = BigDecimal.ZERO;
                         OutputStream out = res.getResponseBody();
                         res.setHeader("Transfer-Encoding", "chunked");
-                        res.setHeader("200", "0");
+                        res.exchange.sendResponseHeaders(200, 0);
 
                         for (int i = 0; i < 100; i++) {
                             int[] numbers = new int[256 * 1024]; // 1MB of integers
