@@ -38,9 +38,8 @@ public class NewTests {
                                 int number = random.nextInt();
                                 totalSum = totalSum.add(BigDecimal.valueOf(number));
                                 System.out.println("Server: Sending number " + number);
-                                ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
-                                buffer.putInt(number);
-                                writeChunk(out, buffer.array());
+                                String numberString = Integer.toString(number);
+                                writeChunk(out, numberString.getBytes(StandardCharsets.UTF_8));
                             }
 
                             // Send the total sum as the last chunk
@@ -75,9 +74,8 @@ public class NewTests {
                             sumPart = part.substring(4).trim();
                             System.out.println("Client: Received sum part " + sumPart);
                         } else if (!part.isEmpty()) {
-                            byte[] bytes = part.getBytes(StandardCharsets.ISO_8859_1);
-                            if (bytes.length == Integer.BYTES) {
-                                int number = ByteBuffer.wrap(bytes).getInt();
+                            try {
+                                int number = Integer.parseInt(part.trim());
                                 calculatedSum = calculatedSum.add(BigDecimal.valueOf(number));
                                 System.out.println("Client: Processing number " + number);
                             } else {
