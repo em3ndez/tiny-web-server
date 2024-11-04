@@ -685,7 +685,7 @@ public class TinyWeb {
             }
         }
 
-        private void writeChunk(OutputStream out, byte[] chunk) throws IOException {
+        public void writeChunk(OutputStream out, byte[] chunk) throws IOException {
             String chunkSize = Integer.toHexString(chunk.length) + "\r\n";
             out.write(chunkSize.getBytes(StandardCharsets.US_ASCII));
             out.write(chunk);

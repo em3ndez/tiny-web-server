@@ -33,15 +33,14 @@ public class NewTests {
 
                         try {
                             res.sendResponseHeaders(200, 0);
-
                             for (int i = 0; i < 10; i++) {
                                 int number = random.nextInt();
                                 totalSum = totalSum.add(BigDecimal.valueOf(number));
                                 String numberString = Integer.toString(number);
-                                writeChunk(out, numberString.getBytes(StandardCharsets.UTF_8));
+                                res.writeChunk(out, numberString.getBytes(StandardCharsets.UTF_8));
                             }
 
-                            writeChunk(out, new byte[0]); // End of chunks
+                            res.writeChunk(out, new byte[0]); // End of chunks
                             out.close();
                         } catch (IOException e) {
                             throw new RuntimeException("IOE during chunk testing 2", e);
