@@ -37,7 +37,6 @@ public class NewTests {
                             for (int i = 0; i < 10; i++) {
                                 int number = random.nextInt();
                                 totalSum = totalSum.add(BigDecimal.valueOf(number));
-                                System.out.println("Server: Sending number " + number + " " + i);
                                 String numberString = Integer.toString(number);
                                 writeChunk(out, numberString.getBytes(StandardCharsets.UTF_8));
                             }
@@ -58,24 +57,18 @@ public class NewTests {
                     assertThat(response.code(), equalTo(200));
                     String responseBody = response.body().string();
                     // Split the response into chunks
-                    System.out.println("Client: Received response body:\n" + responseBody);
                     String[] parts = responseBody.split("\r\n|\n");
                     BigDecimal calculatedSum = BigDecimal.ZERO;
                     String sumPart = "";
 
                     for (String part : parts) {
-                        if (part.matches("^[0-9a-fA-F]+$")) {
+                        if (part.matches("^[0-9a-fA-F]$")) {
                             // Skip chunk size lines
                             continue;
-                        } else if (part.startsWith("SUM:")) {
-                            sumPart = part.substring(4).trim();
-                            System.out.println("Client: Received sum part " + sumPart + " " + i);
                         } else if (!part.isEmpty()) {
                             try {
                                 // Ensure the part is a valid integer
-                                int number = Integer.parseInt(part.trim());
-                                calculatedSum = calculatedSum.add(BigDecimal.valueOf(number));
-                                System.out.println("Client: Processing number " + number + " " + i++);
+                                calculatedSum = calculatedSum.add(BigDecimal.valueOf(Integer.parseInt(part.trim())));
                             } catch (NumberFormatException e) {
                                 System.out.println("Client: Skipping non-integer chunk " + part);
                             }
@@ -98,6 +91,7 @@ public class NewTests {
         out.write(chunkSize.getBytes(StandardCharsets.US_ASCII));
         out.write(chunk);
         out.write("\r\n".getBytes(StandardCharsets.US_ASCII));
+        out.flush();
     }
 
     private okhttp3.Response httpGet(String url) throws IOException {
