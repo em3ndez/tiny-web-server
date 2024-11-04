@@ -59,7 +59,7 @@ public class NewTests {
                     String responseBody = response.body().string();
                     // Split the response into chunks
                     System.out.println("Client: Received response body:\n" + responseBody);
-                    String[] parts = responseBody.split("\r\n");
+                    String[] parts = responseBody.split("\r\n|\n");
                     BigDecimal calculatedSum = BigDecimal.ZERO;
                     String sumPart = "";
 
