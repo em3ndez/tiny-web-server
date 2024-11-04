@@ -695,6 +695,10 @@ public class TinyWeb {
         public OutputStream getResponseBody() {
             return this.exchange.getResponseBody();
         }
+
+        public void sendResponseHeaders(int i, int i1) throws IOException {
+            exchange.sendResponseHeaders(i, i1);
+        }
     }
 
     public interface ComponentCache {

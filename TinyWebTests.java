@@ -913,7 +913,6 @@ public class TinyWebTests {
     }
 
 
-
     public static ShoppingCart createOrGetShoppingCart(TinyWeb.ComponentCache cache) {
         return cache.getOrCreate(ShoppingCart.class, () ->
                 new ShoppingCart(getOrCreateProductInventory(cache))

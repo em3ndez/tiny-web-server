@@ -20,6 +20,7 @@ import java.util.Random;
 @Test
 public class NewTests {
     TinyWeb.Server webServer;
+    BigDecimal totalSum = BigDecimal.ZERO;
 
     {
         describe("Given a TinyWeb server with a chunked response endpoint", () -> {
@@ -27,7 +28,6 @@ public class NewTests {
                 webServer = new TinyWeb.Server(8080, -1) {{
                     endPoint(TinyWeb.Method.GET, "/chunked", (req, res, ctx) -> {
                         Random random = new Random();
-                        BigDecimal totalSum = BigDecimal.ZERO;
                         OutputStream out = res.getResponseBody();
                         res.setHeader("Transfer-Encoding", "chunked");
 
@@ -37,15 +37,11 @@ public class NewTests {
                             for (int i = 0; i < 10; i++) {
                                 int number = random.nextInt();
                                 totalSum = totalSum.add(BigDecimal.valueOf(number));
-                                System.out.println("Server: Sending number " + number);
+                                System.out.println("Server: Sending number " + number + " " + i);
                                 String numberString = Integer.toString(number);
                                 writeChunk(out, numberString.getBytes(StandardCharsets.UTF_8));
                             }
 
-                            // Send the total sum as the last chunk
-                            String sumMessage = "SUM:" + totalSum.toPlainString();
-                            System.out.println("Server: Sending total sum " + sumMessage);
-                            writeChunk(out, sumMessage.getBytes(StandardCharsets.UTF_8));
                             writeChunk(out, new byte[0]); // End of chunks
                             out.close();
                         } catch (IOException e) {
@@ -57,6 +53,7 @@ public class NewTests {
             });
 
             it("Then it should return the response in chunks", () -> {
+                int i = 0;
                 try (okhttp3.Response response = httpGet("/chunked")) {
                     assertThat(response.code(), equalTo(200));
                     String responseBody = response.body().string();
@@ -72,20 +69,20 @@ public class NewTests {
                             continue;
                         } else if (part.startsWith("SUM:")) {
                             sumPart = part.substring(4).trim();
-                            System.out.println("Client: Received sum part " + sumPart);
+                            System.out.println("Client: Received sum part " + sumPart + " " + i);
                         } else if (!part.isEmpty()) {
                             try {
                                 // Ensure the part is a valid integer
                                 int number = Integer.parseInt(part.trim());
                                 calculatedSum = calculatedSum.add(BigDecimal.valueOf(number));
-                                System.out.println("Client: Processing number " + number);
+                                System.out.println("Client: Processing number " + number + " " + i++);
                             } catch (NumberFormatException e) {
                                 System.out.println("Client: Skipping non-integer chunk " + part);
                             }
                         }
                     }
 
-                    assertThat(calculatedSum.toString(), equalTo(sumPart));
+                    assertThat(calculatedSum, equalTo(totalSum));
                 }
             });
 
