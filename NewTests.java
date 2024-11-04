@@ -86,13 +86,6 @@ public class NewTests {
         });
     }
 
-    private void writeChunk(OutputStream out, byte[] chunk) throws IOException {
-        String chunkSize = Integer.toHexString(chunk.length) + "\r\n";
-        out.write(chunkSize.getBytes(StandardCharsets.US_ASCII));
-        out.write(chunk);
-        out.write("\r\n".getBytes(StandardCharsets.US_ASCII));
-        out.flush();
-    }
 
     private okhttp3.Response httpGet(String url) throws IOException {
         return new OkHttpClient().newCall(new Request.Builder()

@@ -690,6 +690,7 @@ public class TinyWeb {
             out.write(chunkSize.getBytes(StandardCharsets.US_ASCII));
             out.write(chunk);
             out.write("\r\n".getBytes(StandardCharsets.US_ASCII));
+            out.flush();
         }
 
         public OutputStream getResponseBody() {
