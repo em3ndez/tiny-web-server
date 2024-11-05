@@ -1,6 +1,6 @@
 # TinyWeb 
 
-A tiny web Server and SocketServer that depend only on JDK classes and are in a single source file.
+A tiny web Server and SocketServer that depend only on JDK classes and are in a single source file: `TinyWeb.java`
 
 ## Table of Contents
 - [Web Server](#web-server)
@@ -41,7 +41,7 @@ A tiny web Server and SocketServer that depend only on JDK classes and are in a 
   - [Tests](#tests)
   - [TinyWeb's Own Test Results](#tinywebs-own-test-results)
 
-The `TinyWeb` single source file provides a lightweight and flexible server implementation that supports both HTTP and 
+The TinyWeb single source file provides a lightweight and flexible server implementation that supports both HTTP and 
 WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  
 It uses a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
 system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Netty or Jetty.
@@ -411,26 +411,20 @@ secure, protecting data from eavesdropping and tampering.
 
 ## TinyWeb Performance
 
-Performance testing for `TinyWeb` has not been extensively conducted. However, due to its lightweight nature and minimal dependencies, `TinyWeb` is expected to perform efficiently for small to medium-sized applications. Here are some considerations for optimizing performance:
-
-- **Use Virtual Threads**: `TinyWeb` leverages Java's virtual threads, which can handle a large number of concurrent connections efficiently. Ensure your Java version supports this feature.
-- **Optimize Endpoints**: Minimize processing time within endpoints by avoiding heavy computations or blocking operations. Consider offloading such tasks to background threads or external services.
-- **Static File Caching**: If serving static files, consider using a reverse proxy or CDN to cache and deliver these files, reducing the load on the server.
-- **Connection Management**: Tune the server's connection settings, such as timeouts and maximum connections, to match your application's needs.
-
-For detailed performance analysis, consider using profiling tools like JMH (Java Microbenchmark Harness) or integrating with monitoring solutions to track real-time performance metrics.
+Performance testing for TinyWeb has not been extensively conducted. However, due to its lightweight nature and minimal 
+dependencies, TinyWeb is expected to perform efficiently for small to medium-sized applications.
 
 ## Error handling
 
 ### In EndPoints Themselves
 
-When handling requests in `TinyWeb`, it's important to understand how to set HTTP response codes and customize 
+When handling requests in TinyWeb, it's important to understand how to set HTTP response codes and customize 
 responses. HTTP response codes are crucial for indicating the result of a request to the client. Here's how you can 
-manage responses in `TinyWeb`:
+manage responses in TinyWeb:
 
 #### Setting HTTP Response Codes
 
-In `TinyWeb`, you can set the HTTP response code by using the `write` method of the `Response` object. The `write` 
+In TinyWeb, you can set the HTTP response code by using the `write` method of the `TinyWeb.Response` object. The `write` 
 method allows you to specify both the response content and the status code. Here's an example:
 
 ```java
@@ -456,13 +450,13 @@ Understanding common HTTP response codes is essential for effectively communicat
 
 ### TinyWeb's Overridable Exception Methods
 
-In `TinyWeb`, exception handling is an important aspect of managing server and application errors. The framework 
+In TinyWeb, exception handling is an important aspect of managing server and application errors. The framework 
 provides two overridable methods to handle exceptions: `serverException(e)` and `appHandlingException(Exception e)`. 
 These methods allow you to customize how exceptions are logged or processed.
 
 #### serverException(e)
 
-The `serverException(e)` method is called when a `ServerException` occurs. This typically involves issues related to 
+The `serverException` method is called when a `ServerException` occurs. This typically involves issues related to 
 the server's internal operations, such as network errors or configuration problems. By default, this method logs the 
 exception message and stack trace to the standard error stream. You can override this method to implement custom 
 logging or error handling strategies.
@@ -508,7 +502,7 @@ svr = new TinyWeb.Server(8080, -1) {
 };
 ```
 
-By overriding these methods, you can tailor the exception handling behavior of your `TinyWeb` server to meet your 
+By overriding these methods, you can tailor the exception handling behavior of your TinyWeb server to meet your 
 application's specific needs, ensuring that errors are managed effectively and transparently.
 
 #### Security Best Practices
@@ -518,7 +512,7 @@ application's specific needs, ensuring that errors are managed effectively and t
 - **Validate on Both Client and Server**: Perform validation on the client side for user feedback and on the server side for security.
 - **Limit Input Size**: Restrict the size of inputs to prevent buffer overflow attacks.
 
-By implementing robust input validation, you can enhance the security of your `TinyWeb` application and protect it 
+By implementing robust input validation, you can enhance the security of your TinyWeb application and protect it 
 from common web vulnerabilities.
 
 ## Integrating other frameworks
@@ -526,9 +520,10 @@ from common web vulnerabilities.
 ### Dependency Injection
 
 We can't integrate dependency injection with TinyWeb. The reason for that is handlers don't take strongly typed 
-dependencies in the `(req, resp, context)` functional interfaces, nor do they have constructors associated. 
+dependencies in the `(req, resp, context)` functional interfaces, nor do those have constructors associated. 
 
-For it to be true Dependency Injection capable - for say a ShoppingCart into a handler - you would something like:
+For it to be true Dependency Injection capable - for say injecting a `ShoppingCart` into a endpoint or filter - you would something like:
+
 ```java
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     endPoint(GET, "/users", /*ShoppingCart*/ cart, (req, res, context) -> {
@@ -538,19 +533,21 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 }};
 ```
 
-The problem is that method `endPoint(..)` has a fixed param list. It can't be extended to suit each specific use 
-of `endPoint` in an app. You could maybe have "Object[] deps" as an arg directly and do casting, but we have chosen 
-to have a `getDep(..)` method on context (RequestContext) object. We acknowledge this is no longer Dependency 
+The problem is that method `endPoint(..)` has a fixed parameter list. It can't be extended to suit each specific use 
+of `endPoint` in an app that would list dependencies to be injected. Instead, we have chosen 
+to have a `getDep(..)` method on context `RequestContext` object. We acknowledge this is no longer Dependency 
 Injection.
 
-Thus we are follow **Inversion of Control** (IoC) idioms with a lookup-style (interface injection) way of getting 
-dependencies into a endpoint (or filter). I contrast the differences 21 years ago - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf, 
-and I've built something rudimentary into TinyWeb that fits interface injection. The debate on Dependency Injection 
-(DI) vs a possibly global-static Service Locator (that was popular before it) was popularized by Martin Fowler 
+We think we are instead following the framing **Inversion of Control** (IoC) idiom with a lookup-style (interface 
+injection) way of getting dependencies into a endpoint (or filter). I contrast the differences 21 years 
+ago - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf, 
+and I've built something rudimentary into TinyWeb that fits interface injection style. 
+The debate on Dependency Injection 
+(DI) vs a possibly global-static Service Locator (that was popular before it) was put front and center by Martin Fowler 
 in https://www.martinfowler.com/articles/injection.html (I get a mention in the footnotes, but people occasionally 
 tell me to read it).
 
-Here's an example. Again, this is not D.I., but is IoC from the pre-DI style.
+Here's an example of our way. Again, this is not D.I., but is IoC from the pre-DI era.
 
 ```java
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
@@ -559,18 +556,18 @@ endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
 });
 ```
 
-This below is not Dependency injection, nor is it IoC, but you could this way if really wanted to:
+This below is also not Dependency injection, nor is it IoC, but you could this way if really wanted to:
 
 ```java
 
-// classic service locator style - should not do this IMO
+// classic service locator style - should not do this, IMO
 
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
     ShoppingCart sc = GlobalServiceLocator.getDepndency(ShoppingCart.class);
     res.write("Cart items count: " + sc.cartCount());
 });
     
-// classic singleton design-pattern style - should not do this IMO
+// classic singleton design-pattern style - should not do this, IMO
 
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
     ShoppingCart sc = ShoppingCart.getInstance();
@@ -588,12 +585,12 @@ endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
 ```
 
 Say `ShoppingCart` depends on `ProductInventory`, but because you're following Inversion of Control you do not
-want the `ProductInventory` instance directly used in any `endPoint(..)`. You would hide its instantiation in a scope of execution
-that would not be accessible to the `endPoint(..)` lambdas. Of course, if it is in the classpath, any code could do
+want the `ProductInventory` instance directly used in any endPoint or filter. You would hide its instantiation in a scope of execution
+that would not be accessible to the endPoint or filter lambdas. Of course, if it is in the classpath, any code could do
 `new ProductInventory(..)` but we presume there are some secrets passed in through the constructor that ALSO are
-hidden from `endPoint(..)` lambdas making that pointless.
+hidden from or filter lambdas making that pointless.
 
-If you were using SprintFrameWork, you would have `ProductInventory` as `@Singleton` scope (an idiom, not the Gang-of-Four 
+If you were using Spring Framework, you would have `ProductInventory` as `@Singleton` scope (an idiom, not the Gang-of-Four 
 design pattern). You would also have `ShoppingCart` as `@Scope("request")`
 
 In [TinyWebTests](TinyWebTests.java), we have an example of use that features `endPoint(..)`, `ShoppingCart` 
@@ -638,9 +635,9 @@ public class MyDatabaseApp {
 }
 ```
 
-We could have used the `ctx.getDep(..)` way of depending on JDBI, but in the above example, we just have an
-instance `jdbi` that is visible to all the filters and endpoints duly composed. It is up to you which way you develop
-with TinyWeb
+We could have used the `ctx.getDep(..)` way of depending on JDBI, to aid mocking during test automation. But in the 
+above example, we just have an  instance `jdbi` that is visible to all the filters and endpoints duly composed. 
+It is up to you which way you develop with TinyWeb
 
 ## Pitfalls
 
@@ -664,13 +661,13 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 
 ## Testing Your Web App
 
-Testing is a critical part of developing reliable web applications. `TinyWeb` is just a library. You can write tests
+Testing is a critical part of developing reliable web applications. TinyWeb is just a library. You can write tests
 using it in JUnit, TestNG, JBehave.
 
 ### Cuppa-Framework
 
-The Cuppa-Framework is recommended for testing `TinyWeb` applications due to its idiomatic style, which closely aligns 
-with `TinyWeb`'s composition approach. It allows for expressive and readable test definitions.
+The Cuppa-Framework is what we are using for testing TinyWeb applications due to its idiomatic style, which closely aligns 
+with TinyWeb's composition approach. It allows for expressive and readable test definitions.
 
 Example:
 
@@ -721,6 +718,9 @@ public static class MyApp {
 In your tests, you could ignore the main() method, and call `composeApplication` with a mock `MyApp` instance. All 
 your when(), verify() logic will work as you expect it to.
 
+You could also override the `dep(..)` or `instantiateDep(..)` methods as a good place to hand mock collaborators in
+to the "component under test."
+
 # Build and Test of TinyWeb itself
 
 ## Compiling TinyWeb
@@ -732,29 +732,13 @@ mkdir -p target/classes
 javac -d target/classes/ TinyWeb.java
 ```
 
-That's it - no deps.
-
-That makes:
-
-``` 
-ls target/classes/com/paulhammant/tnywb
-
-TinyWeb$ServerContext.class  TinyWeb$Filter.class  TinyWeb$PathContext.class  
-TinyWeb$Server.class  TinyWeb$SocketServer$SocketMessageHandler.class 
-TinyWeb$EndPoint.class  TinyWeb$FilterEntry.class  TinyWeb$Request.class  
-TinyWeb$ServerException.class  TinyWeb$SocketServer.class  TinyWeb.class 
-TinyWeb$MessageSender.class  TinyWeb$Response.class  TinyWeb$SocketClient.class      
-TinyWeb$Method.class  TinyWeb$Server$1.class  TinyWeb$JavascriptSocketClient.class 
-TinyWeb$ExampleApp$1.class TinyWeb$ExampleApp.class
-```
-
-The last two are the built-in example app, and if we made a jar, we wouldn't bother to include those include them.
+That's it - no deps, and 1.5 seconds of compilation time on my mid-range Chromebook. That makes 31 `.class` files
 
 ```bash
-find target/classes -name 'TinyWeb$ExampleApp*.class' -delete
 jar cf TinyWeb.jar -C target/classes/ .
-// that's about 100K in size
 ```
+
+that is about 37K in size.
 
 ## Tests
 
