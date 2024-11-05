@@ -35,6 +35,9 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 
@@ -694,7 +697,7 @@ public class TinyWebTests {
                 });
             });
 
-            describe("When the composition can happen on a previously instantiated TinyWeb.Server", () -> {
+            describe("When additional composition can happen on a previously instantiated TinyWeb.Server", () -> {
                 before(() -> {
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         endPoint(GET, "/foo", (req, res, ctx) -> {
@@ -728,6 +731,75 @@ public class TinyWebTests {
                     bodyAndResponseCodeShouldBe(httpGet("/bar2/baz2"),
                             "Hello3", 200);
                 });
+                after(() -> {
+                    webServer.stop();
+                    webServer = null;
+                });
+            });
+
+            describe("Given a TinyWeb server with a chunked response endpoint", () -> {
+                BigDecimal[] totalSum = { BigDecimal.ZERO };
+                before(() -> {
+                    webServer = new TinyWeb.Server(8080, -1) {{
+                        endPoint(TinyWeb.Method.GET, "/chunked", (req, res, ctx) -> {
+                            Random random = new Random();
+                            OutputStream out = res.getResponseBody();
+                            res.setHeader("Transfer-Encoding", "chunked");
+
+                            try {
+                                res.sendResponseHeaders(200, 0);
+                                for (int i = 0; i < 10; i++) {
+                                    int number = random.nextInt();
+                                    totalSum[0] = totalSum[0].add(BigDecimal.valueOf(number));
+                                    String numberString = Integer.toString(number);
+                                    res.writeChunk(out, numberString.getBytes(StandardCharsets.UTF_8));
+                                }
+
+                                res.writeChunk(out, new byte[0]); // End of chunks
+                                out.close();
+                            } catch (IOException e) {
+                                throw new AssertionError("IOE during chunk testing 2", e);
+                            }
+                        });
+                    }};
+                    webServer.start();
+                });
+
+                it("Then it should return the response in chunks", () -> {
+                    int i = 0;
+                    try (okhttp3.Response response = httpGet("/chunked")) {
+                        assertThat(response.code(), equalTo(200));
+                        String responseBody = response.body().string();
+                        // OkHttp reads all the chunks into one for you
+                        // Split the response back into chunks
+                        String[] parts = responseBody.split("\r\n|\n");
+                        BigDecimal calculatedSum = BigDecimal.ZERO;
+                        String sumPart = "";
+
+                        int sz = 0;
+                        for (String part : parts) {
+                            if (part.matches("^[0-9a-fA-F]$")) {
+                                sz = Integer.valueOf(part, 16);
+                                //System.out.println("SZ " + sz);
+                                // Skip chunk size lines
+                                continue;
+                            } else if (!part.isEmpty()) {
+                                try {
+                                    // Ensure the part is a valid integer
+                                    String num = part.trim();
+                                    //ystem.out.println("num " + num);
+                                    assertThat(num.length(), equalTo(sz));
+                                    calculatedSum = calculatedSum.add(BigDecimal.valueOf(Integer.parseInt(num)));
+                                } catch (NumberFormatException e) {
+                                    throw new AssertionError(e.getMessage(), e);
+                                }
+                            }
+                        }
+
+                        assertThat(calculatedSum, equalTo(totalSum[0]));
+                    }
+                });
+
                 after(() -> {
                     webServer.stop();
                     webServer = null;

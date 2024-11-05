@@ -734,10 +734,8 @@ public class TinyWeb {
 
         @Override
         public <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier) {
-            System.out.println("Cache: " + clazz.getName() + " being sought");
             return (T) cache.computeIfAbsent(clazz, key -> supplier.get());
         }
-        // direct put of instance here
     }
 
     public static class ServerException extends RuntimeException {
