@@ -55,19 +55,26 @@ public class NewTests {
                 try (okhttp3.Response response = httpGet("/chunked")) {
                     assertThat(response.code(), equalTo(200));
                     String responseBody = response.body().string();
-                    // Split the response into chunks
+                    // OkHttp reads all the chunks into one for you
+                    // Split the response back into chunks
                     String[] parts = responseBody.split("\r\n|\n");
                     BigDecimal calculatedSum = BigDecimal.ZERO;
                     String sumPart = "";
 
                     for (String part : parts) {
+                        int sz = 0;
                         if (part.matches("^[0-9a-fA-F]$")) {
+                            sz = Integer.valueOf(part, 16);
+                            System.out.println("SZ " + sz);
                             // Skip chunk size lines
                             continue;
                         } else if (!part.isEmpty()) {
                             try {
                                 // Ensure the part is a valid integer
-                                calculatedSum = calculatedSum.add(BigDecimal.valueOf(Integer.parseInt(part.trim())));
+                                String trim = part.trim();
+                                System.out.println("trim " + trim);
+//                                assertThat(trim.length(), equalTo(sz));
+                                calculatedSum = calculatedSum.add(BigDecimal.valueOf(Integer.parseInt(trim)));
                             } catch (NumberFormatException e) {
                                 throw new AssertionError(e.getMessage(), e);
                             }
