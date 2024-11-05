@@ -22,6 +22,32 @@ public class NewTests {
     TinyWeb.Server webServer;
 
     {
+        describe("Given a TinyWeb server with ConcreteExtensionToServerComposition", () -> {
+            before(() -> {
+                webServer = new TinyWeb.Server(8080, 8081);
+                new ConcreteExtensionToServerComposition(webServer);
+                webServer.start();
+            });
+
+            it("Then it should return 'Hello from /foo/bar' when accessing /foo/bar", () -> {
+                try (okhttp3.Response response = httpGet("/foo/bar")) {
+                    assertThat(response.code(), equalTo(200));
+                    assertThat(response.body().string(), equalTo("Hello from /foo/bar"));
+                }
+            });
+
+            it("Then it should return 403 Forbidden when accessing /foo/bar with 'X-Example-Header' missing", () -> {
+                try (okhttp3.Response response = httpGet("/foo/bar")) {
+                    assertThat(response.code(), equalTo(403));
+                    assertThat(response.body().string(), equalTo("Forbidden"));
+                }
+            });
+
+            after(() -> {
+                webServer.stop();
+                webServer = null;
+            });
+        });
 
     }
 
