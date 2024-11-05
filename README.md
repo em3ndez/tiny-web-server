@@ -51,7 +51,7 @@ system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Nett
 The `TinyWeb.Server` class allows you to create an HTTP server with minimal configuration. You can define routes for 
 different HTTP methods (GET, POST, PUT, DELETE) and attach handlers to process requests. The server supports:
 
-- **Path-based Routing**: Define endpoints with path parameters and handle requests dynamically.
+- **Path-based Routing**: Define endpoints with path parameters and handle requests dynamically. Paths can be nested to create a hierarchical structure, allowing for organized and intuitive route management.
 - **Static File Serving**: Serve static files from a specified directory with automatic content type detection.
 - **Filters**: Apply filters to requests for pre-processing or access control.
 - Fairly open
