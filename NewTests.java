@@ -43,7 +43,7 @@ public class NewTests {
                             res.writeChunk(out, new byte[0]); // End of chunks
                             out.close();
                         } catch (IOException e) {
-                            throw new RuntimeException("IOE during chunk testing 2", e);
+                            throw new AssertionError("IOE during chunk testing 2", e);
                         }
                     });
                 }};
@@ -69,7 +69,7 @@ public class NewTests {
                                 // Ensure the part is a valid integer
                                 calculatedSum = calculatedSum.add(BigDecimal.valueOf(Integer.parseInt(part.trim())));
                             } catch (NumberFormatException e) {
-                                System.out.println("Client: Skipping non-integer chunk " + part);
+                                throw new AssertionError(e.getMessage(), e);
                             }
                         }
                     }
