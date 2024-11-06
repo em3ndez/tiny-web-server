@@ -16,6 +16,7 @@
 
 package tests;
 
+import tests.ExampleApp;
 import com.paulhammant.tnywb.TinyWeb.Request;
 import com.paulhammant.tnywb.TinyWeb.Response;
 import okhttp3.OkHttpClient;
