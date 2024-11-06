@@ -2,10 +2,52 @@
 
 A tiny web Server and SocketServer that depend only on JDK classes and are in a single source file: `TinyWeb.java`
 
-## Table of Contents
-- [Web Server](#web-server)
-- [Web Sockets](#web-sockets)
-- [Rationale](#rationale)
+The TinyWeb single source file provides a lightweight and flexible server implementation that supports both HTTP and 
+WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  
+It uses a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
+system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Netty or Jetty.
+
+## The Web Server
+
+The `TinyWeb.Server` class allows you to create an HTTP server with minimal configuration. You can define filters and 
+endpoints for different HTTP methods (GET, POST, PUT, DELETE and others), and process requests. 
+
+The server supports:
+
+- **Path-based Routing**: Define endpoints with path parameters and handle requests dynamically. Paths can be nested to create a hierarchical structure, allowing for organized and intuitive filter/endpoint management.
+- **Static File Serving**: Serve static files from a specified directory with automatic content type detection.
+- **Filters**: Apply filters to requests for pre-processing or access control.
+- Fairly open
+
+There are paths too, to which filters and endpoints can be attached, but don't themselves handle requests.
+
+## Its Web Sockets sibling
+
+A coupled `TinyWeb.SocketServer` class provides WebSocket support, enabling communication back from the server to 
+attached clients.  It can be used alone, but also integrated into the same path structure of the main server.
+Admittedly that's a trick as the path and the length of the path are tge leftmost part of the message up
+to the SocketServer.
+
+## Rationale
+
+I wanted to make something that:
+
+1. A reliance on Java-8's lambdas - as close as regular Java can get to Groovy's builders
+2. Has a `path(..)` construct that groups other paths, endpoints and filters together. This approach allows for a clean and intuitive way to compose complex URL hierarchies within the server. More elegant and maintainable 
+3. Using those, could take **a series of multiple such compositions** (nested paths/filter/endPoints). This for web-module separation to aid deployment and testing flexibility
+4. No shared static state
+
+And in a second tier:
+
+1. Attempted to coerce websockets into the same nested path organization as is available for the web path composition
+2. Exist in a single source file, for no good reason
+3. Have no dependencies at all, outside the JDK
+4. Does not itself pollute stdout force a logging framework on users.
+5. Loosely follows Inversion of Control (IoC) idioms
+6. Aids testability wherever it can
+
+# Table of Contents
+
 - [Quick User Guide](#quick-user-guide)
   - [Basic Use](#basic-use)
     - [EndPoints](#endpoints)
@@ -40,47 +82,6 @@ A tiny web Server and SocketServer that depend only on JDK classes and are in a 
   - [Compiling TinyWeb](#compiling-tinyweb)
   - [Tests](#tests)
   - [TinyWeb's Own Test Results](#tinywebs-own-test-results)
-
-The TinyWeb single source file provides a lightweight and flexible server implementation that supports both HTTP and 
-WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  
-It uses a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
-system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Netty or Jetty.
-
-## Web Server
-
-The `TinyWeb.Server` class allows you to create an HTTP server with minimal configuration. You can define routes for 
-different HTTP methods (GET, POST, PUT, DELETE) and attach handlers to process requests. The server supports:
-
-- **Path-based Routing**: Define endpoints with path parameters and handle requests dynamically. Paths can be nested to create a hierarchical structure, allowing for organized and intuitive route management.
-- **Static File Serving**: Serve static files from a specified directory with automatic content type detection.
-- **Filters**: Apply filters to requests for pre-processing or access control.
-- Fairly open
-
-## Web Sockets
-
-The `TinyWeb.SocketServer` class provides WebSocket support, enabling real-time, bidirectional communication between 
-the server and clients. Key features include:
-
-- **Message Handling**: Register handlers for specific WebSocket paths to process incoming messages.
-- **Secure Communication**: Supports WebSocket handshake and message framing for secure data exchange.
-- **Integration with HTTP Server**: Seamlessly integrate WebSocket functionality with the HTTP server for a unified application architecture.
-
-`TinyWeb.Server` and `TinyWeb.SocketServer` together are ideal for building lightweight web applications and services 
-that require both HTTP and WebSocket 
-capabilities. TinyWeb.SocketServer can be run separately.
-
-## Rationale
-
-I wanted to make something that:
-
-1. Had nested `path( .. )` lambda functions to group endpoints together. This approach allows for a clean and intuitive way to define complex routing structures within the server. By nesting `path()` functions, developers can easily manage and organize routes, making the codebase more maintainable and scalable.
-2. Could take a series of multiple such registrations of nested paths/filter/endPoints - for web-module separation
-3. No shared static state
-4. Loosely follows Inversion of Control (IoC) idioms.
-4. Attempted to coerce websockets into the same nested path organization.
-3. Be a single source file solution
-4. Have no dependencies at all, outside the JDK
-3. Does not itself pollute stdout, and has not picked a logging framework, but laves that open as an implementation detail. I wrote much of https://cwiki.apache.org/confluence/display/avalon/AvalonNoLogging back in 2003 or so.
 
 # Quick user guide
 
@@ -367,7 +368,7 @@ big map of paths and websockets open to clients, and if this were a single web-a
 websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
 four concurrently connected channels.
 
-#### Thoughts on WebSockets
+**Thoughts on WebSockets**
 
 Guideline: Short async messages with a follow-up via a regular GET Requests
 
@@ -390,6 +391,68 @@ Here's a simple example of how this might work:
 
 This pattern is particularly useful in applications where real-time updates are needed, but the data associated with 
 those updates is too large or complex to send over a WebSocket connection.
+
+## Testing Your Web App
+
+Testing is a critical part of developing reliable web applications. TinyWeb is just a library. You can write tests
+using it in JUnit, TestNG, JBehave.
+
+### Cuppa-Framework
+
+The Cuppa-Framework is what we are using for testing TinyWeb applications due to its idiomatic style, which closely aligns
+with TinyWeb's composition approach. It allows for expressive and readable test definitions.
+
+Example:
+
+```java
+import static org.forgerock.cuppa.Cuppa.*;
+
+public class MyWebAppTest {
+    {
+        describe("GET /hello", () -> {
+            it("should return a greeting message", () -> {
+                // Test logic here
+            });
+        });
+    }
+}
+```
+
+[See the tests that use Cuppa](TinyWebTests.java)
+
+### Mockito and similar
+
+Mockito is a powerful mocking framework that can be used to create mock objects for testing. It is particularly useful
+for isolating components and testing interactions.
+
+Consider the following code:
+
+```java
+public static class MyApp {
+
+        public void foobar(Request req, Response res, TinyWeb.RequestContext ctx) {
+            res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
+        }
+
+        public static TinyWeb.Server composeApplication(String[] args, MyApp app) {
+            TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+                endPoint(GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
+            }};
+            return server;
+        }
+    }
+
+    public static void main(String[] args) {
+        MyApp.composeApplication(args, new MyApp()).start();
+    }
+}
+```
+
+In your tests, you could ignore the main() method, and call `composeApplication` with a mock `MyApp` instance. All
+your when(), verify() logic will work as you expect it to.
+
+You could also override the `dep(..)` or `instantiateDep(..)` methods as a good place to hand mock collaborators in
+to the "component under test."
 
 ## Secure Channels
 
@@ -658,68 +721,6 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     });
 }};
 ```
-
-## Testing Your Web App
-
-Testing is a critical part of developing reliable web applications. TinyWeb is just a library. You can write tests
-using it in JUnit, TestNG, JBehave.
-
-### Cuppa-Framework
-
-The Cuppa-Framework is what we are using for testing TinyWeb applications due to its idiomatic style, which closely aligns 
-with TinyWeb's composition approach. It allows for expressive and readable test definitions.
-
-Example:
-
-```java
-import static org.forgerock.cuppa.Cuppa.*;
-
-public class MyWebAppTest {
-    {
-        describe("GET /hello", () -> {
-            it("should return a greeting message", () -> {
-                // Test logic here
-            });
-        });
-    }
-}
-```
-
-[See the tests that use Cuppa](TinyWebTests.java)
-
-### Mockito and similar
-
-Mockito is a powerful mocking framework that can be used to create mock objects for testing. It is particularly useful 
-for isolating components and testing interactions.
-
-Consider the following code:
-
-```java
-public static class MyApp {
-
-        public void foobar(Request req, Response res, TinyWeb.RequestContext ctx) {
-            res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
-        }
-
-        public static TinyWeb.Server composeApplication(String[] args, MyApp app) {
-            TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-                endPoint(GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
-            }};
-            return server;
-        }
-    }
-
-    public static void main(String[] args) {
-        MyApp.composeApplication(args, new MyApp()).start();
-    }
-}
-```
-
-In your tests, you could ignore the main() method, and call `composeApplication` with a mock `MyApp` instance. All 
-your when(), verify() logic will work as you expect it to.
-
-You could also override the `dep(..)` or `instantiateDep(..)` methods as a good place to hand mock collaborators in
-to the "component under test."
 
 # Build and Test of TinyWeb itself
 

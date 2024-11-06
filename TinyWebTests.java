@@ -461,7 +461,7 @@ public class TinyWebTests {
                         registerMessageHandler("/foo/baz", (message, sender) -> {
                             for (int i = 1; i <= 3; i++) {
                                 String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                                sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                                sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
                                 try {
                                     sleep(100);
                                 } catch (InterruptedException e) {
@@ -520,7 +520,7 @@ public class TinyWebTests {
                             webSocket("/baz", (message, sender) -> {
                                 for (int i = 1; i <= 3; i++) {
                                     String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                                    sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                                    sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
                                     try {
                                         sleep(100);
                                     } catch (InterruptedException e) {
@@ -618,7 +618,7 @@ public class TinyWebTests {
                         webSocket("/baz", (message, sender) -> {
                             for (int i = 1; i <= 3; i++) {
                                 String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                                sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                                sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
                                 try {
                                     sleep(100);
                                 } catch (InterruptedException e) {
@@ -840,7 +840,7 @@ public class TinyWebTests {
                     webSocket("/eee", (message, sender) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
+                            sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
                             try {
                                 Thread.sleep(100);
                             } catch (InterruptedException e) {

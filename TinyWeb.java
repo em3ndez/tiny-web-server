@@ -97,8 +97,8 @@ public class TinyWeb {
 
     public static abstract class AbstractServerContext implements ServerContext {
 
-        Map<Method, Map<Pattern, EndPoint>> routes = new HashMap<>();
-        Map<Pattern, SocketMessageHandler> wsRoutes = new HashMap<>();
+        Map<Method, Map<Pattern, EndPoint>> endPoints = new HashMap<>();
+        Map<Pattern, SocketMessageHandler> wsEndPoints = new HashMap<>();
         Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
         protected final ServerState serverState;
 
@@ -106,51 +106,51 @@ public class TinyWeb {
             this.serverState = serverState;
         }
 
-        public PathContext path(String basePath, Runnable routes) {
-            // Save current routes and filters
+        public PathContext path(String basePath, Runnable runnable) {
+            // Save current endpoints and filters
             if (serverState.hasStarted()) {
-                throw new IllegalStateException("Cannot modify routes after the server has started.");
+                throw new IllegalStateException("Cannot modify paths after the server has started.");
             }
-            Map<Method, Map<Pattern, EndPoint>> previousRoutes = this.routes;
-            Map<Pattern, SocketMessageHandler> previousWsRoutes = this.wsRoutes;
+            Map<Method, Map<Pattern, EndPoint>> previousEndPoints = this.endPoints;
+            Map<Pattern, SocketMessageHandler> previousWsEndPoints = this.wsEndPoints;
             Map<Method, List<FilterEntry>> previousFilters = this.filters;
 
-            // Create new maps to collect routes and filters within this path
-            this.routes = new HashMap<>();
-            this.wsRoutes = new HashMap<>();
+            // Create new maps to collect endpoints and filters within this path
+            this.endPoints = new HashMap<>();
+            this.wsEndPoints = new HashMap<>();
             this.filters = new HashMap<>();
 
             // Initialize empty maps for all methods
             for (Method method : Method.values()) {
-                this.routes.put(method, new HashMap<>());
+                this.endPoints.put(method, new HashMap<>());
                 this.filters.put(method, new ArrayList<>());
             }
 
 
-            // Run the routes Runnable, which will populate this.routes and this.filters
-            routes.run();
+            // Run the Runnable, which will populate this.endpoints and this.filters
+            runnable.run();
 
-            // Prefix basePath to routes
+            // Prefix basePath to endpoints
             for (Method method : Method.values()) {
-                Map<Pattern, EndPoint> methodRoutes = this.routes.get(method);
-                if (methodRoutes != null && !methodRoutes.isEmpty()) {
-                    Map<Pattern, EndPoint> prefixedRoutes = new HashMap<>();
-                    for (Map.Entry<Pattern, EndPoint> entry : methodRoutes.entrySet()) {
+                Map<Pattern, EndPoint> methodEndPoints = this.endPoints.get(method);
+                if (methodEndPoints != null && !methodEndPoints.isEmpty()) {
+                    Map<Pattern, EndPoint> prefixedEndPoints = new HashMap<>();
+                    for (Map.Entry<Pattern, EndPoint> entry : methodEndPoints.entrySet()) {
                         Pattern pattern = entry.getKey();
                         EndPoint endPoint = entry.getValue();
                         Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
-                        prefixedRoutes.put(newPattern, endPoint);
+                        prefixedEndPoints.put(newPattern, endPoint);
                     }
-                    previousRoutes.get(method).putAll(prefixedRoutes);
+                    previousEndPoints.get(method).putAll(prefixedEndPoints);
                 }
             }
 
             // Prefix basePath to WebSocket handlers
-            for (Map.Entry<Pattern, SocketMessageHandler> entry : this.wsRoutes.entrySet()) {
+            for (Map.Entry<Pattern, SocketMessageHandler> entry : this.wsEndPoints.entrySet()) {
                 Pattern pattern = entry.getKey();
                 SocketMessageHandler wsHandler = entry.getValue();
                 Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
-                previousWsRoutes.put(newPattern, wsHandler);
+                previousWsEndPoints.put(newPattern, wsHandler);
             }
 
             // Prefix basePath to filters
@@ -174,9 +174,9 @@ public class TinyWeb {
                 }
             }
 
-            // Restore routes and filters
-            this.routes = previousRoutes;
-            this.wsRoutes = previousWsRoutes;
+            // Restore endpoints and filters
+            this.endPoints = previousEndPoints;
+            this.wsEndPoints = previousWsEndPoints;
             this.filters = previousFilters;
             return new PathContext(basePath, this, serverState);
         }
@@ -190,7 +190,7 @@ public class TinyWeb {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add endpoints after the server has started.");
             }
-            routes.computeIfAbsent(method, k -> new HashMap<>())
+            endPoints.computeIfAbsent(method, k -> new HashMap<>())
                     .put(Pattern.compile("^" + path + "$"), endPoint);
             return this;
         }
@@ -199,7 +199,7 @@ public class TinyWeb {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add WebSocket handlers after the server has started.");
             }
-            wsRoutes.put(Pattern.compile("^" + path + "$"), wsHandler);
+            wsEndPoints.put(Pattern.compile("^" + path + "$"), wsHandler);
             return this;
         }
 
@@ -265,7 +265,7 @@ public class TinyWeb {
         @Override
         public PathContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
             String fullPath = basePath + path;
-            parentContext.routes.computeIfAbsent(method, k -> new HashMap<>())
+            parentContext.endPoints.computeIfAbsent(method, k -> new HashMap<>())
                     .put(Pattern.compile("^" + fullPath + "$"), endPoint);
             return this;
         }
@@ -304,7 +304,7 @@ public class TinyWeb {
                 socketServer = new SocketServer(webSocketPort) {
                     @Override
                     protected SocketMessageHandler getHandler(String path) {
-                        for (Map.Entry<Pattern, SocketMessageHandler> patternWebSocketMessageHandlerEntry : wsRoutes.entrySet()) {
+                        for (Map.Entry<Pattern, SocketMessageHandler> patternWebSocketMessageHandlerEntry : wsEndPoints.entrySet()) {
                             Pattern key = patternWebSocketMessageHandlerEntry.getKey();
                             SocketMessageHandler value = patternWebSocketMessageHandlerEntry.getValue();
                             if (key.matcher(path).matches()) {
@@ -312,7 +312,7 @@ public class TinyWeb {
                             }
                         }
                         System.out.println("No websocket handler for " + path);
-                        return (message, sender) -> sender.sendTextFrame("no matching path on the server side".getBytes("UTF-8"));
+                        return (message, sender) -> sender.sendBytesFrame("no matching path on the server side".getBytes("UTF-8"));
                     }
                 };
             } else {
@@ -320,7 +320,7 @@ public class TinyWeb {
             }
 
             for (Method method : Method.values()) {
-                routes.put(method, new HashMap<>());
+                endPoints.put(method, new HashMap<>());
                 filters.put(method, new ArrayList<>());
             }
 
@@ -328,15 +328,15 @@ public class TinyWeb {
                 String path = exchange.getRequestURI().getPath();
                 Method method = Method.valueOf(exchange.getRequestMethod());
 
-                Map<Pattern, EndPoint> methodRoutes = routes.get(method);
-                if (methodRoutes == null) {
+                Map<Pattern, EndPoint> methodEndPoints = endPoints.get(method);
+                if (methodEndPoints == null) {
                     sendErrorResponse(exchange, 405, "Method not allowed");
                     return;
                 }
 
                 boolean routeMatched = false;
 
-                for (Map.Entry<Pattern, EndPoint> route : methodRoutes.entrySet()) {
+                for (Map.Entry<Pattern, EndPoint> route : methodEndPoints.entrySet()) {
                     Matcher matcher = route.getKey().matcher(path);
                     if (matcher.matches()) {
                         routeMatched = true;
@@ -479,8 +479,8 @@ public class TinyWeb {
         }
 
         @Override
-        public PathContext path(String basePath, Runnable routes) {
-            return server.path(basePath, routes);
+        public PathContext path(String basePath, Runnable runnable) {
+            return server.path(basePath, runnable);
         }
 
         @Override
@@ -520,7 +520,7 @@ public class TinyWeb {
      */
 
     public interface ServerContext {
-        PathContext path(String basePath, Runnable routes);
+        PathContext path(String basePath, Runnable runnable);
         ServerContext endPoint(Method method, String path, EndPoint endPoint);
         ServerContext webSocket(String path, SocketMessageHandler wsHandler);
         ServerContext filter(Method method, String path, Filter filter);
@@ -1095,7 +1095,7 @@ public class TinyWeb {
             this.outputStream = outputStream;
         }
 
-        public void sendTextFrame(byte[] payload) throws IOException {
+        public void sendBytesFrame(byte[] payload) throws IOException {
             outputStream.write(0x81); // FIN bit set, text frame
             if (payload.length < 126) {
                 outputStream.write(payload.length);
