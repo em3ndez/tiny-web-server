@@ -6,7 +6,7 @@ import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.reporters.DefaultReporter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.Arrays;
 
 public class Suite {
 
@@ -18,6 +18,6 @@ public class Suite {
 
     public static void main(String[] args) {
         Runner runner = new Runner();
-        runner.run(runner.defineTests(Arrays.asList(NewTests.class, TinyWebTests.class)), new DefaultReporter());
+        runner.run(runner.defineTests(Arrays.asList(NewTests.class, TinyWebServerTests.class, TinyWebSocketTests.class, TinyWebIntegrationTests.class)), new DefaultReporter());
     }
 }
