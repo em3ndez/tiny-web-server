@@ -886,10 +886,5 @@ public class TinyWebTests {
         return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
     }
 
-    public static void main(String[] args) {
-        Runner runner = new Runner();
-        runner.run(runner.defineTests(Collections.singletonList(TinyWebTests.class)), new DefaultReporter());
-    }
-
 }
 
