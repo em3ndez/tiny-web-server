@@ -528,45 +528,12 @@ svr = new TinyWeb.Server(8080, -1) {
 By overriding these methods, you can tailor the exception handling behavior of your TinyWeb server to meet your
 application's specific needs, ensuring that errors are managed effectively and transparently.
 
-## Secure Channels
-
-### Securing HTTP Channels
-
-Currently, TinyWeb supports HTTP, which is suitable for development and testing environments. 
-However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by 
-fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination. These proxies can be 
-configured to forward requests to TinyWeb over HTTP, while serving clients over HTTPS. This approach leverages the 
-robust SSL/TLS capabilities of these proxies, ensuring secure communication without modifying the TinyWeb server code.
-
-### Securing WebSocket Channels
-
-TinyWeb currently supports WebSocket (WS) connections, which are not encrypted. For secure communication, it's 
-important to use Secure WebSocket (WSS) connections. Similar to HTTP, you can achieve this by using a reverse proxy 
-that supports SSL/TLS termination for WebSockets. The proxy can handle the encryption and decryption of WebSocket 
-traffic, forwarding it to TinyWeb over an unencrypted channel. This setup ensures that WebSocket communications are 
-secure, protecting data from eavesdropping and tampering.
-
-## TinyWeb Performance
-
-Performance testing for TinyWeb has not been extensively conducted. However, due to its lightweight nature and minimal 
-dependencies, TinyWeb is expected to perform efficiently for small to medium-sized applications.
-
-#### Security Best Practices
-
-- **Sanitize Inputs**: Remove or escape potentially harmful characters from user inputs.
-- **Use CSRF Tokens**: Implement CSRF protection by requiring tokens for state-changing requests.
-- **Validate on Both Client and Server**: Perform validation on the client side for user feedback and on the server side for security.
-- **Limit Input Size**: Restrict the size of inputs to prevent buffer overflow attacks.
-
-By implementing robust input validation, you can enhance the security of your TinyWeb application and protect it 
-from common web vulnerabilities.
-
 ## Integrating other frameworks
 
 ### Dependency Injection
 
-We can't integrate dependency injection with TinyWeb. The reason for that is handlers don't take strongly typed 
-dependencies in the `(req, resp, context)` functional interfaces, nor do those have constructors associated. 
+We can't integrate dependency injection with TinyWeb. The reason for that is handlers don't take strongly typed
+dependencies in the `(req, resp, context)` functional interfaces, nor do those have constructors associated.
 
 For it to be true Dependency Injection capable - for say injecting a `ShoppingCart` into a endpoint or filter - you would something like:
 
@@ -579,18 +546,18 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 }};
 ```
 
-The problem is that method `endPoint(..)` has a fixed parameter list. It can't be extended to suit each specific use 
-of `endPoint` in an app that would list dependencies to be injected. Instead, we have chosen 
-to have a `getDep(..)` method on context `RequestContext` object. We acknowledge this is no longer Dependency 
+The problem is that method `endPoint(..)` has a fixed parameter list. It can't be extended to suit each specific use
+of `endPoint` in an app that would list dependencies to be injected. Instead, we have chosen
+to have a `getDep(..)` method on context `RequestContext` object. We acknowledge this is no longer Dependency
 Injection.
 
-We think we are instead following the framing **Inversion of Control** (IoC) idiom with a lookup-style (interface 
-injection) way of getting dependencies into a endpoint (or filter). I contrast the differences 21 years 
-ago - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf, 
-and I've built something rudimentary into TinyWeb that fits interface injection style. 
-The debate on Dependency Injection 
-(DI) vs a possibly global-static Service Locator (that was popular before it) was put front and center by Martin Fowler 
-in https://www.martinfowler.com/articles/injection.html (I get a mention in the footnotes, but people occasionally 
+We think we are instead following the framing **Inversion of Control** (IoC) idiom with a lookup-style (interface
+injection) way of getting dependencies into a endpoint (or filter). I contrast the differences 21 years
+ago - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf,
+and I've built something rudimentary into TinyWeb that fits interface injection style.
+The debate on Dependency Injection
+(DI) vs a possibly global-static Service Locator (that was popular before it) was put front and center by Martin Fowler
+in https://www.martinfowler.com/articles/injection.html (I get a mention in the footnotes, but people occasionally
 tell me to read it).
 
 Here's an example of our way. Again, this is not D.I., but is IoC from the pre-DI era.
@@ -636,10 +603,10 @@ that would not be accessible to the endPoint or filter lambdas. Of course, if it
 `new ProductInventory(..)` but we presume there are some secrets passed in through the constructor that ALSO are
 hidden from or filter lambdas making that pointless.
 
-If you were using Spring Framework, you would have `ProductInventory` as `@Singleton` scope (an idiom, not the Gang-of-Four 
+If you were using Spring Framework, you would have `ProductInventory` as `@Singleton` scope (an idiom, not the Gang-of-Four
 design pattern). You would also have `ShoppingCart` as `@Scope("request")`
 
-In [TinyWebTests](TinyWebTests.java), we have an example of use that features `endPoint(..)`, `ShoppingCart` 
+In [TinyWebTests](TinyWebTests.java), we have an example of use that features `endPoint(..)`, `ShoppingCart`
 and `ProductInventory`
 
 ### Database/ ORM Technologies
@@ -681,9 +648,42 @@ public class MyDatabaseApp {
 }
 ```
 
-We could have used the `ctx.getDep(..)` way of depending on JDBI, to aid mocking during test automation. But in the 
-above example, we just have an  instance `jdbi` that is visible to all the filters and endpoints duly composed. 
+We could have used the `ctx.getDep(..)` way of depending on JDBI, to aid mocking during test automation. But in the
+above example, we just have an  instance `jdbi` that is visible to all the filters and endpoints duly composed.
 It is up to you which way you develop with TinyWeb
+
+## Secure Channels
+
+### Securing HTTP Channels
+
+Currently, TinyWeb supports HTTP, which is suitable for development and testing environments. 
+However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by 
+fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination. These proxies can be 
+configured to forward requests to TinyWeb over HTTP, while serving clients over HTTPS. This approach leverages the 
+robust SSL/TLS capabilities of these proxies, ensuring secure communication without modifying the TinyWeb server code.
+
+### Securing WebSocket Channels
+
+TinyWeb currently supports WebSocket (WS) connections, which are not encrypted. For secure communication, it's 
+important to use Secure WebSocket (WSS) connections. Similar to HTTP, you can achieve this by using a reverse proxy 
+that supports SSL/TLS termination for WebSockets. The proxy can handle the encryption and decryption of WebSocket 
+traffic, forwarding it to TinyWeb over an unencrypted channel. This setup ensures that WebSocket communications are 
+secure, protecting data from eavesdropping and tampering.
+
+## TinyWeb Performance
+
+Performance testing for TinyWeb has not been extensively conducted. However, due to its lightweight nature and minimal 
+dependencies, TinyWeb is expected to perform efficiently for small to medium-sized applications.
+
+#### Security Best Practices
+
+- **Sanitize Inputs**: Remove or escape potentially harmful characters from user inputs.
+- **Use CSRF Tokens**: Implement CSRF protection by requiring tokens for state-changing requests.
+- **Validate on Both Client and Server**: Perform validation on the client side for user feedback and on the server side for security.
+- **Limit Input Size**: Restrict the size of inputs to prevent buffer overflow attacks.
+
+By implementing robust input validation, you can enhance the security of your TinyWeb application and protect it 
+from common web vulnerabilities.
 
 ## Pitfalls
 
