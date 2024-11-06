@@ -83,7 +83,7 @@ And in a second tier:
   - [Tests](#tests)
   - [TinyWeb's Own Test Results](#tinywebs-own-test-results)
 
-# Quick user guide
+# User guide
 
 "Users" are developers, if that's not obvious. 
 
