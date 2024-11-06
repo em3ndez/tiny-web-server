@@ -18,6 +18,6 @@ public class Suite {
 
     public static void main(String[] args) {
         Runner runner = new Runner();
-        runner.run(runner.defineTests(Collections.singletonList(NewTests.class)), new DefaultReporter());
+        runner.run(runner.defineTests(Arrays.asList(NewTests.class, TinyWebTests.class)), new DefaultReporter());
     }
 }
