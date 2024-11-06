@@ -58,7 +58,6 @@ And in a second tier:
     - [Connecting to a WebSocket using TinyWeb.SocketClient](#connecting-to-a-websocket-using-tinywebsocketclient)
     - [Connecting to a WebSocket using JavaScript Source File Endpoint](#connecting-to-a-websocket-using-javascript-source-file-endpoint)
     - [Two WebSockets with Different Paths](#two-websockets-with-different-paths)
-- [Thoughts on WebSockets](#thoughts-on-websockets)
 - [Testing Your Web App](#testing-your-web-app)
   - [Cuppa-Framework](#cuppa-framework)
   - [Mockito](#mockito)
@@ -450,6 +449,85 @@ your when(), verify() logic will work as you expect it to.
 You could also override the `dep(..)` or `instantiateDep(..)` methods as a good place to hand mock collaborators in
 to the "component under test."
 
+## Error handling
+
+### In EndPoints Themselves
+
+When handling requests in TinyWeb, it's important to understand how to set HTTP response codes and customize
+responses. HTTP response codes are crucial for indicating the result of a request to the client. Here's how you can
+manage responses in TinyWeb:
+
+#### Setting HTTP Response Codes
+
+In TinyWeb, you can set the HTTP response code by using the `write` method of the `TinyWeb.Response` object. The `write`
+method allows you to specify both the response content and the status code. Here's an example:
+
+```java
+endPoint(TinyWeb.Method.GET, "/example", (req, res, context) -> {
+    // Set a 200 OK response
+    res.write("Request was successful", 200);
+});
+```
+
+In that example, the endpoint responds with a 200 OK status code, indicating that the request was successful.
+
+### TinyWeb's Overridable Exception Methods
+
+In TinyWeb, exception handling is an important aspect of managing server and application errors. The framework
+provides two overridable methods to handle exceptions: `serverException(e)` and `appHandlingException(Exception e)`.
+These methods allow you to customize how exceptions are logged or processed.
+
+#### serverException(e)
+
+The `serverException` method is called when a `ServerException` occurs. This typically involves issues related to
+the server's internal operations, such as network errors or configuration problems. By default, this method logs the
+exception message and stack trace to the standard error stream. You can override this method to implement custom
+logging or error handling strategies.
+
+Example:
+
+```java
+svr = new TinyWeb.Server(8080, -1) {
+    {
+      // paths, filters, endPoints
+    }
+    @Override
+    protected void serverException (ServerException e){
+        // Custom logging logic
+        System.err.println("Custom Server Exception: " + e.getMessage());
+        e.printStackTrace(System.err);
+    }
+};
+```
+
+#### appHandlingException(Exception e)
+
+The `appHandlingException(Exception e)` method is invoked when an exception occurs within an endpoint or filter.
+This is useful for handling application-specific errors, such as invalid input or business logic failures. That would
+nearly always be an endpoint of filter throwing `java.lang.RuntimeException` or `java.lang.Error`. They are not supposed
+to, but they may do so. By default, this method logs the exception message and stack trace to the standard error
+stream. You can override it to provide custom error handling, such as sending alerts or writing to a log file.
+
+Example:
+
+```java
+svr = new TinyWeb.Server(8080, -1) {
+    {
+        // paths, filters, endPoints
+    }
+
+    @Override
+    protected void appHandlingException (Exception e) {
+        // Custom application error handling
+        System.err.println("Custom Application Exception: " + e.getMessage());
+        e.printStackTrace(System.err);
+    }
+};
+```
+
+By overriding these methods, you can tailor the exception handling behavior of your TinyWeb server to meet your
+application's specific needs, ensuring that errors are managed effectively and transparently.
+
 ## Secure Channels
 
 ### Securing HTTP Channels
@@ -472,97 +550,6 @@ secure, protecting data from eavesdropping and tampering.
 
 Performance testing for TinyWeb has not been extensively conducted. However, due to its lightweight nature and minimal 
 dependencies, TinyWeb is expected to perform efficiently for small to medium-sized applications.
-
-## Error handling
-
-### In EndPoints Themselves
-
-When handling requests in TinyWeb, it's important to understand how to set HTTP response codes and customize 
-responses. HTTP response codes are crucial for indicating the result of a request to the client. Here's how you can 
-manage responses in TinyWeb:
-
-#### Setting HTTP Response Codes
-
-In TinyWeb, you can set the HTTP response code by using the `write` method of the `TinyWeb.Response` object. The `write` 
-method allows you to specify both the response content and the status code. Here's an example:
-
-```java
-endPoint(TinyWeb.Method.GET, "/example", (req, res, context) -> {
-    // Set a 200 OK response
-    res.write("Request was successful", 200);
-});
-```
-
-In that example, the endpoint responds with a 200 OK status code, indicating that the request was successful.
-
-#### Common HTTP Response Codes
-
-Understanding common HTTP response codes is essential for effectively communicating the outcome of requests:
-
-- **200 OK**: The request was successful, and the server returned the requested resource.
-- **201 Created**: The request was successful, and a new resource was created.
-- **400 Bad Request**: The server could not understand the request due to invalid syntax.
-- **401 Unauthorized**: The client must authenticate itself to get the requested response.
-- **403 Forbidden**: The client does not have access rights to the content.
-- **404 Not Found**: The server cannot find the requested resource.
-- **500 Internal Server Error**: The server encountered an unexpected condition that prevented it from fulfilling the request.
-
-### TinyWeb's Overridable Exception Methods
-
-In TinyWeb, exception handling is an important aspect of managing server and application errors. The framework 
-provides two overridable methods to handle exceptions: `serverException(e)` and `appHandlingException(Exception e)`. 
-These methods allow you to customize how exceptions are logged or processed.
-
-#### serverException(e)
-
-The `serverException` method is called when a `ServerException` occurs. This typically involves issues related to 
-the server's internal operations, such as network errors or configuration problems. By default, this method logs the 
-exception message and stack trace to the standard error stream. You can override this method to implement custom 
-logging or error handling strategies.
-
-Example:
-
-```java
-svr = new TinyWeb.Server(8080, -1) {
-    {
-      // paths, filters, endPoints
-    }
-    @Override
-    protected void serverException (ServerException e){
-        // Custom logging logic
-        System.err.println("Custom Server Exception: " + e.getMessage());
-        e.printStackTrace(System.err);
-    }
-};
-```
-
-#### appHandlingException(Exception e)
-
-The `appHandlingException(Exception e)` method is invoked when an exception occurs within an endpoint or filter. 
-This is useful for handling application-specific errors, such as invalid input or business logic failures. That would
-nearly always be an endpoint of filter throwing `java.lang.RuntimeException` or `java.lang.Error`. They are not supposed
-to, but they may do so. By default, this method logs the exception message and stack trace to the standard error 
-stream. You can override it to provide custom error handling, such as sending alerts or writing to a log file.
-
-Example:
-
-```java
-svr = new TinyWeb.Server(8080, -1) {
-    {
-        // paths, filters, endPoints
-    }
-
-    @Override
-    protected void appHandlingException (Exception e) {
-        // Custom application error handling
-        System.err.println("Custom Application Exception: " + e.getMessage());
-        e.printStackTrace(System.err);
-    }
-};
-```
-
-By overriding these methods, you can tailor the exception handling behavior of your TinyWeb server to meet your 
-application's specific needs, ensuring that errors are managed effectively and transparently.
 
 #### Security Best Practices
 
