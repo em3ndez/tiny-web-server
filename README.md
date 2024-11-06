@@ -48,7 +48,7 @@ And in a second tier:
 
 # Table of Contents
 
-- [Quick User Guide](#quick-user-guide)
+- [User Guide](#user-guide)
   - [Basic Use](#basic-use)
     - [EndPoints](#endpoints)
     - [A Filter and an EndPoint](#a-filter-and-an-endpoint)
@@ -59,6 +59,9 @@ And in a second tier:
     - [Connecting to a WebSocket using JavaScript Source File Endpoint](#connecting-to-a-websocket-using-javascript-source-file-endpoint)
     - [Two WebSockets with Different Paths](#two-websockets-with-different-paths)
 - [Thoughts on WebSockets](#thoughts-on-websockets)
+- [Testing Your Web App](#testing-your-web-app)
+  - [Cuppa-Framework](#cuppa-framework)
+  - [Mockito](#mockito)
 - [Secure Channels](#secure-channels)
   - [Securing HTTP Channels](#securing-http-channels)
   - [Securing WebSocket Channels](#securing-websocket-channels)
@@ -70,18 +73,11 @@ And in a second tier:
   - [Dependency Injection](#dependency-injection)
   - [Database/ ORM Technologies](#database-orm-technologies)
 - [Pitfalls](#pitfalls)
-- [Testing Your Web App](#testing-your-web-app)
-  - [Cuppa-Framework](#cuppa-framework)
-  - [JUnit and TestNG](#junit-and-testng)
-  - [Mockito](#mockito)
 - [Build and Test of TinyWeb Itself](#build-and-test-of-tinyweb-itself)
   - [Compiling TinyWeb](#compiling-tinyweb)
   - [Tests](#tests)
-  - [TinyWeb's own test results](#tinywebs-own-test-results)
-- [Project & Source Repository](#project--source-repository)
-  - [Compiling TinyWeb](#compiling-tinyweb)
-  - [Tests](#tests)
   - [TinyWeb's Own Test Results](#tinywebs-own-test-results)
+- [Project & Source Repository](#project--source-repository)
 
 # User guide
 
