@@ -16,30 +16,21 @@
 
 package tests;
 
-import tests.ExampleApp;
 import com.paulhammant.tnywb.TinyWeb.Request;
 import com.paulhammant.tnywb.TinyWeb.Response;
 import okhttp3.OkHttpClient;
 
-import org.mockito.Mockito;
 import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.reporters.DefaultReporter;
 
 import org.jetbrains.annotations.NotNull;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.*;
 
 import static java.lang.Thread.sleep;
@@ -55,6 +46,8 @@ import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static com.paulhammant.tnywb.TinyWeb.Method.POST;
 import static com.paulhammant.tnywb.TinyWeb.Method.PUT;
+import static tests.Suite.bodyAndResponseCodeShouldBe;
+import static tests.Suite.httpGet;
 
 @Test
 public class TinyWebTests {
@@ -578,13 +571,6 @@ public class TinyWebTests {
         });
     }
 
-    private static void bodyAndResponseCodeShouldBe(okhttp3.Response response, String bodyShouldBe, int rcShouldBe) throws IOException {
-        try (response) {
-            assertThat(response.body().string(), equalTo(bodyShouldBe));
-            assertThat(response.code(), equalTo(rcShouldBe));
-        }
-    }
-
     public static class ExampleApp {
 
         public void foobar(Request req, Response res, TinyWeb.RequestContext ctx) {
@@ -645,7 +631,7 @@ public class TinyWebTests {
         }
     }
     
-    private static void doCompositionForOneTest(TinyWeb.Server svr) {
+    public static void doCompositionForOneTest(TinyWeb.Server svr) {
         new TinyWeb.ServerComposition(svr) {{
             path("/api", () -> {
                 //deps([OrderBook.class]);
@@ -657,20 +643,7 @@ public class TinyWebTests {
                             "Cart Items after: " + sc.cartCount() + "\n");
                 });
             });
-
         }};
-    }
-
-    private static @NotNull okhttp3.Response httpGet(String url) throws IOException {
-        return new OkHttpClient().newCall(new Builder()
-                .url("http://localhost:8080" + url)
-                .get().build()).execute();
-    }
-
-    private static @NotNull okhttp3.Response httpGet(String url, String hdrKey, String hdrVal) throws IOException {
-        return new OkHttpClient().newCall(new Builder()
-                .url("http://localhost:8080" + url).addHeader(hdrKey, hdrVal)
-                .get().build()).execute();
     }
 
     public static class IsEncryptedByUs {

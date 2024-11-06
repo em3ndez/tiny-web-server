@@ -1,19 +1,36 @@
 package tests;
 
+import static okhttp3.Request.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.reporters.DefaultReporter;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Arrays;
 
 public class Suite {
 
-    public static okhttp3.Response httpGet(String url) throws IOException {
-        return new OkHttpClient().newCall(new Request.Builder()
+    public static @NotNull okhttp3.Response httpGet(String url) throws IOException {
+        return new OkHttpClient().newCall(new Builder()
                 .url("http://localhost:8080" + url)
                 .get().build()).execute();
+    }
+
+    public static @NotNull okhttp3.Response httpGet(String url, String hdrKey, String hdrVal) throws IOException {
+        return new OkHttpClient().newCall(new Builder()
+                .url("http://localhost:8080" + url).addHeader(hdrKey, hdrVal)
+                .get().build()).execute();
+    }
+
+    public static void bodyAndResponseCodeShouldBe(okhttp3.Response response, String bodyShouldBe, int rcShouldBe) throws IOException {
+        try (response) {
+            assertThat(response.body().string(), equalTo(bodyShouldBe));
+            assertThat(response.code(), equalTo(rcShouldBe));
+        }
     }
 
     public static void main(String[] args) {

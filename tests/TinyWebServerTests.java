@@ -15,11 +15,13 @@ import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
 @Test
 public class TinyWebServerTests {
     TinyWeb.Server webServer;
+    TinyWebTests.ExampleApp exampleApp;
 
     {
         describe("Given a running TinyWeb server", () -> {
@@ -170,7 +172,7 @@ public class TinyWebServerTests {
         describe("Given a mocked ExampleApp", () -> {
             describe("When accessing the Greeting GET endpoint", () -> {
                 before(() -> {
-                    TinyWebTests.ExampleApp exampleApp = Mockito.mock(TinyWebTests.ExampleApp.class);
+                    exampleApp = Mockito.mock(TinyWebTests.ExampleApp.class);
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         // some of these are not used by the it() tests
                         endPoint(GET, "/greeting/(\\w+)/(\\w+)", exampleApp::foobar);
