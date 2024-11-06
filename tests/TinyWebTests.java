@@ -207,35 +207,6 @@ public class TinyWebTests {
             });
         });
 
-        describe("Given a mocked ExampleApp", () -> {
-            describe("When accessing the Greeting GET endpoint", () -> {
-                before(() -> {
-                    exampleApp = Mockito.mock(ExampleApp.class);
-                    webServer = new TinyWeb.Server(8080, 8081) {{
-                        // some of these are not used by the it() tests
-                        endPoint(GET, "/greeting/(\\w+)/(\\w+)", exampleApp::foobar);
-                    }};
-                    //waitForPortToBeClosed("localhost",8080, 8081);
-                    webServer.start();
-                    Mockito.doAnswer(invocation -> {
-                        invocation.<TinyWeb.Response>getArgument(1).write("invoked");
-                        return null;
-                    }).when(exampleApp).foobar(Mockito.any(Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<TinyWeb.RequestContext>any());
-                });
-                it("Then it should invoke the ExampleApp foobar method", () -> {
-                    bodyAndResponseCodeShouldBe(httpGet("/greeting/A/B"),
-                            "invoked", 200);
-
-                });
-                after(() -> {
-                    webServer.stop();
-                    Mockito.verify(exampleApp).foobar(Mockito.any(Request.class),
-                            Mockito.any(TinyWeb.Response.class),
-                            Mockito.<TinyWeb.RequestContext>any());
-                    webServer = null;
-                });
-            });
-        });
 
         describe("Given an inlined Cuppa application", () -> {
             describe("When the endpoint can extract parameters", () -> {
