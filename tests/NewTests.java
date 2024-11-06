@@ -1,26 +1,33 @@
+/*
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (c) Paul Hammant, 2024
+ */
+
+package tests;
+
 import com.paulhammant.tnywb.TinyWeb;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import org.forgerock.cuppa.Runner;
+
 import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.reporters.DefaultReporter;
 
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Random;
+import static tests.Suite.httpGet;
 
 @Test
 public class NewTests {
     TinyWeb.Server webServer;
-
     {
         describe("Given a TinyWeb server with ConcreteExtensionToServerComposition", () -> {
             before(() -> {
@@ -35,7 +42,6 @@ public class NewTests {
                 }};
                 webServer.start();
             });
-
             describe("When that concrete class is mounted within another path", () -> {
                 it("Then endPoints should be able to work relatively", () -> {
                     try (okhttp3.Response response = httpGet("/a/b/c/bar/baz")) {
@@ -45,24 +51,10 @@ public class NewTests {
                     }
                 });
             });
-
             after(() -> {
                 webServer.stop();
                 webServer = null;
             });
         });
-
-    }
-
-
-    private okhttp3.Response httpGet(String url) throws IOException {
-        return new OkHttpClient().newCall(new Request.Builder()
-                .url("http://localhost:8080" + url)
-                .get().build()).execute();
-    }
-
-    public static void main(String[] args) {
-        Runner runner = new Runner();
-        runner.run(runner.defineTests(Collections.singletonList(NewTests.class)), new DefaultReporter());
     }
 }

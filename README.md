@@ -58,20 +58,20 @@ And in a second tier:
     - [Connecting to a WebSocket using TinyWeb.SocketClient](#connecting-to-a-websocket-using-tinywebsocketclient)
     - [Connecting to a WebSocket using JavaScript Source File Endpoint](#connecting-to-a-websocket-using-javascript-source-file-endpoint)
     - [Two WebSockets with Different Paths](#two-websockets-with-different-paths)
-- [Testing Your Web App](#testing-your-web-app)
-  - [Cuppa-Framework](#cuppa-framework)
-  - [Mockito and similar](#mockito-and-similar)
-- [Error Handling](#error-handling)
-  - [In EndPoints Themselves](#in-endpoints-themselves)
-  - [TinyWeb's Overridable Exception Methods](#tinywebs-overridable-exception-methods)
-- [Integrating Other Frameworks](#integrating-other-frameworks)
-  - [Dependency Injection](#dependency-injection)
-  - [Database/ ORM Technologies](#database-orm-technologies)
+  - [Testing Your Web App](#testing-your-web-app)
+    - [Cuppa-Framework](#cuppa-framework)
+    - [Mockito and similar](#mockito-and-similar)
+  - [Error Handling](#error-handling)
+    - [In EndPoints Themselves](#in-endpoints-themselves)
+    - [TinyWeb's Overridable Exception Methods](#tinywebs-overridable-exception-methods)
+  - [Integrating Other Frameworks](#integrating-other-frameworks)
+    - [Dependency Injection](#dependency-injection)
+    - [Database/ ORM Technologies](#database-orm-technologies)
+  - [Pitfalls](#pitfalls)
 - [Secure Channels](#secure-channels)
   - [Securing HTTP Channels](#securing-http-channels)
   - [Securing WebSocket Channels](#securing-websocket-channels)
 - [TinyWeb Performance](#tinyweb-performance)
-- [Pitfalls](#pitfalls)
 - [Build and Test of TinyWeb Itself](#build-and-test-of-tinyweb-itself)
   - [Compiling TinyWeb](#compiling-tinyweb)
   - [Tests](#tests)
@@ -100,7 +100,7 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 In this example, a GET endpoint is defined at the path `/hello`. When a request is made to this endpoint, the server 
 responds with "Hello, World!". The server is set to listen on port 8080.
 
-### A Filter and an EndPoints
+### A Filter and an EndPoint
 
 Here's an example of using a filter with an endpoint in TinyWeb:
 
@@ -363,30 +363,6 @@ big map of paths and websockets open to clients, and if this were a single web-a
 websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
 four concurrently connected channels.
 
-**Thoughts on WebSockets**
-
-Guideline: Short async messages with a follow-up via a regular GET Requests
-
-One school of thought says WebSockets (and messaging systems generally) should send short notifications from the server 
-to the client. These notifications can inform the client that an event has occurred or that new data is available. 
-Instead of sending all the data over the implicitly async connection, the server sends a brief message, and the client 
-then performs a traditional HTTP GET request to retrieve the full details.
-
-This approach has several advantages:
-
-1. **Efficiency**: By keeping WebSocket messages short, you reduce the amount of data transmitted over the WebSocket connection, which can be beneficial in bandwidth-constrained environments.
-2. **Scalability**: Using HTTP GET requests for detailed data retrieval allows you to leverage existing HTTP caching and load balancing infrastructure, which can improve scalability and performance.
-3. **Separation of Concerns**: This pattern separates the concerns of real-time notification and data retrieval, allowing each to be optimized independently.
-4. **Security**: HTTP requests can be more easily secured and monitored than WebSocket messages, allowing for better control over data access and auditing.
-
-Here's a simple example of how this might work:
-
-1. **Server**: Sends a short message over the WebSocket, e.g., "{'newTrades': {'tickets': '['MSFT', 'since': 1730052329]}}".
-2. **Client**: Receives the message and performs a GET request to `/api/trades/MSFT` to retrieve the full details.
-
-This pattern is particularly useful in applications where real-time updates are needed, but the data associated with 
-those updates is too large or complex to send over a WebSocket connection.
-
 ## Testing Your Web App
 
 Testing is a critical part of developing reliable web applications. TinyWeb is just a library. You can write tests
@@ -648,43 +624,6 @@ public class MyDatabaseApp {
 }
 ```
 
-We could have used the `ctx.getDep(..)` way of depending on JDBI, to aid mocking during test automation. But in the
-above example, we just have an  instance `jdbi` that is visible to all the filters and endpoints duly composed.
-It is up to you which way you develop with TinyWeb
-
-## Secure Channels
-
-### Securing HTTP Channels
-
-Currently, TinyWeb supports HTTP, which is suitable for development and testing environments. 
-However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by 
-fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination. These proxies can be 
-configured to forward requests to TinyWeb over HTTP, while serving clients over HTTPS. This approach leverages the 
-robust SSL/TLS capabilities of these proxies, ensuring secure communication without modifying the TinyWeb server code.
-
-### Securing WebSocket Channels
-
-TinyWeb currently supports WebSocket (WS) connections, which are not encrypted. For secure communication, it's 
-important to use Secure WebSocket (WSS) connections. Similar to HTTP, you can achieve this by using a reverse proxy 
-that supports SSL/TLS termination for WebSockets. The proxy can handle the encryption and decryption of WebSocket 
-traffic, forwarding it to TinyWeb over an unencrypted channel. This setup ensures that WebSocket communications are 
-secure, protecting data from eavesdropping and tampering.
-
-## TinyWeb Performance
-
-Performance testing for TinyWeb has not been extensively conducted. However, due to its lightweight nature and minimal 
-dependencies, TinyWeb is expected to perform efficiently for small to medium-sized applications.
-
-#### Security Best Practices
-
-- **Sanitize Inputs**: Remove or escape potentially harmful characters from user inputs.
-- **Use CSRF Tokens**: Implement CSRF protection by requiring tokens for state-changing requests.
-- **Validate on Both Client and Server**: Perform validation on the client side for user feedback and on the server side for security.
-- **Limit Input Size**: Restrict the size of inputs to prevent buffer overflow attacks.
-
-By implementing robust input validation, you can enhance the security of your TinyWeb application and protect it 
-from common web vulnerabilities.
-
 ## Pitfalls
 
 When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such
@@ -704,6 +643,30 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     });
 }};
 ```
+
+
+We could have used the `ctx.getDep(..)` way of depending on JDBI, to aid mocking during test automation. But in the
+above example, we just have an  instance `jdbi` that is visible to all the filters and endpoints duly composed.
+It is up to you which way you develop with TinyWeb
+
+## Secure Channels
+
+### Securing HTTP Channels
+
+Currently, TinyWeb supports HTTP, which is suitable for development and testing environments. 
+However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by 
+fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination. 
+
+### Securing WebSocket Channels
+
+TinyWeb currently supports WebSocket (WS) connections, which are not encrypted. For secure communication, it's 
+important to use Secure WebSocket (WSS) connections. Similar to HTTP, you can achieve this by using a reverse proxy 
+that supports SSL/TLS termination for WebSockets. 
+
+## TinyWeb Performance
+
+Performance testing for TinyWeb has not been extensively conducted. However, due to its lightweight nature and minimal 
+dependencies, TinyWeb is expected to perform efficiently for small to medium-sized applications.
 
 # Build and Test of TinyWeb itself
 

@@ -14,7 +14,7 @@
  * Copyright (c) Paul Hammant, 2024
  */
 
-package com.paulhammant.tnywb.tests;
+package tests;
 
 import com.paulhammant.tnywb.TinyWeb.Request;
 import com.paulhammant.tnywb.TinyWeb.Response;
