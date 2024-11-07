@@ -42,10 +42,15 @@ public class NewTests {
                             res.setHeader("Cache-Control", "no-cache");
                             res.setHeader("Connection", "keep-alive");
                             res.write("data: Initial event\n\n");
+                            res.getResponseBody().flush();
                             // Simulate sending events over time
                             new Thread(() -> {
                                 try {
                                     Thread.sleep(1000);
+                                    Thread.sleep(1000);
+                                    res.write("data: Event 2\n\n");
+                                    res.getResponseBody().flush();
+                                    res.getResponseBody().flush();
                                     res.write("data: Event 1\n\n");
                                     Thread.sleep(1000);
                                     res.write("data: Event 2\n\n");
