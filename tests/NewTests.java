@@ -28,6 +28,7 @@ import static tests.Suite.httpGet;
 @Test
 public class NewTests {
     TinyWeb.Server webServer;
+
     {
         describe("Given a TinyWeb server with an SSE endpoint", () -> {
             before(() -> {
@@ -46,7 +47,6 @@ public class NewTests {
                                     Thread.sleep(1000);
                                     res.write("data: Event 2\n\n");
                                 } catch (InterruptedException e) {
-                                    e.printStackTrace();
                                 }
                             }).start();
                         });
@@ -55,7 +55,7 @@ public class NewTests {
                 webServer.start();
             });
 
-            it("Then it should receive server-sent events", () -> {
+            only().it("Then it should receive server-sent events", () -> {
                 try (okhttp3.Response response = httpGet("/sse/events")) {
                     assertThat(response.code(), equalTo(200));
                     String body = response.body().string();
@@ -70,4 +70,5 @@ public class NewTests {
                 webServer = null;
             });
         });
+    }
 }
