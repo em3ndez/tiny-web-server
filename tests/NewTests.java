@@ -58,10 +58,27 @@ public class NewTests {
             only().it("Then it should receive server-sent events", () -> {
                 try (okhttp3.Response response = httpGet("/sse/events")) {
                     assertThat(response.code(), equalTo(200));
-                    String body = response.body().string();
-                    assertThat(body, containsString("data: Initial event"));
-                    assertThat(body, containsString("data: Event 1"));
-                    assertThat(body, containsString("data: Event 2"));
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
+                        String line;
+                        boolean initialEventReceived = false;
+                        boolean event1Received = false;
+                        boolean event2Received = false;
+                        while ((line = reader.readLine()) != null) {
+                            if (line.contains("data: Initial event")) {
+                                initialEventReceived = true;
+                            } else if (line.contains("data: Event 1")) {
+                                event1Received = true;
+                            } else if (line.contains("data: Event 2")) {
+                                event2Received = true;
+                            }
+                            if (initialEventReceived && event1Received && event2Received) {
+                                break;
+                            }
+                        }
+                        assertThat(initialEventReceived, is(true));
+                        assertThat(event1Received, is(true));
+                        assertThat(event2Received, is(true));
+                    }
                 }
             });
 
