@@ -74,7 +74,7 @@ public class TinyWebSocketTests {
             });
         });
 
-        describe("When using TinyWeb.SocketServer with TinyWeb.Server", () -> {
+        describe("When using TinyWeb.SocketServer with TinyWeb.Server and a contrived webSocket endpoint", () -> {
 
             before(() -> {
                 webServer = new TinyWeb.Server(8080, 8081) {{
@@ -83,9 +83,11 @@ public class TinyWebSocketTests {
                             res.write("OK");
                         });
 
-                        webSocket("/baz", (message, sender) -> {
+                        webSocket("/baz", (messageBytes, sender) -> {
                             for (int i = 1; i <= 3; i++) {
-                                String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                                String message = new String(messageBytes, "UTF-8");
+                                int num = Integer.parseInt(message.split(": ")[1]);
+                                String responseMessage = "Server sent: " + message + " -" + (i+num);
                                 sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
                                 try {
                                     Thread.sleep(100);
@@ -97,7 +99,7 @@ public class TinyWebSocketTests {
                 }}.start();
             });
 
-            it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
+            it("Then it should echo three modified messages back to the client (twice)", () -> {
                 try {
                     Thread.sleep(1000); // Wait for server startup
                 } catch (InterruptedException e) {}
@@ -108,7 +110,7 @@ public class TinyWebSocketTests {
                 // Example client usage
                 try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
                     client.performHandshake();
-                    client.sendMessage("/foo/baz", "Hello WebSocket");
+                    client.sendMessage("/foo/baz", "Hello WebSocket: 0");
 
                     StringBuilder messages = new StringBuilder();
 
@@ -119,10 +121,29 @@ public class TinyWebSocketTests {
                             messages.append(response);
                         }
                     }
-                    assertThat(messages.toString(), equalTo(
-                            "Server sent: Hello WebSocket-1" +
-                                    "Server sent: Hello WebSocket-2" +
-                                    "Server sent: Hello WebSocket-3"));
+                    assertThat(messages.toString(),
+                            equalTo(
+                            "Server sent: Hello WebSocket: 0 -1" +
+                                    "Server sent: Hello WebSocket: 0 -2" +
+                                    "Server sent: Hello WebSocket: 0 -3"));
+
+                    client.sendMessage("/foo/baz", "Hello WebSocket: 5");
+
+                    messages = new StringBuilder();
+
+                    // Read all three response frames
+                    for (int i = 0; i < 3; i++) {
+                        String response = client.receiveMessage();
+                        if (response != null) {
+                            messages.append(response);
+                        }
+                    }
+
+                    assertThat(messages.toString(),
+                            equalTo(
+                            "Server sent: Hello WebSocket: 5 -6" +
+                                    "Server sent: Hello WebSocket: 5 -7" +
+                                    "Server sent: Hello WebSocket: 5 -8"));
                 }
             });
             after(() -> {
