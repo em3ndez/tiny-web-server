@@ -1,12 +1,7 @@
 package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import org.forgerock.cuppa.Test;
-import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
 
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -15,7 +10,7 @@ import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
 @Test
-public class TinyWebSocketTests {
+public class WebSocketTests {
     TinyWeb.Server webServer;
     TinyWeb.SocketServer webSocketServer;
 

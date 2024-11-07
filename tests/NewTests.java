@@ -23,6 +23,8 @@ import org.forgerock.cuppa.Test;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,9 +44,9 @@ public class NewTests {
                             res.setHeader("Content-Type", "text/event-stream");
                             res.setHeader("Cache-Control", "no-cache");
                             res.setHeader("Connection", "keep-alive");
-                            res.sendResponseHeaders(200, 0); // Send headers once
-                            OutputStream outputStream = res.getResponseBody();
                             try {
+                                res.sendResponseHeaders(200, 0); // Send headers once
+                                OutputStream outputStream = res.getResponseBody();
                                 outputStream.write("data: Initial event\n\n".getBytes(StandardCharsets.UTF_8));
                                 outputStream.flush();
                                 // Simulate sending events over time
@@ -57,11 +59,9 @@ public class NewTests {
                                         outputStream.write("data: Event 2\n\n".getBytes(StandardCharsets.UTF_8));
                                         outputStream.flush();
                                     } catch (InterruptedException | IOException e) {
-                                        e.printStackTrace();
                                     }
                                 }).start();
                             } catch (IOException e) {
-                                e.printStackTrace();
                             }
                         });
                     });

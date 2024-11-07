@@ -4,16 +4,13 @@ import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 import org.mockito.Mockito;
 
-import java.io.IOException;
-
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
 @Test
-public class TinyWebMockitoTests {
+public class WithMockitoTests {
     TinyWeb.Server webServer;
     TinyWebTests.ExampleApp exampleApp;
 

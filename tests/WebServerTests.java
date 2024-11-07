@@ -1,17 +1,9 @@
 package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import org.forgerock.cuppa.Test;
-import org.jetbrains.annotations.NotNull;
 import org.mockito.Mockito;
 
-import java.io.File;
-import java.io.IOException;
-
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,7 +13,7 @@ import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
 @Test
-public class TinyWebServerTests {
+public class WebServerTests {
     TinyWeb.Server webServer;
     TinyWebTests.ExampleApp exampleApp;
 

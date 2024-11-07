@@ -17,7 +17,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 @Test
-public class TinyWebIntegrationTests {
+public class IntegrationTests {
     TinyWeb.Server webServer;
 
     {
