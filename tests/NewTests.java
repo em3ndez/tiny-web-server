@@ -21,6 +21,7 @@ import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 
 import static org.forgerock.cuppa.Cuppa.*;
@@ -42,7 +43,10 @@ public class NewTests {
                             res.setHeader("Cache-Control", "no-cache");
                             res.setHeader("Connection", "keep-alive");
                             res.write("data: Initial event\n\n");
-                            res.getResponseBody().flush();
+                            try {
+                                res.getResponseBody().flush();
+                            } catch (IOException e) {
+                            }
                             // Simulate sending events over time
                             new Thread(() -> {
                                 try {
@@ -54,7 +58,7 @@ public class NewTests {
                                     res.write("data: Event 1\n\n");
                                     Thread.sleep(1000);
                                     res.write("data: Event 2\n\n");
-                                } catch (InterruptedException e) {
+                                } catch (InterruptedException | IOException e) {
                                 }
                             }).start();
                         });
