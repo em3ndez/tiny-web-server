@@ -11,7 +11,6 @@ import static tests.Suite.httpGet;
 @Test
 public class ServerCompositionTests {
     TinyWeb.Server webServer;
-
     {
         describe("Given a TinyWeb server with composed paths", () -> {
             before(() -> {
@@ -39,5 +38,6 @@ public class ServerCompositionTests {
                 webServer = null;
             });
         });
+        //ONE_MORE_TEST_HERE
     }
 }
