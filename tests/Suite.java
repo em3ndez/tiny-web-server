@@ -35,6 +35,8 @@ public class Suite {
 
     public static void main(String[] args) {
         Runner runner = new Runner();
-        runner.run(runner.defineTests(Arrays.asList(NewTests.class, TinyWebTests.class, TinyWebServerTests.class, TinyWebSocketTests.class, TinyWebIntegrationTests.class, TinyWebMockitoTests.class)), new DefaultReporter());
+        runner.run(runner.defineTests(Arrays.asList(NewTests.class, TinyWebTests.class, TinyWebServerTests.class,
+                TinyWebSocketTests.class, TinyWebIntegrationTests.class, TinyWebMockitoTests.class,
+                ServerCompositionTests.class)), new DefaultReporter());
     }
 }
