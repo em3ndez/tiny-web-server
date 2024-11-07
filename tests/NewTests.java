@@ -20,6 +20,9 @@ import com.paulhammant.tnywb.TinyWeb;
 
 import org.forgerock.cuppa.Test;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
