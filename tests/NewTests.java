@@ -42,18 +42,20 @@ public class NewTests {
                             res.setHeader("Content-Type", "text/event-stream");
                             res.setHeader("Cache-Control", "no-cache");
                             res.setHeader("Connection", "keep-alive");
+                            res.sendResponseHeaders(200, 0); // Send headers once
+                            OutputStream outputStream = res.getResponseBody();
                             try {
-                                res.write("data: Initial event\n\n");
-                                res.getResponseBody().flush();
+                                outputStream.write("data: Initial event\n\n".getBytes(StandardCharsets.UTF_8));
+                                outputStream.flush();
                                 // Simulate sending events over time
                                 new Thread(() -> {
                                     try {
                                         Thread.sleep(1000);
-                                        res.write("data: Event 1\n\n");
-                                        res.getResponseBody().flush();
+                                        outputStream.write("data: Event 1\n\n".getBytes(StandardCharsets.UTF_8));
+                                        outputStream.flush();
                                         Thread.sleep(1000);
-                                        res.write("data: Event 2\n\n");
-                                        res.getResponseBody().flush();
+                                        outputStream.write("data: Event 2\n\n".getBytes(StandardCharsets.UTF_8));
+                                        outputStream.flush();
                                     } catch (InterruptedException | IOException e) {
                                         e.printStackTrace();
                                     }
