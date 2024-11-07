@@ -11,6 +11,8 @@ import java.io.IOException;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static tests.Suite.bodyAndResponseCodeShouldBe;
+import static tests.Suite.httpGet;
 
 @Test
 public class TinyWebSocketTests {
@@ -130,16 +132,4 @@ public class TinyWebSocketTests {
         });
     }
 
-    private static void bodyAndResponseCodeShouldBe(okhttp3.Response response, String bodyShouldBe, int rcShouldBe) throws IOException {
-        try (response) {
-            assertThat(response.body().string(), equalTo(bodyShouldBe));
-            assertThat(response.code(), equalTo(rcShouldBe));
-        }
-    }
-
-    private static @NotNull okhttp3.Response httpGet(String url) throws IOException {
-        return new OkHttpClient().newCall(new Request.Builder()
-                .url("http://localhost:8080" + url)
-                .get().build()).execute();
-    }
 }

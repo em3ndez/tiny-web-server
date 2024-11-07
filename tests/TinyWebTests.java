@@ -51,12 +51,9 @@ import static tests.Suite.httpGet;
 
 @Test
 public class TinyWebTests {
-    ExampleApp exampleApp;
     TinyWeb.Server webServer;
-    TinyWeb.SocketServer webSocketServer;
 
     {
-
 
         describe("Given an inlined Cuppa application", () -> {
             describe("When the endpoint can extract parameters", () -> {

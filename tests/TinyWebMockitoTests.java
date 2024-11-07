@@ -9,6 +9,7 @@ import java.io.IOException;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
 @Test
@@ -47,10 +48,4 @@ public class TinyWebMockitoTests {
         });
     }
 
-    private static void bodyAndResponseCodeShouldBe(okhttp3.Response response, String bodyShouldBe, int rcShouldBe) throws IOException {
-        try (response) {
-            assertThat(response.body().string(), equalTo(bodyShouldBe));
-            assertThat(response.code(), equalTo(rcShouldBe));
-        }
-    }
 }
