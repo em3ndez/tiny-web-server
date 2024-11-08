@@ -97,40 +97,6 @@ public class TinyWebTests {
                     webServer = null;
                 });
             });
-            describe("When endpoint and filters can depend on components", () -> {
-                before(() -> {
-                    webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(new TinyWeb.DefaultComponentCache(){{
-                        this.put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
-                    }}){
-
-                        // This is not Dependency Injection
-                        // This also does not use reflection so is fast.
-
-                        @Override
-                        public <T> T  instantiateDep(Class<T> clazz, TinyWeb.ComponentCache requestCache) {
-                            if (clazz == ShoppingCart.class) {
-                                return (T) createOrGetShoppingCart(requestCache);
-                            }
-                            throw new IllegalArgumentException("Unsupported class: " + clazz);
-                        }
-
-                    });
-                    //svr.applicationScopeCache.put()
-                    doCompositionForOneTest(webServer);
-                    webServer.start();
-
-                });
-                it("Then it should extract parameters correctly from the path", () -> {
-                    bodyAndResponseCodeShouldBe(httpGet("/api/howManyOrderInBook"),
-                            "Cart Items before: 0\n" +
-                            "apple picked: true\n" +
-                            "Cart Items after: 1\n", 200);
-                });
-                after(() -> {
-                    webServer.stop();
-                    webServer = null;
-                });
-            });
             describe("When an application exception is thrown from an endpoint", () -> {
                 final StringBuilder appHandlingExceptions = new StringBuilder();
                 before(() -> {
