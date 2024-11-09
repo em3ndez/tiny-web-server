@@ -36,7 +36,7 @@ public class Suite {
     public static void main(String[] args) {
         Runner runner = new Runner();
         runner.run(runner.defineTests(Arrays.asList(NewTests.class, TinyWebTests.class, WebServerTests.class,
-                WebSocketTests.class, IntegrationTests.class, DependenciesTests.class, ServerSideEventsTests.class, WithMockitoTests.class,
+                WebSocketTests.class, FilterTests.class, IntegrationTests.class, DependenciesTests.class, ServerSideEventsTests.class, WithMockitoTests.class,
                 ServerCompositionTests.class)), new DefaultReporter());
     }
 }
