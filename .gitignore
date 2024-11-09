@@ -5,3 +5,8 @@ target/
 test_libs/
 TinyWeb.jar
 .env
+jacoco-report/
+jacoco.exec
+jacocoagent.jar
+jacococli.jar
+

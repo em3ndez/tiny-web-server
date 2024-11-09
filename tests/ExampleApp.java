@@ -69,4 +69,6 @@ public class ExampleApp {
         }};
         return server;
     }
+
+    // You may have a main method here to launch ExampleApp.exampleComposition(..)
 }

@@ -1,0 +1,14 @@
+tests/ConcreteExtensionToServerComposition.java
+tests/ExampleApp.java
+tests/Suite.java
+tests/ServerCompositionTests.java
+tests/IntegrationTests.java
+tests/WithMockitoTests.java
+tests/WebServerTests.java
+tests/WebSocketTests.java
+tests/NewTests.java
+tests/ServerSideEventsTests.java
+tests/DependenciesTests.java
+tests/FilterTests.java
+tests/ChunkedTests.java
+tests/StaticFilesTests.java

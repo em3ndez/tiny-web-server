@@ -689,61 +689,48 @@ that is about 37K in size.
 
 ## Tests
 
-To compile `TinyWebTests.java` into the `target/test-classes/` directory you WILL need dependencies: (in `test_libs/`). 
+To compile TinyWeb's tests into the `target/test-classes/` directory you WILL need dependencies: (in `test_libs/`). 
 Use the following to go get them:
 
 ```bash
-mkdir -p test_libs
-curl -L -o test_libs/annotations-13.0.jar https://repo1.maven.org/maven2/org/jetbrains/annotations/13.0/annotations-13.0.jar
-curl -L -o test_libs/auto-service-annotations-1.1.1.jar https://repo1.maven.org/maven2/com/google/auto/service/auto-service-annotations/1.1.1/auto-service-annotations-1.1.1.jar
-curl -L -o test_libs/byte-buddy-1.15.4.jar https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy/1.15.4/byte-buddy-1.15.4.jar
-curl -L -o test_libs/byte-buddy-agent-1.15.4.jar https://repo1.maven.org/maven2/net/bytebuddy/byte-buddy-agent/1.15.4/byte-buddy-agent-1.15.4.jar
-curl -L -o test_libs/checker-qual-3.43.0.jar https://repo1.maven.org/maven2/org/checkerframework/checker-qual/3.43.0/checker-qual-3.43.0.jar
-curl -L -o test_libs/commons-exec-1.4.0.jar https://repo1.maven.org/maven2/org/apache/commons/commons-exec/1.4.0/commons-exec-1.4.0.jar
-curl -L -o test_libs/cuppa-1.7.0.jar https://repo1.maven.org/maven2/org/forgerock/cuppa/cuppa/1.7.0/cuppa-1.7.0.jar
-curl -L -o test_libs/error_prone_annotations-2.28.0.jar https://repo1.maven.org/maven2/com/google/errorprone/error_prone_annotations/2.28.0/error_prone_annotations-2.28.0.jar
-curl -L -o test_libs/failureaccess-1.0.2.jar https://repo1.maven.org/maven2/com/google/guava/failureaccess/1.0.2/failureaccess-1.0.2.jar
-curl -L -o test_libs/guava-33.3.0-jre.jar https://repo1.maven.org/maven2/com/google/guava/guava/33.3.0-jre/guava-33.3.0-jre.jar
-curl -L -o test_libs/hamcrest-3.0.jar https://repo1.maven.org/maven2/org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar
-curl -L -o test_libs/j2objc-annotations-3.0.0.jar https://repo1.maven.org/maven2/com/google/j2objc/j2objc-annotations/3.0.0/j2objc-annotations-3.0.0.jar
-curl -L -o test_libs/jspecify-1.0.0.jar https://repo1.maven.org/maven2/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar
-curl -L -o test_libs/jsr305-3.0.2.jar https://repo1.maven.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar
-curl -L -o test_libs/kotlin-stdlib-1.9.23.jar https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.9.23/kotlin-stdlib-1.9.23.jar
-curl -L -o test_libs/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar https://repo1.maven.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar
-curl -L -o test_libs/mockito-core-5.14.2.jar https://repo1.maven.org/maven2/org/mockito/mockito-core/5.14.2/mockito-core-5.14.2.jar
-curl -L -o test_libs/objenesis-3.3.jar https://repo1.maven.org/maven2/org/objenesis/objenesis/3.3/objenesis-3.3.jar
-curl -L -o test_libs/okhttp-5.0.0-alpha.14.jar https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/5.0.0-alpha.14/okhttp-5.0.0-alpha.14.jar
-curl -L -o test_libs/okio-jvm-3.9.0.jar https://repo1.maven.org/maven2/com/squareup/okio/okio-jvm/3.9.0/okio-jvm-3.9.0.jar
-curl -L -o test_libs/opentelemetry-semconv-1.25.0-alpha.jar https://repo1.maven.org/maven2/io/opentelemetry/semconv/opentelemetry-semconv/1.25.0-alpha/opentelemetry-semconv-1.25.0-alpha.jar
-curl -L -o test_libs/selenium-api-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-api/4.25.0/selenium-api-4.25.0.jar
-curl -L -o test_libs/selenium-chrome-driver-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-chrome-driver/4.25.0/selenium-chrome-driver-4.25.0.jar
-curl -L -o test_libs/selenium-chromium-driver-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-chromium-driver/4.25.0/selenium-chromium-driver-4.25.0.jar
-curl -L -o test_libs/selenium-devtools-v129-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-devtools-v129/4.25.0/selenium-devtools-v129-4.25.0.jar
-curl -L -o test_libs/selenium-devtools-v85-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-devtools-v85/4.25.0/selenium-devtools-v85-4.25.0.jar
-curl -L -o test_libs/selenium-edge-driver-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-edge-driver/4.25.0/selenium-edge-driver-4.25.0.jar
-curl -L -o test_libs/selenium-firefox-driver-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-firefox-driver/4.25.0/selenium-firefox-driver-4.25.0.jar
-curl -L -o test_libs/selenium-http-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-http/4.25.0/selenium-http-4.25.0.jar
-curl -L -o test_libs/selenium-ie-driver-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-ie-driver/4.25.0/selenium-ie-driver-4.25.0.jar
-curl -L -o test_libs/selenium-java-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-java/4.25.0/selenium-java-4.25.0.jar
-curl -L -o test_libs/selenium-json-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-json/4.25.0/selenium-json-4.25.0.jar
-curl -L -o test_libs/selenium-manager-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-manager/4.25.0/selenium-manager-4.25.0.jar
-curl -L -o test_libs/selenium-os-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-os/4.25.0/selenium-os-4.25.0.jar
-curl -L -o test_libs/selenium-remote-driver-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-remote-driver/4.25.0/selenium-remote-driver-4.25.0.jar
-curl -L -o test_libs/selenium-safari-driver-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-safari-driver/4.25.0/selenium-safari-driver-4.25.0.jar
-curl -L -o test_libs/selenium-support-4.25.0.jar https://repo1.maven.org/maven2/org/seleniumhq/selenium/selenium-support/4.25.0/selenium-support-4.25.0.jar
+curl -s https://raw.githubusercontent.com/paul-hammant/mvn-dep-getter/refs/heads/main/mvn-dep-getter.py | python3 - org.forgerock.cuppa:cuppa:1.7.0,org.hamcrest:hamcrest:3.0,com.squareup.okhttp3:okhttp:5.0.0-alpha.14,org.mockito:mockito-core:5.14.2,org.seleniumhq.selenium:selenium-java:4.26.0 test_libs
 ```
+
+That is a Python script, so you'll need Python installed. Also Maven, but THIS project does not use Maven in any other way.
 
 Then you can compile the tests class:
 
 ```bash
 mkdir -p target/test-classes
-javac -d target/test-classes -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/classes" TinyWebTests.java
+find tests -name "*.java" > tests/sources.txt
+javac -d target/test-classes -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/classes" @tests/sources.txt
 ```
 
-To run the main method of `TinyWebTests.java`, which executes the tests using the Cuppa framework, use the following command:
+To run the main method of `Suite.java`, which executes the test suite using the Cuppa framework, use the following command:
 
 ```bash
-java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" com.paulhammant.tinywebserver.tests.TinyWebTests
+java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
+```
+
+### Getting coverage reports for TinyWeb
+
+Get JaCoCo
+
+``` 
+curl -L -o jacocoagent.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.10-runtime.jar
+curl -L -o jacococli.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.cli/0.8.12/org.jacoco.cli-0.8.10-nodeps.jar       
+```
+
+Instrument 
+
+``` 
+java -javaagent:jacocoagent.jar=destfile=jacoco.exec -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
+```
+
+Print report
+
+``` 
+java -jar jacococli.jar report jacoco.exec --classfiles target/classes --sourcefiles . --html jacoco-report
 ```
 
 ## TinyWeb's own test results
