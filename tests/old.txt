@@ -1,0 +1,43 @@
+Given a running TinyWeb server
+    When accessing the Echoing GET endpoint
+      ✓ Then it should return the user profile for Jimmy
+      ✓ Then it should return the user profile for Thelma
+  Given a mocked ExampleApp
+    When accessing the Greeting GET endpoint
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/home/paul/scm/tinywebserver/test_libs/byte-buddy-agent-1.15.4.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+      ✓ Then it should invoke the ExampleApp foobar method
+  Given an inlined Cuppa application
+    When the endpoint can extract parameters
+      ✓ Then it should extract parameters correctly from the path
+      ✓ Then it should return 404 when two parameters are provided for a one-parameter path
+    When the endpoint can extract query parameters
+      ✓ Then it should handle query parameters correctly
+    When endpoint and filters can depend on components
+      ✓ Then it should extract parameters correctly from the path
+    When an application exception is thrown from an endpoint
+      ✓ Then it should return 500 and an error message for a runtime exception
+    When the endpoint has query-string parameters
+      ✓ Then it should parse query parameters correctly
+    When response headers are sent to the client
+      ✓ Then it should set the custom header correctly
+    When an exception is thrown from a filter
+      ✓ Then it should return 500 and an error message for a runtime exception in a filter
+    When testing static file serving
+      ✓ Then it should serve a static file correctly
+      ✓ Then it should return 404 for a non-existent static file
+      ✓ Then it should prevent directory traversal attacks
+    When using standalone TinyWeb.SocketServer without TinyWeb.Server
+      ✓ Then it should echo three messages plus -1 -2 -3 back to the client
+    When using TinyWeb.SocketServer with TinyWeb.Server
+      ✓ Then it should echo three messages plus -1 -2 -3 back to the client
+    When using Selenium to subscribe in a browser
+Nov 09, 2024 10:50:37 AM org.openqa.selenium.devtools.CdpVersionFinder findNearestMatch
+WARNING: Unable to find an exact match for CDP version 130, returning the closest version; found: 129; Please update to a Selenium version that supports CDP version 130
+      ✓ Then it should echo three messages plus -1 -2 -3 back to the client
+    When additional composition can happen on a previously instantiated TinyWeb.Server
+      ✓ Then both endpoints should be accessible via GET

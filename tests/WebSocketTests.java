@@ -3,6 +3,7 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
+import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -24,7 +25,7 @@ public class WebSocketTests {
                             String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
                             sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
                             try {
-                                Thread.sleep(100);
+                                sleep(100);
                             } catch (InterruptedException e) {
                             }
                         }
@@ -36,7 +37,7 @@ public class WebSocketTests {
 
             it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
                 try {
-                    Thread.sleep(1000); // Wait for server startup
+                    sleep(1000); // Wait for server startup
                 } catch (InterruptedException e) {
                 }
 
@@ -85,7 +86,7 @@ public class WebSocketTests {
                                 String responseMessage = "Server sent: " + message + " -" + (i+num);
                                 sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
                                 try {
-                                    Thread.sleep(100);
+                                    sleep(100);
                                 } catch (InterruptedException e) {
                                 }
                             }
@@ -96,7 +97,7 @@ public class WebSocketTests {
 
             it("Then it should echo three modified messages back to the client (twice)", () -> {
                 try {
-                    Thread.sleep(1000); // Wait for server startup
+                    sleep(1000); // Wait for server startup
                 } catch (InterruptedException e) {}
 
                 bodyAndResponseCodeShouldBe(httpGet("/foo/bar"),
@@ -144,6 +145,59 @@ public class WebSocketTests {
             after(() -> {
                 webServer.stop();
                 webServer = null;
+            });
+        });
+        describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
+
+            before(() -> {
+                webSocketServer = new TinyWeb.SocketServer(8081) {{
+                    registerMessageHandler("/foo/baz", (message, sender) -> {
+                        for (int i = 1; i <= 3; i++) {
+                            String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
+                            sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
+                            try {
+                                sleep(100);
+                            } catch (InterruptedException e) {
+                            }
+                        }
+                    });
+                }};
+                Thread serverThread = new Thread(webSocketServer::start);
+                serverThread.start();
+            });
+
+            it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
+                try {
+                    sleep(1000); // Wait for server startup
+                } catch (InterruptedException e) {
+                }
+
+                // Example client usage
+                try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
+                    client.performHandshake();
+                    client.sendMessage("/foo/baz", "Hello WebSocket");
+
+                    StringBuilder messages = new StringBuilder();
+
+                    // Read all three response frames
+                    for (int i = 0; i < 3; i++) {
+                        String response = client.receiveMessage();
+                        if (response != null) {
+                            messages.append(response);
+                        }
+                    }
+                    assertThat(messages.toString(), equalTo(
+                            "Server sent: Hello WebSocket-1" +
+                                    "Server sent: Hello WebSocket-2" +
+                                    "Server sent: Hello WebSocket-3"));
+
+                }
+
+            });
+
+            after(() -> {
+                webSocketServer.stop();
+                webSocketServer = null;
             });
         });
     }

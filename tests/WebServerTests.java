@@ -202,6 +202,65 @@ public class WebServerTests {
                     webServer = null;
                 });
             });
+            describe("When accessing a nested path with parameters", () -> {
+                before(() -> {
+                    webServer = new TinyWeb.Server(8080, 8081) {{
+                        final StringBuilder sb = new StringBuilder();  // don't do this - one sv instance for all incoming connections
+                        path("/api", () -> {
+                            sb.append("/api->"); // called once only while composing webapp
+                            path("/v1", () -> {
+                                sb.append("/v1->"); // called once only while composing webapp
+                                endPoint(GET, "/items/(\\w+)/details/(\\w+)", (req, res, ctx) -> {
+                                    sb.append("itemz."); // called while handling request
+                                    res.write("Item: " + ctx.getParam("1") + ", Detail: " + ctx.getParam("2") + "\n" + sb);
+                                });
+                            });
+                        });
+                    }}.start();
+                });
+
+                it("Then it should extract parameters correctly from the nested path", () -> {
+                    bodyAndResponseCodeShouldBe(httpGet("/api/v1/items/123/details/456"),
+                            "Item: 123, Detail: 456\n" +
+                                    "/api->/v1->itemz.", 200);
+                    bodyAndResponseCodeShouldBe(httpGet("/api/v1/items/abc/details/def"),
+                            "Item: abc, Detail: def\n" +
+                                    "/api->/v1->itemz.itemz.", 200);
+                });
+
+                it("Then it should return 404 for an incorrect nested path", () -> {
+                    bodyAndResponseCodeShouldBe(httpGet("/api/v1/items/123/456"),
+                            "Not found", 404);
+                });
+
+                after(() -> {
+                    webServer.stop();
+                    webServer = null;
+                });
+            });
+            describe("When accessing the Echoing GET endpoint", () -> {
+                before(() -> {
+                    webServer = new TinyWeb.Server(8080, 8081) {{
+                        endPoint(GET, "/users/(\\w+)", (req, res, ctx) -> {
+                            res.write("User profile: " + ctx.getParam("1"));
+                        });
+                    }};
+                    webServer.start();
+                });
+                it("Then it should return the user profile for Jimmy", () -> {
+                    bodyAndResponseCodeShouldBe(httpGet("/users/Jimmy"),
+                            "User profile: Jimmy", 200);
+
+                });
+                it("Then it should return the user profile for Thelma", () -> {
+                    bodyAndResponseCodeShouldBe(httpGet("/users/Thelma"),
+                            "User profile: Thelma", 200);
+                });
+                after(() -> {
+                    webServer.stop();
+                    webServer = null;
+                });
+            });
         });
     }
 

@@ -69,6 +69,47 @@ public class FilterTests {
                 webServer = null;
             });
         });
+        describe("When applying filters", () -> {
+            before(() -> {
+                webServer = new TinyWeb.Server(8080, 8081) {{
+                    path("/foo", () -> {
+                        filter(GET, "/.*", (req, res, ctx) -> {
+                            if (req.getHeaders().containsKey("sucks")) {
+                                res.write("Access Denied", 403);
+                                return STOP; // don't proceed
+                            }
+                            return CONTINUE; // proceed
+                        });
+                        endPoint(GET, "/bar", (req, res, ctx) -> {
+                            res.write("Hello, World!");
+                            // This endpoint is /foo/bar if that wasn't obvious
+                        });
+                    });
+                    endPoint(GET, "/baz/baz/baz", (req, res, ctx) -> {
+                        res.write("Hello, World 2!");
+                    });
+                }};
+                webServer.start();
+            });
+            it("Then it should allow access when the 'sucks' header is absent", () -> {
+                bodyAndResponseCodeShouldBe(httpGet("/foo/bar"),
+                        "Hello, World!", 200);
+
+            });
+            it("Then it should deny access when the 'sucks' header is present", () -> {
+                bodyAndResponseCodeShouldBe(httpGet("/foo/bar", "sucks", "true"),
+                        "Access Denied", 403);
+            });
+            it("Then it can access items outside the path", () -> {
+                bodyAndResponseCodeShouldBe(httpGet("/baz/baz/baz"),
+                        "Hello, World 2!", 200);
+
+            });
+            after(() -> {
+                webServer.stop();
+                webServer = null;
+            });
+        });
     }
     public static class IsEncryptedByUs {
         public static Authentication decrypt(String allegedlyLoggedInCookie) {

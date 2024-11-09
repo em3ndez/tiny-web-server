@@ -17,16 +17,17 @@
 package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
-
 import org.forgerock.cuppa.Test;
-import org.hamcrest.Matchers;
 
-import java.util.regex.Matcher;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
 
-import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static tests.Suite.bodyAndResponseCodeShouldBe;
+import static org.hamcrest.Matchers.equalTo;
 import static tests.Suite.httpGet;
 
 @Test

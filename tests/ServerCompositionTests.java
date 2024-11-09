@@ -3,9 +3,11 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
+import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
 @Test
@@ -17,7 +19,7 @@ public class ServerCompositionTests {
                 webServer = new TinyWeb.Server(8080, -1) {{
                     path("/composed", () -> {
                         path("/nested", () -> {
-                            endPoint(TinyWeb.Method.GET, "/endpoint", (req, res, ctx) -> {
+                            endPoint(GET, "/endpoint", (req, res, ctx) -> {
                                 res.write("Composed path response");
                             });
                         });
@@ -38,8 +40,46 @@ public class ServerCompositionTests {
                 webServer = null;
             });
         });
-        //ONE_MORE_TEST_HERE
-        describe("Given a TinyWeb server with ConcreteExtensionToServerComposition", () -> {
+        describe("When additional composition can happen on a previously instantiated TinyWeb.Server", () -> {
+            before(() -> {
+                webServer = new TinyWeb.Server(8080, 8081) {{
+                    endPoint(GET, "/foo", (req, res, ctx) -> {
+                        res.write("Hello1");
+                    });
+                }};
+                new TinyWeb.ServerComposition(webServer) {{
+                    path("/bar2", () -> {
+                        endPoint(GET, "/baz2", (req, res, ctx) -> {
+                            res.write("Hello3");
+                        });
+                    });
+                    path("/bar", () -> {
+                        endPoint(GET, "/baz", (req, res, ctx) -> {
+                            res.write("Hello2");
+                        });
+                    });
+                }};
+                new TinyWeb.ServerComposition(webServer) {{
+                    endPoint(GET, "/bar2/baz2", (req, res, ctx) -> {
+                        res.write("Hello3");
+                    });
+                }};
+                webServer.start();
+            });
+            it("Then both endpoints should be accessible via GET", () -> {
+                bodyAndResponseCodeShouldBe(httpGet("/foo"),
+                        "Hello1", 200);
+                bodyAndResponseCodeShouldBe(httpGet("/bar/baz"),
+                        "Hello2", 200);
+                bodyAndResponseCodeShouldBe(httpGet("/bar2/baz2"),
+                        "Hello3", 200);
+            });
+            after(() -> {
+                webServer.stop();
+                webServer = null;
+            });
+        });
+    describe("Given a TinyWeb server with ConcreteExtensionToServerComposition", () -> {
             before(() -> {
                 webServer = new TinyWeb.Server(8080, -1) {{
                     path("/a", () -> {
