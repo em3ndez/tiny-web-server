@@ -1,6 +1,6 @@
 # TinyWeb 
 
-A tiny web Server and SocketServer that depend only on JDK classes and are in a single source file: `TinyWeb.java`
+A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `TinyWeb.java`
 
 The TinyWeb single source file provides a lightweight and flexible server implementation that supports both HTTP and 
 WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  
@@ -33,18 +33,19 @@ to the SocketServer.
 I wanted to make something that:
 
 1. A reliance on Java-8's lambdas - as close as regular Java can get to Groovy's builders
+1. Have no dependencies at all, outside the JDK
 2. Has a `path(..)` construct that groups other paths, endpoints and filters together. This approach allows for a clean and intuitive way to compose complex URL hierarchies within the server. More elegant and maintainable 
-3. Using those, could take **a series of multiple such compositions** (nested paths/filter/endPoints). This for web-module separation to aid deployment and testing flexibility
-4. No shared static state
+1. Using those, could take **a series of multiple such compositions** (nested paths/filter/endPoints). This for web-module separation to aid deployment and testing flexibility
 
 And in a second tier:
 
+1. No shared static state
 1. Attempted to coerce websockets into the same nested path organization as is available for the web path composition
-2. Exist in a single source file, for no good reason
-3. Have no dependencies at all, outside the JDK
-4. Does not itself pollute stdout force a logging framework on users.
-5. Loosely follows Inversion of Control (IoC) idioms
-6. Aids testability wherever it can
+1. Exist in a single source file, for no good reason
+1. Use JDK's own command for its build technology. Well, bash too.
+1. Does not itself pollute stdout or force a logging framework on users.
+1. Loosely follows Inversion of Control (IoC) idioms
+1. Aids testability wherever it can
 
 # Table of Contents
 
@@ -717,8 +718,8 @@ java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:targe
 Get JaCoCo
 
 ``` 
-curl -L -o jacocoagent.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.10-runtime.jar
-curl -L -o jacococli.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.cli/0.8.12/org.jacoco.cli-0.8.10-nodeps.jar       
+curl -L -o jacocoagent.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.12-runtime.jar
+curl -L -o jacococli.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.cli/0.8.12/org.jacoco.cli-0.8.12-nodeps.jar       
 ```
 
 Instrument 
@@ -730,7 +731,9 @@ java -javaagent:jacocoagent.jar=destfile=jacoco.exec -cp "$(find test_libs -name
 Print report
 
 ``` 
-java -jar jacococli.jar report jacoco.exec --classfiles target/classes --sourcefiles . --html jacoco-report
+mkdir -p target/srcForJaCoCo/com/paulhammant/tnywb/
+cp TinyWeb.java target/srcForJaCoCo/com/paulhammant/tnywb/
+java -jar jacococli.jar report jacoco.exec --classfiles target/classes --sourcefiles target/srcForJaCoCo --html jacoco-report
 ```
 
 ## TinyWeb's own test results

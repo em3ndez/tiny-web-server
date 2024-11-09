@@ -9,4 +9,5 @@ jacoco-report/
 jacoco.exec
 jacocoagent.jar
 jacococli.jar
+out/
 

@@ -23,6 +23,8 @@ import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
 import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
@@ -56,11 +58,11 @@ public class FilterTests {
                 }};
             });
 
-            it("Then the attribute user should be passed from filter to endPoint for authentic user", () -> {
+            it("Then an attribute 'user' can be passed from filter to endPoint for authentication", () -> {
                 bodyAndResponseCodeShouldBe(httpGet("/api/attribute-test", "Cookie", "logged-in=7C65o6I2>A=6]4@>"), "User Is logged in: fred@example.com", 200);
             });
 
-            it("Then the attribute user should not be passed from filter to endPoint for inauthentic user", () -> {
+            it("Then an attribute 'user' should not be passed from filter to endPoint for when inauthentic", () -> {
                 bodyAndResponseCodeShouldBe(httpGet("/api/attribute-test", "Cookie", "logged-in=aeiouaeiou;"), "Try logging in again", 403);
             });
 
@@ -91,17 +93,17 @@ public class FilterTests {
                 }};
                 webServer.start();
             });
-            it("Then it should allow access when the 'sucks' header is absent", () -> {
+            it("Then a filter can conditionally allow access to an endpoint", () -> {
                 bodyAndResponseCodeShouldBe(httpGet("/foo/bar"),
                         "Hello, World!", 200);
 
             });
-            it("Then it should deny access when the 'sucks' header is present", () -> {
+            it("Then a filter can conditionally deny access to an endpoint", () -> {
                 bodyAndResponseCodeShouldBe(httpGet("/foo/bar", "sucks", "true"),
                         "Access Denied", 403);
             });
-            it("Then it can access items outside the path", () -> {
-                bodyAndResponseCodeShouldBe(httpGet("/baz/baz/baz"),
+            it("Then an endpoint outside that conditionally filters isn't blocked", () -> {
+                bodyAndResponseCodeShouldBe(httpGet("/baz/baz/baz", "sucks", "true"),
                         "Hello, World 2!", 200);
 
             });
@@ -110,7 +112,42 @@ public class FilterTests {
                 webServer = null;
             });
         });
+        describe("When a server is started", () -> {
+            it("Then a method filter can't be added anymore", () -> {
+                webServer = new TinyWeb.Server(8080, 8081) {{
+                    start();
+                    try {
+                        filter(GET, "/foo", (req, res, ctx) -> {
+                            return CONTINUE;
+                        });
+                        throw new AssertionError("should have barfed");
+                    } catch (IllegalStateException e) {
+                        assertThat(e.getMessage(), equalTo("Cannot add filters after the server has started."));
+                    }
+                    stop();
+                }};
+            });
+            it("Then a 'all' filter can't be added anymore", () -> {
+                webServer = new TinyWeb.Server(8080, 8081) {{
+                    start();
+                    try {
+                        filter("/foo", (req, res, ctx) -> {
+                            return CONTINUE;
+                        });
+                        throw new AssertionError("should have barfed");
+                    } catch (IllegalStateException e) {
+                        assertThat(e.getMessage(), equalTo("Cannot add filters after the server has started."));
+                    }
+                    stop();
+                }};
+            });
+            after(() -> {
+                webServer = null;
+            });
+        });
     }
+
+
     public static class IsEncryptedByUs {
         public static Authentication decrypt(String allegedlyLoggedInCookie) {
             String rot47ed = rot47(allegedlyLoggedInCookie);

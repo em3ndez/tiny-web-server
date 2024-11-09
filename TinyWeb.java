@@ -109,7 +109,7 @@ public class TinyWeb {
         public PathContext path(String basePath, Runnable runnable) {
             // Save current endpoints and filters
             if (serverState.hasStarted()) {
-                throw new IllegalStateException("Cannot modify paths after the server has started.");
+                throw new IllegalStateException("Cannot add paths after the server has started.");
             }
             Map<Method, Map<Pattern, EndPoint>> previousEndPoints = this.endPoints;
             Map<Pattern, SocketMessageHandler> previousWsEndPoints = this.wsEndPoints;
@@ -178,7 +178,7 @@ public class TinyWeb {
             this.endPoints = previousEndPoints;
             this.wsEndPoints = previousWsEndPoints;
             this.filters = previousFilters;
-            return new PathContext(basePath, this, serverState);
+            return new PathContext(serverState);
         }
 
         // TODO was protected - could be static?
@@ -217,6 +217,9 @@ public class TinyWeb {
         }
 
         public ServerContext serveStaticFilesAsync(String basePath, String directory) {
+            if (serverState.hasStarted()) {
+                throw new IllegalStateException("Cannot add static serving after the server has started.");
+            }
             endPoint(Method.GET, basePath + "/(.*)", (req, res, ctx) -> {
                 String filePath = ctx.getParam("1");
                 Path path = Paths.get(directory, filePath);
@@ -253,30 +256,10 @@ public class TinyWeb {
 
     public static class PathContext extends AbstractServerContext {
 
-        private final String basePath;
-        private final AbstractServerContext parentContext;
-
-        public PathContext(String basePath, AbstractServerContext parentContext, ServerState serverState) {
+        public PathContext(ServerState serverState) {
             super(serverState);
-            this.basePath = basePath;
-            this.parentContext = parentContext;
         }
 
-        @Override
-        public PathContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
-            String fullPath = basePath + path;
-            parentContext.endPoints.computeIfAbsent(method, k -> new HashMap<>())
-                    .put(Pattern.compile("^" + fullPath + "$"), endPoint);
-            return this;
-        }
-
-        @Override
-        public PathContext filter(TinyWeb.Method method, String path, TinyWeb.Filter filter) {
-            String fullPath = basePath + path;
-            parentContext.filters.computeIfAbsent(method, k -> new ArrayList<>())
-                    .add(new TinyWeb.FilterEntry(Pattern.compile("^" + fullPath + "$"), filter));
-            return this;
-        }
     }
 
     public static class Server extends AbstractServerContext {

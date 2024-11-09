@@ -3,6 +3,7 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
+import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -258,6 +259,24 @@ public class WebServerTests {
                 });
                 after(() -> {
                     webServer.stop();
+                    webServer = null;
+                });
+            });
+            describe("When a server is started", () -> {
+                it("Then a endpoint can't be added anymore", () -> {
+                    webServer = new TinyWeb.Server(8080, 8081) {{
+                        start();
+                        try {
+                            endPoint(GET, "/foo", (req, res, ctx) -> {
+                            });
+                            throw new AssertionError("should have barfed");
+                        } catch (IllegalStateException e) {
+                            assertThat(e.getMessage(), equalTo("Cannot add endpoints after the server has started."));
+                        }
+                        stop();
+                    }};
+                });
+                after(() -> {
                     webServer = null;
                 });
             });
