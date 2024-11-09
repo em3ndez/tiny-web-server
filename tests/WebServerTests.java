@@ -2,7 +2,6 @@ package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
-import org.mockito.Mockito;
 
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;

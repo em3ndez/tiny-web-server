@@ -18,18 +18,13 @@ package tests;
 
 import org.forgerock.cuppa.Test;
 
-import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 
 import com.paulhammant.tnywb.TinyWeb;
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
-import static com.paulhammant.tnywb.TinyWeb.Method.POST;
-import static com.paulhammant.tnywb.TinyWeb.Method.PUT;
 import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
