@@ -19,16 +19,14 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 
 import org.forgerock.cuppa.Test;
+import org.hamcrest.Matchers;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
 
+import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
 @Test
@@ -36,40 +34,6 @@ public class NewTests {
     TinyWeb.Server webServer;
 
     {
-
+        //HERE
     }
 }
-        describe("When endpoint and filters can depend on components", () -> {
-            before(() -> {
-                webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(new TinyWeb.DefaultComponentCache(){{
-                    this.put(TinyWebTests.ProductInventory.class, new TinyWebTests.ProductInventory(/* would have secrets in real usage */));
-                }}){
-
-                    // This is not Dependency Injection
-                    // This also does not use reflection so is fast.
-
-                    @Override
-                    public <T> T  instantiateDep(Class<T> clazz, TinyWeb.ComponentCache requestCache) {
-                        if (clazz == TinyWebTests.ShoppingCart.class) {
-                            return (T) TinyWebTests.createOrGetShoppingCart(requestCache);
-                        }
-                        throw new IllegalArgumentException("Unsupported class: " + clazz);
-                    }
-
-                });
-                //svr.applicationScopeCache.put()
-                TinyWebTests.doCompositionForOneTest(webServer);
-                webServer.start();
-
-            });
-            it("Then it should extract parameters correctly from the path", () -> {
-                bodyAndResponseCodeShouldBe(httpGet("/api/howManyOrderInBook"),
-                        "Cart Items before: 0\n" +
-                        "apple picked: true\n" +
-                        "Cart Items after: 1\n", 200);
-            });
-            after(() -> {
-                webServer.stop();
-                webServer = null;
-            });
-        });

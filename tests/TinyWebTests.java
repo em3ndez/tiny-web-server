@@ -16,25 +16,11 @@
 
 package tests;
 
-import com.paulhammant.tnywb.TinyWeb.Request;
-import com.paulhammant.tnywb.TinyWeb.Response;
-import okhttp3.OkHttpClient;
-
-import org.forgerock.cuppa.Runner;
 import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.reporters.DefaultReporter;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static java.lang.Thread.sleep;
-import static okhttp3.Request.*;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -243,81 +229,6 @@ public class TinyWebTests {
 
 
         });
-    }
-
-    public static class ExampleApp {
-
-        public void foobar(Request req, Response res, TinyWeb.RequestContext ctx) {
-            res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
-        }
-
-        public static TinyWeb.Server exampleComposition(String[] args, ExampleApp app) {
-            TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-
-                path("/foo", () -> {
-                    filter(GET, "/.*", (req, res, ctx) -> {
-                        if (req.getHeaders().containsKey("sucks")) {
-                            res.write("Access Denied", 403);
-                            return STOP; // don't proceed
-                        }
-                        return CONTINUE; // proceed
-                    });
-                    endPoint(GET, "/bar", (req, res, ctx) -> {
-                        res.write("Hello, World!");
-                        // This endpoint is /foo/bar if that wasn't obvious
-                    });
-                    webSocket("/eee", (message, sender) -> {
-                        for (int i = 1; i <= 3; i++) {
-                            String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                            sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                            }
-                        }
-                    });
-                });
-
-                serveStaticFilesAsync("/static", new File(".").getAbsolutePath());
-
-                endPoint(GET, "/users/(\\w+)", (req, res, ctx) -> {
-                    res.write("User profile: " + ctx.getParam("1"));
-                });
-
-
-                endPoint(POST, "/echo", (req, res, ctx) -> {
-                    res.write("You sent: " + req.getBody(), 201);
-                });
-
-                endPoint(GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
-
-                endPoint(PUT, "/update", (req, res, ctx) -> {
-                    res.write("Updated data: " + req.getBody(), 200);
-                });
-
-                path("/api", () -> {
-                    endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
-                        res.write("Parameter: " + ctx.getParam("1"));
-                    });
-                });
-            }};
-            return server;
-        }
-    }
-    
-    public static void doCompositionForOneTest(TinyWeb.Server svr) {
-        new TinyWeb.ServerComposition(svr) {{
-            path("/api", () -> {
-                //deps([OrderBook.class]);
-                endPoint(GET, "/howManyOrderInBook", (req, res, ctx) -> {
-
-                    ShoppingCart sc = ctx.dep(ShoppingCart.class);
-                    res.write("Cart Items before: " + sc.cartCount() + "\n" +
-                            "apple picked: " + sc.pickItem("apple") + "\n" +
-                            "Cart Items after: " + sc.cartCount() + "\n");
-                });
-            });
-        }};
     }
 
     public static class IsEncryptedByUs {

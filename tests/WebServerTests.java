@@ -15,39 +15,10 @@ import static tests.Suite.httpGet;
 @Test
 public class WebServerTests {
     TinyWeb.Server webServer;
-    TinyWebTests.ExampleApp exampleApp;
+    ExampleApp exampleApp;
 
     {
 
-        describe("Given a mocked ExampleApp", () -> {
-            describe("When accessing the Greeting GET endpoint", () -> {
-                before(() -> {
-                    exampleApp = Mockito.mock(TinyWebTests.ExampleApp.class);
-                    webServer = new TinyWeb.Server(8080, 8081) {{
-                        // some of these are not used by the it() tests
-                        endPoint(GET, "/greeting/(\\w+)/(\\w+)", exampleApp::foobar);
-                    }};
-                    //waitForPortToBeClosed("localhost",8080, 8081);
-                    webServer.start();
-                    Mockito.doAnswer(invocation -> {
-                        invocation.<TinyWeb.Response>getArgument(1).write("invoked");
-                        return null;
-                    }).when(exampleApp).foobar(Mockito.any(TinyWeb.Request.class), Mockito.any(TinyWeb.Response.class), Mockito.<TinyWeb.RequestContext>any());
-                });
-                it("Then it should invoke the ExampleApp foobar method", () -> {
-                    bodyAndResponseCodeShouldBe(httpGet("/greeting/A/B"),
-                            "invoked", 200);
-
-                });
-                after(() -> {
-                    webServer.stop();
-                    Mockito.verify(exampleApp).foobar(Mockito.any(TinyWeb.Request.class),
-                            Mockito.any(TinyWeb.Response.class),
-                            Mockito.<TinyWeb.RequestContext>any());
-                    webServer = null;
-                });
-            });
-        });
 
         describe("Given an inlined Cuppa application", () -> {
             describe("When the endpoint can extract parameters", () -> {
@@ -90,41 +61,7 @@ public class WebServerTests {
                     webServer.stop();
                     webServer = null;
                 });
-            });
-            describe("When endpoint and filters can depend on components", () -> {
-                before(() -> {
-                    webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(new TinyWeb.DefaultComponentCache(){{
-                        this.put(TinyWebTests.ProductInventory.class, new TinyWebTests.ProductInventory(/* would have secrets in real usage */));
-                    }}){
-
-                        // This is not Dependency Injection
-                        // This also does not use reflection so is fast.
-
-                        @Override
-                        public <T> T  instantiateDep(Class<T> clazz, TinyWeb.ComponentCache requestCache) {
-                            if (clazz == TinyWebTests.ShoppingCart.class) {
-                                return (T) TinyWebTests.createOrGetShoppingCart(requestCache);
-                            }
-                            throw new IllegalArgumentException("Unsupported class: " + clazz);
-                        }
-
-                    });
-                    //svr.applicationScopeCache.put()
-                    TinyWebTests.doCompositionForOneTest(webServer);
-                    webServer.start();
-
-                });
-                it("Then it should extract parameters correctly from the path", () -> {
-                    bodyAndResponseCodeShouldBe(httpGet("/api/howManyOrderInBook"),
-                            "Cart Items before: 0\n" +
-                            "apple picked: true\n" +
-                            "Cart Items after: 1\n", 200);
-                });
-                after(() -> {
-                    webServer.stop();
-                    webServer = null;
-                });
-            });
+            });;
             describe("When an application exception is thrown from an endpoint", () -> {
                 final StringBuilder appHandlingExceptions = new StringBuilder();
                 before(() -> {

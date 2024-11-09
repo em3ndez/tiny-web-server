@@ -4,3 +4,4 @@ target/
 *.iml
 test_libs/
 TinyWeb.jar
+.env

@@ -69,7 +69,7 @@ public class ServerSideEventsTests {
                 webServer.start();
             });
 
-            only().it("Then it should receive server-sent events", () -> {
+            it("Then it should receive server-sent events", () -> {
                 try (okhttp3.Response response = httpGet("/sse/events")) {
                     assertThat(response.code(), equalTo(200));
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {

@@ -12,13 +12,13 @@ import static tests.Suite.httpGet;
 @Test
 public class WithMockitoTests {
     TinyWeb.Server webServer;
-    TinyWebTests.ExampleApp exampleApp;
+    ExampleApp exampleApp;
 
     {
         describe("Given a mocked ExampleApp", () -> {
             describe("When accessing the Greeting GET endpoint", () -> {
                 before(() -> {
-                    exampleApp = Mockito.mock(TinyWebTests.ExampleApp.class);
+                    exampleApp = Mockito.mock(ExampleApp.class);
                     webServer = new TinyWeb.Server(8080, 8081) {{
                         endPoint(TinyWeb.Method.GET, "/greeting/(\\w+)/(\\w+)", exampleApp::foobar);
                     }};

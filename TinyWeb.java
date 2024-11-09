@@ -85,12 +85,12 @@ public class TinyWeb {
             this.cache = cache;
         }
 
-        public <T> T instantiateDep(Class<T> clazz, ComponentCache requestCache) {
+        public <T> T instantiateDep(Class<T> clazz, ComponentCache requestCache, Matcher matcher) {
             // Implement logic to instantiate or retrieve the dependency
             // For example, using the cache to manage instances
             return requestCache.getOrCreate(clazz, () -> {
                 // Add instantiation logic here
-                throw new IllegalArgumentException("Unsupported class: " + clazz);
+                throw new TinyWeb.DependencyException(clazz);
             });
         }
     }
@@ -285,6 +285,7 @@ public class TinyWeb {
         private final SocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
         private final DependencyManager dependencyManager;
+        private Matcher matcher;
 
         public Server(int httpPort, int webSocketPort) {
             this(httpPort, webSocketPort, new DependencyManager(new DefaultComponentCache(null)));
@@ -369,7 +370,7 @@ public class TinyWeb {
                                 try {
                                     FilterResult result;
                                     try {
-                                        result = filterEntry.filter.filter(request, response, createRequestContext(filterParams, attributes, requestCache));
+                                        result = filterEntry.filter.filter(request, response, createRequestContext(filterParams, attributes, requestCache, matcher));
                                     } catch (Exception e) {
                                         exceptionDuringHandling(e);
                                         sendErrorResponse(exchange, 500, "Server Error");
@@ -389,7 +390,7 @@ public class TinyWeb {
                         try {
 
                             try {
-                                route.getValue().handle(request, response, createRequestContext(params, attributes, requestCache));
+                                route.getValue().handle(request, response, createRequestContext(params, attributes, requestCache, matcher));
                             } catch (Exception e) {
                                 exceptionDuringHandling(e);
                                 sendErrorResponse(exchange, 500, "Server error");
@@ -410,7 +411,7 @@ public class TinyWeb {
             });
         }
 
-        private RequestContext createRequestContext(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache) {
+        private RequestContext createRequestContext(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher) {
             return new RequestContext() {
 
                 @Override
@@ -421,7 +422,7 @@ public class TinyWeb {
                 @Override
                 @SuppressWarnings("unchecked")
                 public <T> T dep(Class<T> clazz) {
-                    return dependencyManager.instantiateDep(clazz, requestCache);
+                    return dependencyManager.instantiateDep(clazz, requestCache, matcher);
                 }
 
                 public void setAttribute(String key, Object value) {
@@ -432,6 +433,9 @@ public class TinyWeb {
                     return attributes.get(key);
                 }
 
+                public Matcher getMatcher() {
+                    return matcher;
+                }
             };
         }
 
@@ -1208,6 +1212,15 @@ public class TinyWeb {
                     }
                 };                                        
                 """, 200);
+        }
+    }
+
+    public static class DependencyException extends RuntimeException {
+        private final Class clazz;
+
+        public <T> DependencyException(Class clazz) {
+            super("Wrong scope or not a component at all: " + clazz.getName());
+            this.clazz = clazz;
         }
     }
 }
