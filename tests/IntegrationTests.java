@@ -15,6 +15,8 @@ import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static tests.Suite.bytesToString;
+import static tests.Suite.toBytes;
 
 @Test
 public class IntegrationTests {
@@ -74,8 +76,8 @@ public class IntegrationTests {
 
                     webSocket("/baz", (message, sender) -> {
                         for (int i = 1; i <= 3; i++) {
-                            String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                            sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
+                            String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
+                            sender.sendBytesFrame(toBytes(responseMessage));
                             try {
                                 sleep(100);
                             } catch (InterruptedException e) {

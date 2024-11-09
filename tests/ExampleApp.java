@@ -11,6 +11,8 @@ import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static com.paulhammant.tnywb.TinyWeb.Method.POST;
 import static com.paulhammant.tnywb.TinyWeb.Method.PUT;
+import static tests.Suite.bytesToString;
+import static tests.Suite.toBytes;
 
 public class ExampleApp {
 
@@ -35,8 +37,8 @@ public class ExampleApp {
                 });
                 webSocket("/eee", (message, sender) -> {
                     for (int i = 1; i <= 3; i++) {
-                        String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                        sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
+                        String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
+                        sender.sendBytesFrame(toBytes(responseMessage));
                         try {
                             Thread.sleep(100);
                         } catch (InterruptedException e) {

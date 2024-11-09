@@ -2,13 +2,16 @@ package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static tests.Suite.bodyAndResponseCodeShouldBe;
-import static tests.Suite.httpGet;
+import static tests.Suite.*;
 
 @Test
 public class WebSocketTests {
@@ -22,8 +25,8 @@ public class WebSocketTests {
                 webSocketServer = new TinyWeb.SocketServer(8081) {{
                     registerMessageHandler("/foo/baz", (message, sender) -> {
                         for (int i = 1; i <= 3; i++) {
-                            String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                            sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
+                            String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
+                            sender.sendBytesFrame(toBytes(responseMessage));
                             try {
                                 sleep(100);
                             } catch (InterruptedException e) {
@@ -81,10 +84,10 @@ public class WebSocketTests {
 
                         webSocket("/baz", (messageBytes, sender) -> {
                             for (int i = 1; i <= 3; i++) {
-                                String message = new String(messageBytes, "UTF-8");
+                                String message = bytesToString(messageBytes);
                                 int num = Integer.parseInt(message.split(": ")[1]);
                                 String responseMessage = "Server sent: " + message + " -" + (i+num);
-                                sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
+                                sender.sendBytesFrame(toBytes(responseMessage));
                                 try {
                                     sleep(100);
                                 } catch (InterruptedException e) {
@@ -153,8 +156,8 @@ public class WebSocketTests {
                 webSocketServer = new TinyWeb.SocketServer(8081) {{
                     registerMessageHandler("/foo/baz", (message, sender) -> {
                         for (int i = 1; i <= 3; i++) {
-                            String responseMessage = "Server sent: " + new String(message, "UTF-8") + "-" + i;
-                            sender.sendBytesFrame(responseMessage.getBytes("UTF-8"));
+                            String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
+                            sender.sendBytesFrame(toBytes(responseMessage));
                             try {
                                 sleep(100);
                             } catch (InterruptedException e) {

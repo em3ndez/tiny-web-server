@@ -1,6 +1,7 @@
 package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
+import com.sun.net.httpserver.HttpExchange;
 import org.forgerock.cuppa.Test;
 
 import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
@@ -73,8 +74,9 @@ public class WebServerTests {
                             });
                         }
                         @Override
-                        protected void exceptionDuringHandling(Exception e) {
+                        protected void exceptionDuringHandling(Exception e, HttpExchange exchange) {
                             appHandlingExceptions.append("appHandlingException exception: " + e.getMessage());
+                            super.exceptionDuringHandling(e, exchange);
                         }
                     }.start();
                 });
@@ -155,15 +157,16 @@ public class WebServerTests {
                     }
 
                         @Override
-                        protected void exceptionDuringHandling(Exception e) {
+                        protected void exceptionDuringHandling(Exception e, HttpExchange exchange) {
                             appHandlingExceptions.append("appHandlingException exception: " + e.getMessage());
+                            super.exceptionDuringHandling(e, exchange);
                         }
                     }.start();
                 });
 
                 it("Then it should return 500 and an error message for a runtime exception in a filter", () -> {
                     bodyAndResponseCodeShouldBe(httpGet("/api/error"),
-                                "Server Error", 500);
+                                "Server error", 500);
                     assertThat(appHandlingExceptions.toString(),
                             equalTo("appHandlingException exception: Deliberate exception in filter"));
                 });

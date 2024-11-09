@@ -296,7 +296,13 @@ public class TinyWeb {
                             }
                         }
                         System.out.println("No websocket handler for " + path);
-                        return (message, sender) -> sender.sendBytesFrame("no matching path on the server side".getBytes("UTF-8"));
+                        return (message, sender) -> {
+                            try {
+                                sender.sendBytesFrame("no matching path on the server side".getBytes("UTF-8"));
+                            } catch (IOException e) {
+                                throw new TinyWeb.ServerException("Nonsensical IOE");
+                            }
+                        };
                     }
                 };
             } else {
@@ -331,7 +337,7 @@ public class TinyWeb {
                             params.put(String.valueOf(i), matcher.group(i));
                         }
 
-                        final Request request = new Request(exchange, this);
+                        final Request request = new Request(exchange);
                         final Response response = new Response(exchange);
                         final Map<String, Object> attributes  = new HashMap<>();
                         final ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
@@ -355,8 +361,7 @@ public class TinyWeb {
                                     try {
                                         result = filterEntry.filter.filter(request, response, createRequestContext(filterParams, attributes, requestCache, matcher));
                                     } catch (Exception e) {
-                                        exceptionDuringHandling(e);
-                                        sendErrorResponse(exchange, 500, "Server Error");
+                                        exceptionDuringHandling(e, exchange);
                                         return;
                                     }
                                     if (result == FilterResult.STOP) {
@@ -375,8 +380,7 @@ public class TinyWeb {
                             try {
                                 route.getValue().handle(request, response, createRequestContext(params, attributes, requestCache, matcher));
                             } catch (Exception e) {
-                                exceptionDuringHandling(e);
-                                sendErrorResponse(exchange, 500, "Server error");
+                                exceptionDuringHandling(e, exchange);
                                 return;
                             }
                         } catch (ServerException e) {
@@ -430,9 +434,10 @@ public class TinyWeb {
         /**
          * Most likely a RuntimeException or Error in a endPoint() or filter() code block
          */
-        protected void exceptionDuringHandling(Exception e) {
-            System.err.println(e.getMessage() + "\nStack Trace:");
-            e.printStackTrace(System.err);
+        protected void exceptionDuringHandling(Exception e, HttpExchange exchange) {
+            sendErrorResponse(exchange, 500, "Server error");
+            //System.err.println(e.getMessage() + "\nStack Trace:");
+            //e.printStackTrace(System.err);
         }
 
         public TinyWeb.Server start() {
@@ -444,6 +449,7 @@ public class TinyWeb {
             if (socketServer != null) {
                 simpleWebSocketServerThread = new Thread(socketServer::start);
                 simpleWebSocketServerThread.start();
+                //simpleWebSocketServerThread.setDaemon(true);
             }
             return this;
         }
@@ -538,7 +544,7 @@ public class TinyWeb {
 
     @FunctionalInterface
     public interface SocketMessageHandler {
-        void handleMessage(byte[] message, TinyWeb.MessageSender sender) throws IOException;
+        void handleMessage(byte[] message, TinyWeb.MessageSender sender);
     }
 
     /* ==========================
@@ -557,15 +563,12 @@ public class TinyWeb {
 
     public static class Request {
         private final HttpExchange exchange;
-        private final Server server;
         private final String body;
 
-        // TODO why unused?
         private Map<String, String> queryParams;
 
-        public Request(HttpExchange exchange, Server server) {
+        public Request(HttpExchange exchange) {
             this.exchange = exchange;
-            this.server = server;
             if (exchange != null) {
                 try {
                     this.body = new String(exchange.getRequestBody().readAllBytes());
@@ -919,11 +922,11 @@ public class TinyWeb {
                         CompletableFuture.runAsync(() -> {
                             SocketMessageHandler handler = getHandler(path);
                             if (handler != null) {
-                                try {
+//                                try {
                                     handler.handleMessage(messagePayload, sender);
-                                } catch (IOException e) {
-                                    System.err.println("Error handling WebSocket message: " + e.getMessage());
-                                }
+//                                } catch (IOException e) {
+//                                    System.err.println("Error handling WebSocket message: " + e.getMessage());
+//                                }
                             } else {
                                 System.err.println("No handler found for path: " + path + " keys:" + messageHandlers.keySet());
                             }
@@ -1061,7 +1064,7 @@ public class TinyWeb {
             return new String(payload, 0, bytesRead, "UTF-8");
         }
 
-        public void sendClose() throws IOException {
+        private void sendClose() throws IOException {
             byte[] mask = new byte[4];
             random.nextBytes(mask);
             out.write(new byte[]{(byte) 0x88, (byte) 0x80, mask[0], mask[1], mask[2], mask[3]});
@@ -1082,22 +1085,26 @@ public class TinyWeb {
             this.outputStream = outputStream;
         }
 
-        public void sendBytesFrame(byte[] payload) throws IOException {
-            outputStream.write(0x81); // FIN bit set, text frame
-            if (payload.length < 126) {
-                outputStream.write(payload.length);
-            } else if (payload.length <= 65535) {
-                outputStream.write(126);
-                outputStream.write((payload.length >> 8) & 0xFF);
-                outputStream.write(payload.length & 0xFF);
-            } else {
-                outputStream.write(127);
-                for (int i = 7; i >= 0; i--) {
-                    outputStream.write((payload.length >> (8 * i)) & 0xFF);
+        public void sendBytesFrame(byte[] payload) {
+            try {
+                outputStream.write(0x81); // FIN bit set, text frame
+                if (payload.length < 126) {
+                    outputStream.write(payload.length);
+                } else if (payload.length <= 65535) {
+                    outputStream.write(126);
+                    outputStream.write((payload.length >> 8) & 0xFF);
+                    outputStream.write(payload.length & 0xFF);
+                } else {
+                    outputStream.write(127);
+                    for (int i = 7; i >= 0; i--) {
+                        outputStream.write((payload.length >> (8 * i)) & 0xFF);
+                    }
                 }
+                outputStream.write(payload);
+                outputStream.flush();
+            } catch (IOException e) {
+                throw new TinyWeb.ServerException("IOE " + e.getMessage(), e);
             }
-            outputStream.write(payload);
-            outputStream.flush();
         }
     }
 
