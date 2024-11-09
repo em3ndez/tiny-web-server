@@ -18,8 +18,6 @@ package tests;
 
 import org.forgerock.cuppa.Test;
 
-import java.util.*;
-
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -257,70 +255,5 @@ public class TinyWebTests {
         }
         return result.toString();
     }
-
-
-
-    public static class ProductInventory {
-
-        // We should not hard code cart contents in real life - see note about database below.
-        Map<String, Integer> stockItems = new HashMap<>() {{
-            put("apple", 100);
-            put("orange", 50);
-            put("bagged bannana", 33);
-        }};
-
-        public boolean customerReserves(String item) {
-            if (stockItems.containsKey(item)) {
-                if (stockItems.get(item) > 0) {
-                    stockItems.put(item, stockItems.get(item) -1);
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    /*
-      Most likely the real version of this would use a database to go get the shopping cart contents
-      for the user. Or some database-like solution, that aids quick "session" re-acquisition.
-     */
-    public static class ShoppingCart {
-
-        private final ProductInventory inv;
-        private final Map<String, Integer> items = new HashMap<>();
-
-        public ShoppingCart(ProductInventory inv) {
-            this.inv = inv;
-        }
-
-        public int cartCount() {
-            return items.values().stream().mapToInt(Integer::intValue).sum();
-        }
-
-        public boolean pickItem(String item) {
-            boolean gotIt = inv.customerReserves(item);
-            if (!gotIt) {
-                return false;
-            }
-            if (items.containsKey(item)) {
-                items.put(item, items.get(item) +1);
-            } else {
-                items.put(item, 1);
-            }
-            return true;
-        }
-    }
-
-
-    public static ShoppingCart createOrGetShoppingCart(TinyWeb.ComponentCache cache) {
-        return cache.getOrCreate(ShoppingCart.class, () ->
-                new ShoppingCart(getOrCreateProductInventory(cache))
-        );
-    }
-
-    public static ProductInventory getOrCreateProductInventory(TinyWeb.ComponentCache cache) {
-        return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
-    }
-
 }
 

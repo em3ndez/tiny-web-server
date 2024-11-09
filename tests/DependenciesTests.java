@@ -20,6 +20,8 @@ import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 import org.hamcrest.Matchers;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
@@ -36,9 +38,9 @@ public class DependenciesTests {
     {
         describe("When endpoint and filters can depend on components", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(new TinyWeb.DefaultComponentCache(){{
-                    this.put(TinyWebTests.ProductInventory.class, new TinyWebTests.ProductInventory(/* would have secrets in real usage */));
-                }}){
+                TinyWeb.DefaultComponentCache cache = new TinyWeb.DefaultComponentCache();
+                cache.put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
+                webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(cache){
 
                     // This is not Dependency Injection
                     // This also does not use reflection so is fast.
@@ -46,8 +48,8 @@ public class DependenciesTests {
                     @Override
                     public <T> T  instantiateDep(Class<T> clazz, TinyWeb.ComponentCache requestCache, Matcher matcher) {
                         // all your request scoped deps here in a if/else sequence
-                        if (clazz == TinyWebTests.ShoppingCart.class) {
-                            return (T) TinyWebTests.createOrGetShoppingCart(requestCache);
+                        if (clazz == ShoppingCart.class) {
+                            return (T) createOrGetShoppingCart(requestCache);
                         }
                         throw new TinyWeb.DependencyException(clazz);
                         // or ...
@@ -63,9 +65,9 @@ public class DependenciesTests {
                         endPoint(GET, "/howManyOrderInBook", (req, res, ctx) -> {
 
                             // ShoppingCart is request scoped
-                            TinyWebTests.ShoppingCart sc = ctx.dep(TinyWebTests.ShoppingCart.class);
+                            ShoppingCart sc = ctx.dep(ShoppingCart.class);
 
-                            TinyWebTests.ShoppingCart sc2 = ctx.dep(TinyWebTests.ShoppingCart.class);
+                            ShoppingCart sc2 = ctx.dep(ShoppingCart.class);
 
                             res.write("Cart Items before: " + sc.cartCount() + "\n" +
                                     "apple picked: " + sc.pickItem("apple") + "\n" +
@@ -76,9 +78,9 @@ public class DependenciesTests {
                         endPoint(GET, "/howBooksInTheInventory", (req, res, ctx) -> {
 
                             // ProductInventory is application scoped
-                            TinyWebTests.ProductInventory pi = null;
+                            ProductInventory pi = null;
                             try {
-                                pi = ctx.dep(TinyWebTests.ProductInventory.class);
+                                pi = ctx.dep(ProductInventory.class);
                                 res.write("blah blah never gets here: " + pi.stockItems.size());
                             } catch (TinyWeb.DependencyException e) {
                                 // You don't have to try/catch DependencyException as an end-user
@@ -110,5 +112,70 @@ public class DependenciesTests {
                 webServer = null;
             });
         });
+        
     }
+
+
+    public static class ProductInventory {
+
+        // We should not hard code cart contents in real life - see note about database below.
+        Map<String, Integer> stockItems = new HashMap<>() {{
+            put("apple", 100);
+            put("orange", 50);
+            put("bagged bannana", 33);
+        }};
+
+        public boolean customerReserves(String item) {
+            if (stockItems.containsKey(item)) {
+                if (stockItems.get(item) > 0) {
+                    stockItems.put(item, stockItems.get(item) -1);
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    /*
+      Most likely the real version of this would use a database to go get the shopping cart contents
+      for the user. Or some database-like solution, that aids quick "session" re-acquisition.
+     */
+    public static class ShoppingCart {
+
+        private final ProductInventory inv;
+        private final Map<String, Integer> items = new HashMap<>();
+
+        public ShoppingCart(ProductInventory inv) {
+            this.inv = inv;
+        }
+
+        public int cartCount() {
+            return items.values().stream().mapToInt(Integer::intValue).sum();
+        }
+
+        public boolean pickItem(String item) {
+            boolean gotIt = inv.customerReserves(item);
+            if (!gotIt) {
+                return false;
+            }
+            if (items.containsKey(item)) {
+                items.put(item, items.get(item) +1);
+            } else {
+                items.put(item, 1);
+            }
+            return true;
+        }
+    }
+
+
+    public static ShoppingCart createOrGetShoppingCart(TinyWeb.ComponentCache cache) {
+        return cache.getOrCreate(ShoppingCart.class, () ->
+                new ShoppingCart(getOrCreateProductInventory(cache))
+        );
+    }
+
+    public static ProductInventory getOrCreateProductInventory(TinyWeb.ComponentCache cache) {
+        return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
+    }
+    
 }
