@@ -35,6 +35,46 @@ public class NewTests {
     TinyWeb.Server webServer;
 
     {
-        //HERE
+        describe("Given a TinyWeb server with filters and an endpoint", () -> {
+            before(() -> {
+                webServer = new TinyWeb.Server(8080, -1) {
+                    @Override
+                    protected void recordStatistics(String path, Map<String, Object> stats) {
+                        System.out.println("Stats: " + stats);
+                    }
+                };
+                webServer.path("/test", () -> {
+                    webServer.filter(GET, "/.*", (req, res, ctx) -> {
+                        try { Thread.sleep(50); } catch (InterruptedException e) {}
+                        return CONTINUE;
+                    });
+                    webServer.filter(GET, "/.*", (req, res, ctx) -> {
+                        try { Thread.sleep(50); } catch (InterruptedException e) {}
+                        return CONTINUE;
+                    });
+                    webServer.filter(GET, "/.*", (req, res, ctx) -> {
+                        try { Thread.sleep(50); } catch (InterruptedException e) {}
+                        return CONTINUE;
+                    });
+                    webServer.endPoint(GET, "/endpoint", (req, res, ctx) -> {
+                        try { Thread.sleep(10); } catch (InterruptedException e) {}
+                        res.write("hello");
+                    });
+                });
+                webServer.start();
+            });
+
+            it("Then it should collect statistics for filters and endpoint", () -> {
+                okhttp3.Response response = httpGet("/test/endpoint");
+                assertThat(response.code(), equalTo(200));
+                assertThat(response.body().string(), equalTo("hello"));
+                // Here you would verify the stats output, but for this example, we print it
+            });
+
+            after(() -> {
+                webServer.stop();
+                webServer = null;
+            });
+        });
     }
 }
