@@ -388,7 +388,16 @@ public class TinyWeb {
                                         long filterDuration = System.currentTimeMillis() - filterStartTime;
                                         filterSequence.add(filterEntry.pattern.pattern() + " (" + filterDuration + "ms)");
                                     } catch (Exception e) {
-                                        // STATS FOR THIS TOO
+                                        long filterDuration = System.currentTimeMillis() - filterStartTime;
+                                        filterSequence.add(filterEntry.pattern.pattern() + " (" + filterDuration + "ms)");
+
+                                        Map<String, Object> stats = new HashMap<>();
+                                        stats.put("filters", filterSequence);
+                                        stats.put("endpoint", "filter_exception");
+                                        stats.put("status", 500);
+                                        stats.put("duration", System.currentTimeMillis() - startTime);
+
+                                        recordStatistics(path, stats);
                                         exceptionDuringHandling(e, exchange);
                                         return;
                                     }
@@ -396,7 +405,13 @@ public class TinyWeb {
                                         return; // Stop processing if filter returns STOP
                                     }
                                 } catch (ServerException e) {
-                                    // STATS FOR THIS TOO
+                                    Map<String, Object> stats = new HashMap<>();
+                                    stats.put("filters", filterSequence);
+                                    stats.put("endpoint", "filter_exception");
+                                    stats.put("status", 500);
+                                    stats.put("duration", System.currentTimeMillis() - startTime);
+
+                                    recordStatistics(path, stats);
                                     serverException(e);
                                     sendErrorResponse(exchange, 500, "Internal server error: " + e.getMessage());
                                     return;
@@ -420,12 +435,24 @@ public class TinyWeb {
 
                                 recordStatistics(path, stats);
                             } catch (Exception e) {
-                                // STATS FOR THIS TOO
+                                Map<String, Object> stats = new HashMap<>();
+                                stats.put("filters", filterSequence);
+                                stats.put("endpoint", "endpoint_exception");
+                                stats.put("status", 500);
+                                stats.put("duration", System.currentTimeMillis() - startTime);
+
+                                recordStatistics(path, stats);
                                 exceptionDuringHandling(e, exchange);
                                 return;
                             }
                         } catch (ServerException e) {
-                            // STATS FOR THIS TOO
+                            Map<String, Object> stats = new HashMap<>();
+                            stats.put("filters", filterSequence);
+                            stats.put("endpoint", "endpoint_exception");
+                            stats.put("status", 500);
+                            stats.put("duration", System.currentTimeMillis() - startTime);
+
+                            recordStatistics(path, stats);
                             serverException(e);
                             sendErrorResponse(exchange, 500,"Internal server error: " + e.getMessage());
                             return;
