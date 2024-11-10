@@ -371,6 +371,7 @@ public class TinyWeb {
                                 try {
                                     FilterResult result;
                                     try {
+                                        // STATS NEEDED FOR THIS
                                         result = filterEntry.filter.filter(request, response, createRequestContext(filterParams, attributes, requestCache, matcher));
                                     } catch (Exception e) {
                                         exceptionDuringHandling(e, exchange);
@@ -390,6 +391,7 @@ public class TinyWeb {
                         try {
 
                             try {
+                                // STATS NEEDED FOR THIS
                                 route.getValue().handle(request, response, createRequestContext(params, attributes, requestCache, matcher));
                             } catch (Exception e) {
                                 exceptionDuringHandling(e, exchange);
