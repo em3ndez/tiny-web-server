@@ -388,6 +388,7 @@ public class TinyWeb {
                                         long filterDuration = System.currentTimeMillis() - filterStartTime;
                                         filterSequence.add(filterEntry.pattern.pattern() + " (" + filterDuration + "ms)");
                                     } catch (Exception e) {
+                                        // STATS FOR THIS TOO
                                         exceptionDuringHandling(e, exchange);
                                         return;
                                     }
@@ -395,6 +396,7 @@ public class TinyWeb {
                                         return; // Stop processing if filter returns STOP
                                     }
                                 } catch (ServerException e) {
+                                    // STATS FOR THIS TOO
                                     serverException(e);
                                     sendErrorResponse(exchange, 500, "Internal server error: " + e.getMessage());
                                     return;
@@ -418,10 +420,12 @@ public class TinyWeb {
 
                                 recordStatistics(path, stats);
                             } catch (Exception e) {
+                                // STATS FOR THIS TOO
                                 exceptionDuringHandling(e, exchange);
                                 return;
                             }
                         } catch (ServerException e) {
+                            // STATS FOR THIS TOO
                             serverException(e);
                             sendErrorResponse(exchange, 500,"Internal server error: " + e.getMessage());
                             return;
