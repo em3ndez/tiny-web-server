@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Pattern;
 
 import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
@@ -39,6 +40,8 @@ public class NewTests {
     TinyWeb.Server webServer;
     StringBuilder statsStr = new StringBuilder();
 
+    public static final String TEST_SLASH_ALL = "/.*";
+
     {
         describe("Given a TinyWeb server with filters and an endpoint", () -> {
             before(() -> {
@@ -46,14 +49,15 @@ public class NewTests {
                     @Override
                     protected void recordStatistics(String path, Map<String, Object> stats) {
                         String string = stats.toString()
-                                .replaceAll("=\\d{2}", "=50")
-                                .replaceAll("=\\d{3}", "=200");
+                                .replaceAll("ration=\\d{2}", "ration=50")
+                                .replaceAll("ration=\\d{3}", "ration=200")
+                                .replaceAll("ration=\\d{1},", "ration=50,");
                         statsStr.append(string);
                     }
 
                     {
                         path("/test", () -> {
-                            filter(GET, "/.*", (req, res, ctx) -> {
+                            filter(GET, TEST_SLASH_ALL, (req, res, ctx) -> {
                                 try {
                                     sleep(50);
                                 } catch (InterruptedException e) {
@@ -86,21 +90,41 @@ public class NewTests {
                 webServer.start();
             });
 
-            only().it("Then it should collect statistics for filters and endpoint", () -> {
+            it("Then it should collect statistics for filters and endpoint", () -> {
                 okhttp3.Response response = httpGet("/test/abc");
                 assertThat(response.code(), equalTo(200));
                 assertThat(response.body().string(), equalTo("hello"));
                 sleep(10);
-                assertThat(statsStr.toString(), equalTo("{duration=200, endpoint=^/test/abc$, endpointDuration=50, " +
+                assertThat(statsStr.toString(), equalTo("{duration=200, path=/test/abc, endpoint=^/test/abc$, endpointDuration=50, " +
                         "filters=[FilterStat[path=^/test/.*$, result=ok, duration=50], " +
                                  "FilterStat[path=^/test/a.*$, result=ok, duration=50], " +
                                  "FilterStat[path=^/test/.*c$, result=ok, duration=50]], " +
                         "status=200}"));
+                statsStr = new StringBuilder();
+            });
+            it("Then it should collect statistics for missing endpoints", () -> {
+                okhttp3.Response response = httpGet("/blahhhhh");
+                assertThat(response.code(), equalTo(404));
+                assertThat(response.body().string(), equalTo("Not found"));
+                sleep(10);
+                assertThat(statsStr.toString(), equalTo("{duration=50, path=/blahhhhh, endpoint=unmatched, filters=[], status=404}"));
+                statsStr = new StringBuilder();
+            });
+
+            it("Then it should not collect statistics filter that notionally match when the endPoint is a 404", () -> {
+                okhttp3.Response response = httpGet("/test/zzz");
+                assertThat(Pattern.compile("/test/.*").matcher("/test/zzz").matches(), equalTo(true));
+                assertThat(response.code(), equalTo(404));
+                assertThat(response.body().string(), equalTo("Not found"));
+                sleep(10);
+                assertThat(statsStr.toString(), equalTo("{duration=50, path=/test/zzz, endpoint=unmatched, filters=[], status=404}"));
+                statsStr = new StringBuilder();
             });
 
             after(() -> {
                 webServer.stop();
                 webServer = null;
+
             });
         });
     }

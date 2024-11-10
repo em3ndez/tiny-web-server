@@ -399,6 +399,7 @@ public class TinyWeb {
                 }
 
             } finally {
+                stats.put("path", path);
                 stats.put("duration", System.currentTimeMillis() - startTime);
                 recordStatistics(path, stats);
             }
