@@ -683,7 +683,7 @@ javac -d target/classes/ TinyWeb.java
 That's it - no deps, and 1.5 seconds of compilation time on my mid-range Chromebook. That makes 31 `.class` files
 
 ```bash
-jar cf TinyWeb.jar -C target/classes/ .
+jar cf TinyWeb-$(cat TinyWeb.java | grep VERSION | cut -d '"' -f 2).jar -C target/classes/ .
 ```
 
 that is about 37K in size.

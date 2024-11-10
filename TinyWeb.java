@@ -28,10 +28,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +47,7 @@ import java.util.regex.Pattern;
 
 public class TinyWeb {
 
-    public static final String VERSION = "1.0.0";
+    public static final String VERSION = "1.0-SNAPSHOT";
 
     /* ==========================
      * Enums
@@ -268,24 +265,39 @@ public class TinyWeb {
         private final SocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
         private final DependencyManager dependencyManager;
-        private Matcher matcher;
 
-        public Server(int httpPort, int webSocketPort) {
-            this(httpPort, webSocketPort, new DependencyManager(new DefaultComponentCache(null)));
+        public Server(int httpPort, int wsPort) {
+            this(new InetSocketAddress(httpPort), wsPort, 50, null);
         }
 
-        public Server(int httpPort, int webSocketPort, DependencyManager dependencyManager) {
+        public Server(InetSocketAddress inetSocketAddress, int wsPort) {
+            this(inetSocketAddress, wsPort, 50, null);
+        }
+
+        public Server(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog) {
+            this(inetSocketAddress, wsPort, wsBacklog, null);
+        }
+
+        public Server(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr) {
+            this(inetSocketAddress, wsPort, wsBacklog, wsBindAddr, new DependencyManager(new DefaultComponentCache(null)));
+        }
+
+        public Server(int httpPort, int wsPort, DependencyManager dependencyManager) {
+            this(new InetSocketAddress(httpPort), wsPort, 50, null, dependencyManager);
+        }
+
+        public Server(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, DependencyManager dependencyManager) {
             super(new ServerState());
             this.dependencyManager = dependencyManager;
             try {
-                httpServer = HttpServer.create(new InetSocketAddress(httpPort), 0);
+                httpServer = HttpServer.create(inetSocketAddress, 0);
             } catch (IOException e) {
-                throw new ServerException("Can't listen on port " + httpPort, e);
+                throw new ServerException("Can't listen on port " + inetSocketAddress.getPort(), e);
             }
             httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
-            if (webSocketPort != -1) {
-                socketServer = new SocketServer(webSocketPort) {
+            if (wsPort > 0) {
+                socketServer = new SocketServer(wsPort, wsBacklog, wsBindAddr) {
                     @Override
                     protected SocketMessageHandler getHandler(String path) {
                         for (Map.Entry<Pattern, SocketMessageHandler> patternWebSocketMessageHandlerEntry : wsEndPoints.entrySet()) {
@@ -742,17 +754,29 @@ public class TinyWeb {
      * WebSocket Classes
      * ==========================
      */
+
+
     public static class SocketServer {
 
-        private final int port;
+        private final int wsPort;
+        private final int wsBacklog;
+        private final InetAddress wsBindAddr;
         private ServerSocket server;
         private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
         private static final int SOCKET_TIMEOUT = 30000; // 30 seconds timeout
         private static final SecureRandom random = new SecureRandom();
         private Map<String, SocketMessageHandler> messageHandlers = new HashMap<>();
 
-        public SocketServer(int port) {
-            this.port = port;
+        public SocketServer(int wsPort) {
+            this.wsPort = wsPort;
+            this.wsBacklog = 50;
+            this.wsBindAddr = null;
+
+        }
+        public SocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr) {
+            this.wsPort = wsPort;
+            this.wsBacklog = wsBacklog;
+            this.wsBindAddr = wsBindAddr;
         }
 
         public void registerMessageHandler(String path, SocketMessageHandler handler) {
@@ -761,7 +785,7 @@ public class TinyWeb {
 
         public void start() {
             try {
-                server = new ServerSocket(port);
+                server = new ServerSocket(wsPort, wsBacklog, wsBindAddr);
 
                 while (!server.isClosed()) {
                     try {
