@@ -141,15 +141,6 @@ public class TinyWeb {
                     previousEndPoints.get(method).putAll(prefixedEndPoints);
                 }
 
-                if (!routeMatched) {
-                    Map<String, Object> stats = new HashMap<>();
-                    stats.put("filters", filterSequence);
-                    stats.put("endpoint", "unmatched");
-                    stats.put("status", 404);
-                    stats.put("duration", System.currentTimeMillis() - startTime);
-
-                    recordStatistics(path, stats);
-                }
             }
 
             // Prefix basePath to WebSocket handlers
@@ -269,6 +260,8 @@ public class TinyWeb {
 
     }
 
+    public static record FilterStat (String path, String result, long duration) {}
+
     public static class Server extends AbstractServerContext {
 
         private final HttpServer httpServer;
@@ -337,18 +330,27 @@ public class TinyWeb {
             }
 
             httpServer.createContext("/", exchange -> {
-                String path = exchange.getRequestURI().getPath();
-                Method method = Method.valueOf(exchange.getRequestMethod());
+                handleHttpRequest(dependencyManager, exchange);
+            });
+        }
 
-                Map<Pattern, EndPoint> methodEndPoints = endPoints.get(method);
-                if (methodEndPoints == null) {
-                    sendErrorResponse(exchange, 405, "Method not allowed");
-                    return;
-                }
+        private void handleHttpRequest(DependencyManager dependencyManager, HttpExchange exchange) {
+            String path = exchange.getRequestURI().getPath();
+            Method method = Method.valueOf(exchange.getRequestMethod());
 
-                boolean routeMatched = false;
-                List<String> filterSequence = new ArrayList<>();
-                long startTime = System.currentTimeMillis();
+            Map<Pattern, EndPoint> methodEndPoints = endPoints.get(method);
+            if (methodEndPoints == null) {
+                sendErrorResponse(exchange, 405, "Method not allowed");
+                return;
+            }
+
+            List<FilterStat> filterSequence = new ArrayList<>();
+            long startTime = System.currentTimeMillis();
+            boolean routeMatched = false;
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("filters", filterSequence);
+
+            try {
 
                 for (Map.Entry<Pattern, EndPoint> route : methodEndPoints.entrySet()) {
                     Matcher matcher = route.getKey().matcher(path);
@@ -363,7 +365,7 @@ public class TinyWeb {
 
                         final Request request = new Request(exchange);
                         final Response response = new Response(exchange);
-                        final Map<String, Object> attributes  = new HashMap<>();
+                        final Map<String, Object> attributes = new HashMap<>();
                         final ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
 
                         // Apply filters
@@ -376,95 +378,82 @@ public class TinyWeb {
                         for (FilterEntry filterEntry : methodFilters) {
                             Matcher filterMatcher = filterEntry.pattern.matcher(path);
                             if (filterMatcher.matches()) {
-                                Map<String, String> filterParams = new HashMap<>();
-                                for (int i = 1; i <= filterMatcher.groupCount(); i++) {
-                                    filterParams.put(String.valueOf(i), filterMatcher.group(i));
-                                }
-                                try {
-                                    FilterResult result;
-                                    try {
-                                        long filterStartTime = System.currentTimeMillis();
-                                        result = filterEntry.filter.filter(request, response, createRequestContext(filterParams, attributes, requestCache, matcher));
-                                        long filterDuration = System.currentTimeMillis() - filterStartTime;
-                                        filterSequence.add(filterEntry.pattern.pattern() + " (" + filterDuration + "ms)");
-                                    } catch (Exception e) {
-                                        long filterDuration = System.currentTimeMillis() - filterStartTime;
-                                        filterSequence.add(filterEntry.pattern.pattern() + " (" + filterDuration + "ms)");
-
-                                        Map<String, Object> stats = new HashMap<>();
-                                        stats.put("filters", filterSequence);
-                                        stats.put("endpoint", "filter_exception");
-                                        stats.put("status", 500);
-                                        stats.put("duration", System.currentTimeMillis() - startTime);
-
-                                        recordStatistics(path, stats);
-                                        exceptionDuringHandling(e, exchange);
-                                        return;
-                                    }
-                                    if (result == FilterResult.STOP) {
-                                        return; // Stop processing if filter returns STOP
-                                    }
-                                } catch (ServerException e) {
-                                    Map<String, Object> stats = new HashMap<>();
-                                    stats.put("filters", filterSequence);
-                                    stats.put("endpoint", "filter_exception");
-                                    stats.put("status", 500);
-                                    stats.put("duration", System.currentTimeMillis() - startTime);
-
-                                    recordStatistics(path, stats);
-                                    serverException(e);
-                                    sendErrorResponse(exchange, 500, "Internal server error: " + e.getMessage());
+                                if (handleFilterMatch(exchange, filterEntry, filterMatcher, request, response, attributes, requestCache, matcher, filterSequence) == FilterResult.STOP) {
+                                    // stop chain of execution
                                     return;
                                 }
                             }
                         }
 
-                        try {
-
-                            try {
-                                long endPointStartTime = System.currentTimeMillis();
-                                route.getValue().handle(request, response, createRequestContext(params, attributes, requestCache, matcher));
-                                long endPointDuration = System.currentTimeMillis() - endPointStartTime;
-
-                                Map<String, Object> stats = new HashMap<>();
-                                stats.put("filters", filterSequence);
-                                stats.put("endpoint", route.getKey().pattern());
-                                stats.put("status", response.exchange.getResponseCode());
-                                stats.put("duration", System.currentTimeMillis() - startTime);
-                                stats.put("endpointDuration", endPointDuration);
-
-                                recordStatistics(path, stats);
-                            } catch (Exception e) {
-                                Map<String, Object> stats = new HashMap<>();
-                                stats.put("filters", filterSequence);
-                                stats.put("endpoint", "endpoint_exception");
-                                stats.put("status", 500);
-                                stats.put("duration", System.currentTimeMillis() - startTime);
-
-                                recordStatistics(path, stats);
-                                exceptionDuringHandling(e, exchange);
-                                return;
-                            }
-                        } catch (ServerException e) {
-                            Map<String, Object> stats = new HashMap<>();
-                            stats.put("filters", filterSequence);
-                            stats.put("endpoint", "endpoint_exception");
-                            stats.put("status", 500);
-                            stats.put("duration", System.currentTimeMillis() - startTime);
-
-                            recordStatistics(path, stats);
-                            serverException(e);
-                            sendErrorResponse(exchange, 500,"Internal server error: " + e.getMessage());
-                            return;
-                        }
+                        handleEndPointMatch(exchange, route, request, response, params, attributes, requestCache, matcher, stats);
+                        // matched route
                         return;
                     }
                 }
 
+                // route unmatched
                 if (!routeMatched) {
                     sendErrorResponse(exchange, 404, "Not found");
+                    stats.put("endpoint", "unmatched");
+                    stats.put("status", 404);
                 }
-            });
+
+            } finally {
+                stats.put("duration", System.currentTimeMillis() - startTime);
+                recordStatistics(path, stats);
+            }
+        }
+
+        private void handleEndPointMatch(HttpExchange exchange, Map.Entry<Pattern, EndPoint> route, Request request, Response response, Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher, Map<String, Object> stats) {
+            long endPointStartTime = System.currentTimeMillis();
+            try {
+                try {
+                    route.getValue().handle(request, response, createRequestContext(params, attributes, requestCache, matcher));
+
+                    stats.put("endpoint", route.getKey().pattern());
+                    stats.put("status", response.exchange.getResponseCode());
+
+                } catch (Exception e) {
+                    stats.put("endpoint", route.getKey().pattern() + " -Exception");
+                    stats.put("status", 500);
+                    exceptionDuringHandling(e, exchange);
+                    return;
+                }
+            } catch (ServerException e) {
+                stats.put("endpoint", route.getKey().pattern() + " -ServerException");
+                stats.put("status", 500);
+
+                serverException(e);
+                sendErrorResponse(exchange, 500, "Internal server error: " + e.getMessage());
+                return;
+            } finally {
+                stats.put("endpointDuration", System.currentTimeMillis() - endPointStartTime);
+            }
+        }
+
+        private FilterResult handleFilterMatch(HttpExchange exchange, FilterEntry filterEntry, Matcher filterMatcher, Request request, Response response, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher, List<FilterStat> filterSequence) {
+            Map<String, String> filterParams = new HashMap<>();
+            for (int i = 1; i <= filterMatcher.groupCount(); i++) {
+                filterParams.put(String.valueOf(i), filterMatcher.group(i));
+            }
+            long filterStartTime = System.currentTimeMillis();
+            try {
+                FilterResult result;
+                try {
+                    result = filterEntry.filter.filter(request, response, createRequestContext(filterParams, attributes, requestCache, matcher));
+                    filterSequence.add(new FilterStat(filterEntry.pattern.pattern(), "ok", System.currentTimeMillis() - filterStartTime));
+                    return result;
+                } catch (Exception e) {
+                    filterSequence.add(new FilterStat(filterEntry.pattern.pattern(), "exception", System.currentTimeMillis() - filterStartTime));
+                    exceptionDuringHandling(e, exchange);
+                    return FilterResult.STOP;
+                }
+            } catch (ServerException e) {
+                filterSequence.add(new FilterStat(filterEntry.pattern.pattern(), "server-exception", System.currentTimeMillis() - filterStartTime));
+                serverException(e);
+                sendErrorResponse(exchange, 500, "Internal server error: " + e.getMessage());
+                return FilterResult.STOP;
+            }
         }
 
         protected HttpServer makeHttpServer(InetSocketAddress inetSocketAddress) throws IOException {
