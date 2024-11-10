@@ -820,3 +820,7 @@ rm tempfile.java
 ```
 
 The README and tests are heading toward that size but are still under.
+
+## Limitations
+
+* No examples of participating in idle or socket timeouts. There's a hint in the source, but it lacks sophistication.

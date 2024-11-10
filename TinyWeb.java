@@ -290,7 +290,7 @@ public class TinyWeb {
             super(new ServerState());
             this.dependencyManager = dependencyManager;
             try {
-                httpServer = HttpServer.create(inetSocketAddress, 0);
+                httpServer = makeHttpServer(inetSocketAddress);
             } catch (IOException e) {
                 throw new ServerException("Can't listen on port " + inetSocketAddress.getPort(), e);
             }
@@ -408,6 +408,19 @@ public class TinyWeb {
                     sendErrorResponse(exchange, 404, "Not found");
                 }
             });
+        }
+
+        protected HttpServer makeHttpServer(InetSocketAddress inetSocketAddress) throws IOException {
+
+            return HttpServer.create(inetSocketAddress, 0);
+
+            // How to participate in Idle Timeouts - override this method
+            //ServerSocket socket = server.getAddress().getSocket();
+            //socket.setSoTimeout(timeoutInMillis); // Set the idle timeout in milliseconds
+
+            // Socket timeouts is harder, google for: "HttpServer in the com.sun.net.httpserver package lacks direct
+            //    support for setting a custom ServerSocket with SO_TIMEOUT but how do I make it work with subclasses?"
+
         }
 
         private RequestContext createRequestContext(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher) {
