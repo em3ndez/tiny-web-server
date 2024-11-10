@@ -140,6 +140,16 @@ public class TinyWeb {
                     }
                     previousEndPoints.get(method).putAll(prefixedEndPoints);
                 }
+
+                if (!routeMatched) {
+                    Map<String, Object> stats = new HashMap<>();
+                    stats.put("filters", filterSequence);
+                    stats.put("endpoint", "unmatched");
+                    stats.put("status", 404);
+                    stats.put("duration", System.currentTimeMillis() - startTime);
+
+                    recordStatistics(path, stats);
+                }
             }
 
             // Prefix basePath to WebSocket handlers
@@ -337,6 +347,8 @@ public class TinyWeb {
                 }
 
                 boolean routeMatched = false;
+                List<String> filterSequence = new ArrayList<>();
+                long startTime = System.currentTimeMillis();
 
                 for (Map.Entry<Pattern, EndPoint> route : methodEndPoints.entrySet()) {
                     Matcher matcher = route.getKey().matcher(path);
@@ -371,8 +383,10 @@ public class TinyWeb {
                                 try {
                                     FilterResult result;
                                     try {
-                                        // STATS NEEDED FOR THIS
+                                        long filterStartTime = System.currentTimeMillis();
                                         result = filterEntry.filter.filter(request, response, createRequestContext(filterParams, attributes, requestCache, matcher));
+                                        long filterDuration = System.currentTimeMillis() - filterStartTime;
+                                        filterSequence.add(filterEntry.pattern.pattern() + " (" + filterDuration + "ms)");
                                     } catch (Exception e) {
                                         exceptionDuringHandling(e, exchange);
                                         return;
@@ -391,8 +405,18 @@ public class TinyWeb {
                         try {
 
                             try {
-                                // STATS NEEDED FOR THIS
+                                long endPointStartTime = System.currentTimeMillis();
                                 route.getValue().handle(request, response, createRequestContext(params, attributes, requestCache, matcher));
+                                long endPointDuration = System.currentTimeMillis() - endPointStartTime;
+
+                                Map<String, Object> stats = new HashMap<>();
+                                stats.put("filters", filterSequence);
+                                stats.put("endpoint", route.getKey().pattern());
+                                stats.put("status", response.exchange.getResponseCode());
+                                stats.put("duration", System.currentTimeMillis() - startTime);
+                                stats.put("endpointDuration", endPointDuration);
+
+                                recordStatistics(path, stats);
                             } catch (Exception e) {
                                 exceptionDuringHandling(e, exchange);
                                 return;
@@ -451,6 +475,10 @@ public class TinyWeb {
                     return matcher;
                 }
             };
+        }
+
+        protected void recordStatistics(String path, Map<String, Object> stats) {
+            // This method is intentionally left empty for now.
         }
 
         protected void serverException(ServerException e) {
