@@ -2,6 +2,10 @@
 
 A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `TinyWeb.java`
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 The TinyWeb single source file provides a lightweight and flexible server implementation that supports both HTTP and 
 WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  
 It uses a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
