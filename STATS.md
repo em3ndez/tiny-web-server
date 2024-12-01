@@ -1,6 +1,6 @@
 # TinyWeb Statistics
 
-TinyWeb provides a built-in statistics capability that allows you to monitor and analyze the performance of your web server. This feature is useful for understanding the behavior of your application and identifying potential bottlenecks.
+TinyWeb provides a built-in statistics capability that allows you to monitor and analyze the performance of your app. This feature is useful for understanding the behavior of your application and identifying potential bottlenecks.
 
 ## Key Features
 
