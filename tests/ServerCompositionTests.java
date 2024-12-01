@@ -26,6 +26,13 @@ public class ServerCompositionTests {
                             });
                         });
                     });
+                    path("/alpha", () -> {
+                        path("/beta", () -> {
+                            endPoint(GET, "/gammat", (req, res, ctx) -> {
+                                res.write("Second Composed path response");
+                            });
+                        });
+                    });
                 }};
                 webServer.start();
             });
@@ -35,6 +42,15 @@ public class ServerCompositionTests {
                     assertThat(response.code(), equalTo(200));
                     assertThat(response.body().string(), equalTo("Composed path response"));
                 }
+                assertThat(httpGet("/composed/nested/").code(), equalTo(404));
+                assertThat(httpGet("/composed/").code(), equalTo(404));
+
+                try (okhttp3.Response response = httpGet("/alpha/beta/gamma")) {
+                    assertThat(response.code(), equalTo(200));
+                    assertThat(response.body().string(), equalTo("Second Composed path response"));
+                }
+                assertThat(httpGet("/alpha/beta/").code(), equalTo(404));
+                assertThat(httpGet("/alpha").code(), equalTo(404));
             });
 
             after(() -> {

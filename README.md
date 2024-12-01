@@ -11,7 +11,7 @@ WebSocket protocols. This single-source-file technology is designed to be easy t
 It uses a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
 system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Netty or Jetty.
 
-## The Web Server
+## Web Server 
 
 The `TinyWeb.Server` class allows you to create an HTTP server with minimal configuration. You can define filters and 
 endpoints for different HTTP methods (GET, POST, PUT, DELETE and others), and process requests. 
@@ -25,7 +25,7 @@ The server supports:
 
 There are paths too, to which filters and endpoints can be attached, but don't themselves handle requests.
 
-## Its Web Sockets sibling
+## Web Sockets Server
 
 A coupled `TinyWeb.SocketServer` class provides WebSocket support, enabling communication back from the server to 
 attached clients.  It can be used alone, but also integrated into the same path structure of the main server.
@@ -38,8 +38,8 @@ I wanted to make something that:
 
 1. A reliance on Java-8's lambdas - as close as regular Java can get to Groovy's builders for now
 2. ** Related: Have a `path(..)` construct that allows nesting of other sub-paths (and endpoints and filters). To me, this feels more representative and maintainable. 
-2. ** Support a multi-module compositions. This for web-module separation to aid deployment and testing flexibility
-1. Have no dependencies at all, outside the JDK
+3. ** Support a multi-module compositions. This for web-module separation to aid deployment and testing flexibility
+4. Have no dependencies at all, outside the JDK
 
 And in a second tier of goals:
 
@@ -98,7 +98,7 @@ Well cons, really:
 
 ## Basic Use
 
-### EndPoints
+### End-points
 
 Here is a basic example of defining a GET endpoint using TinyWeb:
 
@@ -113,7 +113,7 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 
 In this example, a GET endpoint is defined at the path `/hello`. When a request is made to http://localhost:8080/hello, the server responds with "Hello, World!"
 
-### A Filter and an EndPoint
+### A Filter and an End-point
 
 Here's an example of using a filter with an endpoint in TinyWeb:
 
@@ -141,7 +141,7 @@ In this example, a filter is applied to the `/secure` path to check for the pres
 If the header is missing, the request is denied with a 401 status code. If the header is present, the request
 proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
 
-### Two EndPoints within a path
+### Two End-points within a path
 
 Here's an example of defining two endpoints within a single path using TinyWeb:
 
@@ -161,7 +161,7 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 }}.start();
 ```
 
-### A filter and an EndPoint within a path
+### A filter and an end-point within a path
 
 Here's an example of using a filter to perform authentication and a logged-in user attribute to an endpoint within a path 
 or not at all of there's no logged in user.
@@ -259,7 +259,7 @@ port 8081. The client performs a WebSocket handshake, sends a message to the `/m
 response received from the server. On the wire, the path and message are put in a specific structure for sending to
 the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not. This is to make the webSockets
 appear within the same nested path structure of the composed server grammar. They are not really - not even the
-same port to the server. The path association is places in the first bytes of the message from the client to the 
+same port on the server. The path association is places in the first bytes of the message from the client to the 
 server. So `SocketClient` does that custom adaption of client-to-server TinyWeb.Socket messages.
 
 #### Connecting to a WebSocket using JavaScript source file endpoint
@@ -344,7 +344,13 @@ big map of paths and websockets open to clients, and if this were a single web-a
 websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
 four concurrently connected channels.
 
-## Testing Your Web App
+## Static File Serving
+
+TinyWeb can serve static files from a specified directory. This is useful for serving assets like images, CSS, and JavaScript files directly from the server.
+
+//TODO more details of that.
+
+## Testing your web app
 
 Testing is a critical part of developing reliable web applications. TinyWeb is just a library. You can write tests
 using it in JUnit, TestNG, JBehave. You can use Mockito as you would do normally.
