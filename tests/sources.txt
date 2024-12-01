@@ -7,6 +7,7 @@ tests/ServerSideEventsTests.java
 tests/WebServerTests.java
 tests/ExampleApp.java
 tests/Suite.java
+tests/CompositionReuseTests.java
 tests/IntegrationTests.java
 tests/DependenciesTests.java
 tests/ConcreteExtensionToServerComposition.java

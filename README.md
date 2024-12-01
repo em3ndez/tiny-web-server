@@ -694,7 +694,7 @@ that is about 37K in size.
 
 ## Tests
 
-To compile TinyWeb's tests into the `target/test-classes/` directory you WILL need dependencies: (in `test_libs/`). 
+To compile TinyWeb's tests into the `target/test-classes/` directory you WILL need jar dependencies: (in `test_libs/`). 
 Use the following to go get them:
 
 ```bash
