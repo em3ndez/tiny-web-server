@@ -36,15 +36,15 @@ to the SocketServer.
 
 I wanted to make something that:
 
-1. A reliance on Java-8's lambdas - as close as regular Java can get to Groovy's builders
+1. A reliance on Java-8's lambdas - as close as regular Java can get to Groovy's builders for now
+2. ** Related: Have a `path(..)` construct that allows nesting of other sub-paths (and endpoints and filters). To me, this feels more representative and maintainable. 
+2. ** Support a multi-module compositions. This for web-module separation to aid deployment and testing flexibility
 1. Have no dependencies at all, outside the JDK
-2. Has a `path(..)` construct that groups other paths, endpoints and filters together. This approach allows for a clean and intuitive way to compose complex URL hierarchies within the server. More elegant and maintainable 
-1. Using those, could take **a series of multiple such compositions** (nested paths/filter/endPoints). This for web-module separation to aid deployment and testing flexibility
 
-And in a second tier:
+And in a second tier of goals:
 
 1. No shared static state
-1. Attempted to coerce websockets into the same nested path organization as is available for the web path composition
+1. An attempt to coerce websockets into the same "nested path" composition 
 1. Exist in a single source file, for no good reason
 1. Use JDK's own command for its build technology. Well, bash too.
 1. Does not itself pollute stdout or force a logging framework on users.
@@ -83,27 +83,35 @@ And in a second tier:
   - [TinyWeb's Own Test Results](#tinywebs-own-test-results)
 - [Project & Source Repository](#project--source-repository)
 
+# Other pros and cons
+
+Well cons, really:
+
+* Batteries not included.
+* Not perf/load tested
+* No built-in HTTPS support.
+* Utilizes some regex wrapping of Java's build-in webserver tech - either could have vulns.
+
 # User guide
 
-"Users" are developers, if that's not obvious. 
+"Users" are developers, if that is not obvious. 
 
 ## Basic Use
 
 ### EndPoints
 
-Here's a basic example of defining a GET endpoint using TinyWeb:
+Here is a basic example of defining a GET endpoint using TinyWeb:
 
 ```java 
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
-        res.write("Hello, World!");
         // req gives access to headers, etc
+        res.write("Hello, World!");
     });
 }}.start();
 ```
 
-In this example, a GET endpoint is defined at the path `/hello`. When a request is made to this endpoint, the server 
-responds with "Hello, World!". The server is set to listen on port 8080.
+In this example, a GET endpoint is defined at the path `/hello`. When a request is made to http://localhost:8080/hello, the server responds with "Hello, World!"
 
 ### A Filter and an EndPoint
 
@@ -142,31 +150,25 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     path("/api", () -> {
         // Define the first GET endpoint
         endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
-            res.write("Hello from the first endpoint!");
+            res.write("{ message:`Hello from the first endpoint!` }");
         });
 
         // Define the second GET endpoint
         endPoint(TinyWeb.Method.GET, "/goodbye", (req, res, context) -> {
-            res.write("Goodbye from the second endpoint!");
+          res.write("{ message:`Goodbye from the second endpoint!` }");
         });
     });
 }}.start();
 ```
 
-In this example, two GET endpoints are defined within the `/api` path. The first endpoint responds with "Hello
-from the first endpoint!" when a request is made to `/api/hello`, and the second endpoint responds with
-"Goodbye from the second endpoint!" when a request is made to `/api/goodbye`.
-
-You could place your Unauthorized/401 security check inside "/api" path and have it apply to both endPoints
-
 ### A filter and an EndPoint within a path
 
-Here's an example of using a filter to perform authentication and passing attributes to an endpoint within a path 
-using TinyWeb:
+Here's an example of using a filter to perform authentication and a logged-in user attribute to an endpoint within a path 
+or not at all of there's no logged in user.
 
 ```java
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
-    path("/api", () -> {
+    path("/shopping", () -> {
         filter(TinyWeb.Method.GET, ".*", (req, res, context) -> {
             String allegedlyLoggedInCookie = req.getCookie("logged-in");
             // This test class only performs rot47 on the cookie passed in.
@@ -180,47 +182,21 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
             }
             return FilterResult.CONTINUE; // Continue processing
         });
-        endPoint(TinyWeb.Method.GET, "/attribute-test", (req, res, context) -> {
-            res.write("User Is logged in: " + req.getAttribute("user"));
+        endPoint(TinyWeb.Method.GET, "/cart", (req, res, context) -> {
+            Cart = carts.getCartFor(req.getAttribute("user"));
+            // do something with cart
+            // ignore the 'carts' class for the moment.
         });
     });
 }}.start();
-
-public static class IsEncryptedByUs {
-    public static Authentication decrypt(String allegedlyLoggedInCookie) {
-        String rot47ed = rot47(allegedlyLoggedInCookie);
-        // Check if it's an email address
-        if (rot47ed.matches("^[\\w.%+-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$")) {
-            return new Authentication(true, rot47ed);
-        } else {
-            return new Authentication(false, null);
-        }
-    }
-}
-
-public record Authentication(boolean authentic, String user) {}
-
-private static String rot47(String input) {
-    StringBuilder result = new StringBuilder();
-    for (char c : input.toCharArray()) {
-        if (c >= '!' && c <= 'O') {
-            result.append((char) (c + 47));
-        } else if (c >= 'P' && c <= '~') {
-            result.append((char) (c - 47));
-        } else {
-            result.append(c);
-        }
-    }
-    return result.toString();
-}
 ```
 
-In this example, a filter is applied to all GET requests within the `/api` path to check for a 
+In this example, a filter is applied to all GET requests within the `/shopping` path to check for a 
 "logged-in" cookie. The cookie is decrypted using a simple ROT47 algorithm to verify if the user 
 is authenticated. If authenticated, the user's email is set as an attribute in the request, which 
 is then accessed by the endpoint to respond with a message indicating the user is logged in.
 
-In the test suite, there are two alternate test cases for authentication. One test case simulates a successful 
+In the **test suite**, there are two alternate test cases for authentication. One test case simulates a successful 
 authentication by providing a valid "logged-in" cookie (7C65o6I2>A=6]4@>), which is decrypted to reveal a valid 
 email address (fred@example.com). Recall, rot47 is only used for testing and you would never go live with that. 
 The other test case simulates a failed authentication by providing an invalid cookie (aeiouaeiou), which does not decrypt 
@@ -234,14 +210,14 @@ Here's an example of defining both a WebSocket and an HTTP endpoint within a sin
 
 ```java
 TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-    path("/api", () -> {
+    path("/messenger", () -> {
         // Define a GET endpoint
-        endPoint(TinyWeb.Method.GET, "/status", (req, res, context) -> {
-            res.write("API is running");
+        endPoint(TinyWeb.Method.GET, "/inboxStatus", (req, res, context) -> {
+            res.write("API is running"); // not really what an api would do
         });
 
         // Define a WebSocket endpoint
-        webSocket("/chat", (message, sender) -> {
+        webSocket("/chatback", (message, sender) -> {
             String responseMessage = "Echo: " + new String(message, "UTF-8");
             sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
         });
@@ -249,8 +225,8 @@ TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
 }}.start();
 ```
 
-In this example, a GET endpoint is defined at `/api/status` that responds with "API is running".
-Additionally, a WebSocket endpoint is defined at `/api/chat` that echoes back any message it
+In this example, a GET endpoint is defined at `/messenger/inboxStatus` that responds with "API is running".
+Additionally, a WebSocket endpoint is defined at `/messenger/chatback` that echoes back any message it
 receives, prefixed with "Echo: ", which we admit isn't a real world example.
 
 #### Connecting to a WebSocket using TinyWeb.SocketClient
@@ -265,7 +241,7 @@ public class WebSocketClientExample {
             client.performHandshake();
 
             // Send a message to the WebSocket server
-            client.sendMessage("/chat", "Hello WebSocket");
+            client.sendMessage("/messenger/chatback", "Hello WebSocket");
 
             // Receive a response from the WebSocket server
             String response = client.receiveMessage();
@@ -279,15 +255,16 @@ public class WebSocketClientExample {
 ```
 
 In this example, a `TinyWeb.SocketClient` is created to connect to a WebSocket server running on `localhost` at
-port 8081. The client performs a WebSocket handshake, sends a message to the `/chat` path, and prints the
+port 8081. The client performs a WebSocket handshake, sends a message to the `/messenger/chatback` path, and prints the
 response received from the server. On the wire, the path and message are put in a specific structure for sending to
 the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not. This is to make the webSockets
-appear within the same nested path structure of the composed server grammar. They're not really - not even the
-same port to the server.
+appear within the same nested path structure of the composed server grammar. They are not really - not even the
+same port to the server. The path association is places in the first bytes of the message from the client to the 
+server. So `SocketClient` does that custom adaption of client-to-server TinyWeb.Socket messages.
 
 #### Connecting to a WebSocket using JavaScript source file endpoint
 
-Here's an example of how to connect to a WebSocket using the JavaScript version of `TinyWeb.SocketClient`:
+Here's an example of how to connect to a TinyWeb.Socket using the JavaScript version of `TinyWeb.SocketClient`:
 
 ```html
 <!DOCTYPE html>
@@ -306,7 +283,7 @@ Here's an example of how to connect to a WebSocket using the JavaScript version 
         async function example() {
             try {
                 await tinyWebSocketClient.waitForOpen();
-                await tinyWebSocketClient.sendMessage('/chat', 'Hello WebSocket');
+                await tinyWebSocketClient.sendMessage('/messenger/chatback', 'Hello WebSocket');
 
                 const response = await tinyWebSocketClient.receiveMessage();
                 document.getElementById('messageDisplay').textContent = 'Received: ' + response;
@@ -316,17 +293,15 @@ Here's an example of how to connect to a WebSocket using the JavaScript version 
                 console.error('WebSocket error:', error);
             }
         }
-
         example();
     </script>
 </body>
 </html>
 ```
 
-In this example, a JavaScript version of `TinyWeb.SocketClient` (`TinyWeb.JavaScriptSocketClient`) is created in 
+In this example, a JavaScript version of `TinyWeb.SocketClient` (via `TinyWeb.JavaScriptSocketClient` Jav class) is created in 
 JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
-connection to open, sends a message to the `/chat` path, and displays the response received from the server in 
-the browser.
+connection to open, sends a message to the `/messenger/chatback` path, and displays the response received from the server in the browser (html code not shown).
 
 **Making the JavaScript WebSocket Client available to webapps**
 
@@ -336,6 +311,7 @@ that responds with the JavaScript code when requested:
 
 ```java
 endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js",new TinyWeb.JavascriptSocketClient());
+// or your preferred path
 ```
 This is to honor the server-side need for path & message to be in a specific opinionated structure.
 
@@ -371,12 +347,12 @@ four concurrently connected channels.
 ## Testing Your Web App
 
 Testing is a critical part of developing reliable web applications. TinyWeb is just a library. You can write tests
-using it in JUnit, TestNG, JBehave.
+using it in JUnit, TestNG, JBehave. You can use Mockito as you would do normally.
 
 ### Cuppa-Framework
 
 The Cuppa-Framework is what we are using for testing TinyWeb applications due to its idiomatic style, which closely aligns
-with TinyWeb's composition approach. It allows for expressive and readable test definitions.
+with TinyWeb's composition approach. It allows for expressive and readable test definitions. 
 
 Example:
 
@@ -394,7 +370,7 @@ public class MyWebAppTest {
 }
 ```
 
-[See the tests that use Cuppa](TinyWebTests.java)
+See the tests that use Cuppa linked to from the main [suite](tests/Suite.java).
 
 ### Mockito and similar
 
@@ -424,11 +400,10 @@ public static class MyApp {
 }
 ```
 
-In your tests, you could ignore the main() method, and call `composeApplication` with a mock `MyApp` instance. All
-your when(), verify() logic will work as you expect it to.
+In your tests, you could ignore the main() method, and call `composeApplication` with a mock `MyApp` instance that is an argument for that method. All your when(), verify() logic will work as you expect it to.
 
 You could also override the `dep(..)` or `instantiateDep(..)` methods as a good place to hand mock collaborators in
-to the "component under test."
+to the "component under test." See later: TODO
 
 ## Error handling
 
@@ -452,16 +427,17 @@ endPoint(TinyWeb.Method.GET, "/example", (req, res, context) -> {
 
 In that example, the endpoint responds with a 200 OK status code, indicating that the request was successful.
 
+TODO: example that sets a non-200 response code.
+
 ### TinyWeb's Overridable Exception Methods
 
 In TinyWeb, exception handling is an important aspect of managing server and application errors. The framework
-provides two overridable methods to handle exceptions: `serverException(e)` and `appHandlingException(Exception e)`.
-These methods allow you to customize how exceptions are logged or processed.
+provides two overridable methods to handle exceptions: `serverException(ServerException e)` and `appHandlingException(Exception e)`. These methods allow you to customize how exceptions are logged or processed.
 
-#### serverException(e)
+#### serverException(ServerException e)
 
 The `serverException` method is called when a `ServerException` occurs. This typically involves issues related to
-the server's internal operations, such as network errors or configuration problems. By default, this method logs the
+the server's **internal operations**, such as network errors or configuration problems. By default, this method shows the
 exception message and stack trace to the standard error stream. You can override this method to implement custom
 logging or error handling strategies.
 
@@ -470,31 +446,31 @@ Example:
 ```java
 svr = new TinyWeb.Server(8080, -1) {
     {
-      // paths, filters, endPoints
+      // paths, filters, endPoints setup as described before
     }
     @Override
     protected void serverException (ServerException e){
         // Custom logging logic
         System.err.println("Custom Server Exception: " + e.getMessage());
         e.printStackTrace(System.err);
+        // or throw something
     }
 };
 ```
 
 #### appHandlingException(Exception e)
 
-The `appHandlingException(Exception e)` method is invoked when an exception occurs within an endpoint or filter.
+The `appHandlingException(Exception e)` method is invoked when an exception occurs within an endpoint or filter logic
 This is useful for handling application-specific errors, such as invalid input or business logic failures. That would
 nearly always be an endpoint of filter throwing `java.lang.RuntimeException` or `java.lang.Error`. They are not supposed
-to, but they may do so. By default, this method logs the exception message and stack trace to the standard error
-stream. You can override it to provide custom error handling, such as sending alerts or writing to a log file.
+to, but they may do so, or a library they call does so. By default, this method logs the exception message and stack trace to the standard error stream. You can override it to provide custom error handling, such as sending alerts or writing to a log file.
 
 Example:
 
 ```java
 svr = new TinyWeb.Server(8080, -1) {
     {
-        // paths, filters, endPoints
+        // paths, filters, endPoints setup as described before
     }
 
     @Override
@@ -524,22 +500,26 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
         // do something with "cart" var
         res.write("some response");
     });
+    // or...
+    endPoint(GET, "/users", (req, res, context, /*ShoppingCart*/ cart) -> {
+        // do something with "cart" var
+        res.write("some response");
+    });
 }};
 ```
 
 The problem is that method `endPoint(..)` has a fixed parameter list. It can't be extended to suit each specific use
-of `endPoint` in an app that would list dependencies to be injected. Instead, we have chosen
-to have a `getDep(..)` method on context `RequestContext` object. We acknowledge this is no longer Dependency
-Injection.
+of `endPoint` in an app that would list dependencies to be injected. Java itself does not allow this. Instead, we have chosen to have a `getDep(..)` method on context `RequestContext` object. We acknowledge this is no longer Dependency
+Injection. 
 
 We think we are instead following the framing **Inversion of Control** (IoC) idiom with a lookup-style (interface
 injection) way of getting dependencies into a endpoint (or filter). I contrast the differences 21 years
 ago - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf,
-and I've built something rudimentary into TinyWeb that fits interface injection style.
+and I've built something rudimentary into TinyWeb that fits "interface injection" style.
 The debate on Dependency Injection
 (DI) vs a possibly global-static Service Locator (that was popular before it) was put front and center by Martin Fowler
 in https://www.martinfowler.com/articles/injection.html (I get a mention in the footnotes, but people occasionally
-tell me to read it).
+tell me to read it). "Inferface Injection" is mention in that article. So is PicoContainer a DI container tech that I co-created with Aslak Hellosøy and that competed with SpringFramework for 5 mins (also 20 years ago).
 
 Here's an example of our way. Again, this is not D.I., but is IoC from the pre-DI era.
 
@@ -550,44 +530,43 @@ endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
 });
 ```
 
-This below is also not Dependency injection, nor is it IoC, but you could this way if really wanted to:
+This below is **also** not Dependency injection, nor is it IoC, but you could this way if really wanted to:
 
 ```java
 
 // classic service locator style - should not do this, IMO
 
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
+    // Eww - shared static state
     ShoppingCart sc = GlobalServiceLocator.getDepndency(ShoppingCart.class);
     res.write("Cart items count: " + sc.cartCount());
 });
     
-// classic singleton design-pattern style - should not do this, IMO
+// classic singleton design-pattern (not the Spring idiom) style - should not do this, IMO
 
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
+    // Eww - shared static state
     ShoppingCart sc = ShoppingCart.getInstance();
     res.write("Cart items count: " + sc.cartCount());
 });
 ```
 
-This one again is not Dependency injection, but could be IoC depending on implementation:
+This one again is more questionable - omething registered at the same level as new `TinyWeb.Server() { .. };`
 
 ```java
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
+    
     ShoppingCart sc = getInstance(ShoppingCart.class); // from some scope outside than the endPoint() lambda
     res.write("Cart items count: " + sc.cartCount());
 });
 ```
 
 Say `ShoppingCart` depends on `ProductInventory`, but because you're following Inversion of Control you do not
-want the `ProductInventory` instance directly used in any endPoint or filter. You would hide its instantiation in a scope of execution
-that would not be accessible to the endPoint or filter lambdas. Of course, if it is in the classpath, any code could do
-`new ProductInventory(..)` but we presume there are some secrets passed in through the constructor that ALSO are
-hidden from or filter lambdas making that pointless.
+want the `ProductInventory` instance directly used in any endPoint or filter. You would hide its instantiation in a scope of execution that would not be accessible to the endPoint or filter lambdas. Of course, if it is in the classpath, any code could do `new ProductInventory(..)` but we presume there are some secrets passed in through the constructor that ALSO are hidden from or filter lambdas making that pointless.
 
-If you were using Spring Framework, you would have `ProductInventory` as `@Singleton` scope (an idiom, not the Gang-of-Four
-design pattern). You would also have `ShoppingCart` as `@Scope("request")`
+If you were using Spring Framework, you would have `ProductInventory` as `@Singleton` scope (a Spring idiom, not the Gang-of-Four design pattern). You would also have `ShoppingCart` as `@Scope("request")`
 
-In [TinyWebTests](TinyWebTests.java), we have an example of use that features `endPoint(..)`, `ShoppingCart`
+In the tests for TinbyWeb, we have an example of use that features `endPoint(..)`, `ShoppingCart`
 and `ProductInventory`
 
 ### Database/ ORM Technologies
@@ -603,7 +582,9 @@ public class MyDatabaseApp {
     private TinyWeb.Server server;
           
     public MyDatabaseApp() {
-        jdbi = Jdbi.create("jdbc:h2:mem:test");
+        // every endpoint/filter could directly do JDBC this way as ..
+        final jdbi = Jdbi.create("jdbc:h2:mem:test");
+        // .. `jdbi` would be in scope for all below
 
         server = new TinyWeb.Server(8080, -1) {{
             endPoint(GET, "/users", (req, res, context) -> {
@@ -631,6 +612,8 @@ public class MyDatabaseApp {
 
 ## Pitfalls
 
+### Code in a 'path { }' block
+
 When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such
 as `path()`, `endPoint()`, or `filter()`) is executed only once during the server's instantiation. This
 means that such code is not executed per request or per path hit, but rather when the server is being set up.
@@ -640,7 +623,7 @@ Here's an example of what not to do:
 ```java
 TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
     path("/api", () -> {
-        code().thatYouThink("is per to /api invocation, but it is not");
+        code().that().youThink("is per '/api/.*' invocation").but("it is not");
         // This code runs per request to /api
         endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
             res.write("Code must be in lambda blocks");
@@ -649,10 +632,11 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 }};
 ```
 
+### Application-scoped components
 
 We could have used the `ctx.getDep(..)` way of depending on JDBI, to aid mocking during test automation. But in the
 above example, we just have an  instance `jdbi` that is visible to all the filters and endpoints duly composed.
-It is up to you which way you develop with TinyWeb
+It is up to you which way you develop with TinyWeb.
 
 ## Secure Channels
 
@@ -660,18 +644,17 @@ It is up to you which way you develop with TinyWeb
 
 Currently, TinyWeb supports HTTP, which is suitable for development and testing environments. 
 However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by 
-fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination. 
+fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination.  There are also
+reverse-reverse proxies (tunnels) that with code I have not done yet, could work.
 
 ### Securing WebSocket Channels
 
-TinyWeb currently supports WebSocket (WS) connections, which are not encrypted. For secure communication, it's 
-important to use Secure WebSocket (WSS) connections. Similar to HTTP, you can achieve this by using a reverse proxy 
-that supports SSL/TLS termination for WebSockets. 
+Same notes as above - the current implementation is `ws://` not `wss://` 
 
 ## TinyWeb Performance
 
 Performance testing for TinyWeb has not been extensively conducted. However, due to its lightweight nature and minimal 
-dependencies, TinyWeb is expected to perform efficiently for small to medium-sized applications.
+dependencies, TinyWeb is expected to perform efficiently for small to medium-sized applications, but nor 10K class application serving.
 
 # Build and Test of TinyWeb itself
 
@@ -685,6 +668,8 @@ javac -d target/classes/ TinyWeb.java
 ```
 
 That's it - no deps, and 1.5 seconds of compilation time on my mid-range Chromebook. That makes 31 `.class` files
+
+See also `./build.sh compile`
 
 ```bash
 jar cf TinyWeb-$(cat TinyWeb.java | grep VERSION | cut -d '"' -f 2).jar -C target/classes/ .
@@ -701,7 +686,9 @@ Use the following to go get them:
 curl -s https://raw.githubusercontent.com/paul-hammant/mvn-dep-getter/refs/heads/main/mvn-dep-getter.py | python3 - org.forgerock.cuppa:cuppa:1.7.0,org.hamcrest:hamcrest:3.0,com.squareup.okhttp3:okhttp:5.0.0-alpha.14,org.mockito:mockito-core:5.14.2,org.seleniumhq.selenium:selenium-java:4.26.0 test_libs
 ```
 
-That is a Python script, so you'll need Python installed. Also Maven, but THIS project does not use Maven in any other way.
+That is a Python script, so you'll need Python installed. Also Maven, but THIS project does not use Maven in any other way - just for getting deps for the tests.
+
+See also `./build.sh get-test-deps`
 
 Then you can compile the tests class:
 
@@ -716,6 +703,8 @@ To run the main method of `Suite.java`, which executes the test suite using the 
 ```bash
 java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
 ```
+
+See also `./build.sh tests`
 
 ### Getting coverage reports for TinyWeb
 
@@ -791,16 +780,16 @@ When using the ExampleApp server via sockets
       ✓ echoes three messages plus -1 -2 -3 back to the client
 ```
 
-ChatGPT estimates the path coverage for the TinyWeb class to be around 90-95%
+ChatGPT estimates the path coverage for the TinyWeb class to be around 90-95% It is difficult to say precisely as the test coverage with jacoco misses some of the Java-8 lambda paths. 
 
-I wish I could use Cuppa to generate example code in markdown, too. Maybe I'll raise that feature request.
+I wish I could use Cuppa to generate example code in markdown, too. It would need to have the same Java source parsing fu of the javac compiler, and that may never happen. An AI could copy tests into markdown documentation quickly, and repeatably, I guess.
 
 ## Project & Source Repository
 
 The project is organized as follows:
 
 - **`TinyWeb.java`**: The main source file containing the implementation of the TinyWeb server and related classes. No deps outside the JDK.
-- **`TinyWebTests.java`**: Contains tests for the TinyWeb server using the Cuppa framework. Package is different to the TinyWeb class in order to not accidentally take advantage of public/package/private visibility mistakes which can't neatly be tested for otherwise.
+- **`tests/`**: Contains tests for the TinyWeb server using the Cuppa framework. Package is different to the TinyWeb class in order to not accidentally take advantage of public/package/private visibility mistakes which can't neatly be tested for otherwise.
 - **`README.md`**: This file, providing an overview and documentation of the project.
 - **`test_libs/`**: Directory containing dependencies required for running tests - built by curl scripts in this README
 - **`target/classes/`**: Directory where compiled classes are stored. 
@@ -825,6 +814,8 @@ rm tempfile.java
 
 The README and tests are heading toward that size but are still under.
 
-## Limitations
+## Known Limitations
 
+* The missing HTTPS and WSS side of it, as mentioned
 * No examples of participating in idle or socket timeouts. There's a hint in the source, but it lacks sophistication.
+* No Maven-central publication - you could curl the single source file into your codebase if you wanted. It adds 3-4 seconds to the compile step
