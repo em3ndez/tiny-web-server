@@ -18,7 +18,7 @@ function get_test_deps() {
 function tests() {
     echo "Compiling tests..."
     mkdir -p target/test-classes
-    find tests -name "*.java" > tests/sources.txt
+    find tests -name "*.java" | sort > tests/sources.txt
     javac -d target/test-classes -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/classes" @tests/sources.txt
     echo "Running tests..."
     java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite

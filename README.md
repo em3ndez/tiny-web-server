@@ -569,6 +569,47 @@ If you were using Spring Framework, you would have `ProductInventory` as `@Singl
 In the tests for TinbyWeb, we have an example of use that features `endPoint(..)`, `ShoppingCart`
 and `ProductInventory`
 
+# TinyWeb usage statistics
+
+TinyWeb provides a built-in statistics capability that allows you to monitor and analyze the performance of your app. This feature is useful for understanding the behavior of your application and identifying potential bottlenecks.
+
+To access the collected statistics, you can override the `recordStatistics` method in your TinyWeb server implementation or instantiation. This method is called after each request is processed, and it receives a map of statistics that you can log, store, or analyze as needed.
+
+Example:
+```java
+@Override
+protected void recordStatistics(String path, Map<String, Object> stats) {
+    // per request, after it is complete, a map of stats.
+}
+```
+Stats, if to-String'd, look like:
+
+```
+{
+  duration=2,
+  path=/test/abc,
+  endpoint=^/test/abc$,
+  endpointDuration=50,
+  filters=[
+    FilterStat
+    [
+      path=^/test/.*c$,
+      result=ok,
+      duration=1
+    ]
+  ], 
+  status=51
+}
+```
+
+By overriding the `recordStatistics` method, you can do something toward:
+
+- **Performance Monitoring**: Identify slow endpoints and optimize them for better performance.
+- **Error Tracking**: Monitor the frequency and types of errors occurring in your application.
+- **Filter Analysis**: Understand the impact of filters on request processing time and optimize them as needed.
+- **Logging**
+
+
 ### Database/ ORM Technologies
 
 Picking JDBI to do Object-Relational Mapping (ORM) for the sake of an example (GAV: org.jdbi:jdbi3-core:3.25.0):
@@ -800,7 +841,7 @@ Notes:
 1. `target` is what Maven would use, but we're not using Maven for this repo (we did to discover the dependency tree)
 2. Both Java sources have packages. While it is conventional to have sources in a dir tree that represents the package, you don't have to
 
-Stats:
+Stats about TinyWeb:
 
 Source file `TinyWeb.java` has Approximately 666 lines of consequential code. 
 
