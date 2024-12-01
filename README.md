@@ -710,7 +710,7 @@ javac -d target/classes/ TinyWeb.java
 
 That's it - no deps, and 1.5 seconds of compilation time on my mid-range Chromebook. That makes 31 `.class` files
 
-See also `./build.sh compile`
+See also `make compile`
 
 ```bash
 jar cf TinyWeb-$(cat TinyWeb.java | grep VERSION | cut -d '"' -f 2).jar -C target/classes/ .
@@ -729,7 +729,7 @@ curl -s https://raw.githubusercontent.com/paul-hammant/mvn-dep-getter/refs/heads
 
 That is a Python script, so you'll need Python installed. Also Maven, but THIS project does not use Maven in any other way - just for getting deps for the tests.
 
-See also `./build.sh get-test-deps`
+See also `make get-test-deps`
 
 Then you can compile the tests class:
 
@@ -745,7 +745,7 @@ To run the main method of `Suite.java`, which executes the test suite using the 
 java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
 ```
 
-See also `./build.sh tests`
+See also `make tests`
 
 ### Getting coverage reports for TinyWeb
 
