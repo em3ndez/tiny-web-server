@@ -28,7 +28,7 @@ public class ServerCompositionTests {
                     });
                     path("/alpha", () -> {
                         path("/beta", () -> {
-                            endPoint(GET, "/gammat", (req, res, ctx) -> {
+                            endPoint(GET, "/gamma", (req, res, ctx) -> {
                                 res.write("Second Composed path response");
                             });
                         });
