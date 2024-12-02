@@ -299,15 +299,12 @@ Here's an example of how to connect to a TinyWeb.Socket using the JavaScript ver
 </html>
 ```
 
-In this example, a JavaScript version of `TinyWeb.SocketClient` (via `TinyWeb.JavaScriptSocketClient` Jav class) is created in 
-JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
+In this example, a JavaScript version of `TinyWeb.SocketClient` (via `TinyWeb.JavaScriptSocketClient` Jav class) is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
 connection to open, sends a message to the `/messenger/chatback` path, and displays the response received from the server in the browser (html code not shown).
 
 **Making the JavaScript WebSocket Client available to webapps**
 
-In the example where we connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`,
-the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint
-that responds with the JavaScript code when requested:
+In the example where we connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`, the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint that responds with the JavaScript code when requested:
 
 ```java
 endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js",new TinyWeb.JavascriptSocketClient());
@@ -349,6 +346,24 @@ four concurrently connected channels.
 TinyWeb can serve static files from a specified directory. This is useful for serving assets like images, CSS, and JavaScript files directly from the server.
 
 //TODO more details of that.
+
+## Composition
+
+We've covered paths, filters, endPoints, webSockets, and static file serving the low-level building blocks of TinyWeb applications.
+
+```java
+TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+    path("/ads", () -> {
+      path("/selling", () -> {
+          //TODO
+      });
+      path("/buying", () -> {
+        //TODO
+      });
+    });
+}}.start();
+```
+
 
 ## Testing your web app
 
@@ -522,10 +537,9 @@ We think we are instead following the framing **Inversion of Control** (IoC) idi
 injection) way of getting dependencies into a endpoint (or filter). I contrast the differences 21 years
 ago - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf,
 and I've built something rudimentary into TinyWeb that fits "interface injection" style.
-The debate on Dependency Injection
-(DI) vs a possibly global-static Service Locator (that was popular before it) was put front and center by Martin Fowler
+The debate on Dependency Injection (DI) vs a possibly global-static Service Locator (that was popular before it) was put front and center by Martin Fowler
 in https://www.martinfowler.com/articles/injection.html (I get a mention in the footnotes, but people occasionally
-tell me to read it). "Inferface Injection" is mention in that article. So is PicoContainer a DI container tech that I co-created with Aslak Hellosøy and that competed with SpringFramework for 5 mins (also 20 years ago).
+tell me to read it). "Interface Injection" is mention in that article, and predates the trend for D.I when Apache's defunct Avalon Framework promoted it.
 
 Here's an example of our way. Again, this is not D.I., but is IoC from the pre-DI era.
 
