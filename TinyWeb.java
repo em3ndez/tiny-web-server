@@ -1297,7 +1297,11 @@ public class TinyWeb {
         public final Class clazz;
 
         public <T> DependencyException(Class clazz) {
-            super("Wrong scope or not a component at all: " + clazz.getName());
+            this("Wrong scope or not a component at all " + clazz.getName(), clazz);
+        }
+
+        public <T> DependencyException(String reason, Class clazz) {
+            super(reason);
             this.clazz = clazz;
         }
     }
