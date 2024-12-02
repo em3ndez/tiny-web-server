@@ -1294,7 +1294,7 @@ public class TinyWeb {
     }
 
     public static class DependencyException extends RuntimeException {
-        private final Class clazz;
+        public final Class clazz;
 
         public <T> DependencyException(Class clazz) {
             super("Wrong scope or not a component at all: " + clazz.getName());
