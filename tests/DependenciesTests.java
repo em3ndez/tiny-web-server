@@ -38,8 +38,9 @@ public class DependenciesTests {
     {
         describe("When endpoint and filters can depend on components", () -> {
             before(() -> {
-                TinyWeb.DefaultComponentCache cache = new TinyWeb.DefaultComponentCache();
-                cache.put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
+                TinyWeb.DefaultComponentCache cache = new TinyWeb.DefaultComponentCache() {{
+                    put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
+                }};
                 webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(cache){
 
                     // Note: this is not Dependency Injection
@@ -52,10 +53,23 @@ public class DependenciesTests {
                         }
                         throw new TinyWeb.DependencyException(clazz);
                         // or ...
-//                        return super.instantiateDep(clazz, requestCache);
+                        //    return super.instantiateDep(clazz, requestCache);
                     }
 
-                });
+                }) {{
+                    endPoint(GET, "/testCacheIsOutOfScope", (rq, rs, ctx) -> {
+                        // can't use cache as it is not final or "effectively final" ...
+
+                        // cache.getOrCreate(ShoppingCart.class, () ->
+                        //        new ShoppingCart(getOrCreateProductInventory(cache));
+
+                        // "Effectively final" includes method arguments to the in-scope lambda
+                        // Thus, no secrets or privileged instances in method args when doing an idiomatic `new TinyServer() {{ }}`
+
+                    });
+                }};
+
+                cache = null;
 
                 new TinyWeb.ServerComposition(webServer) {
 
