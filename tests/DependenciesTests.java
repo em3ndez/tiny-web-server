@@ -20,10 +20,12 @@ import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 import org.hamcrest.Matchers;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 
+import static com.paulhammant.tnywb.TinyWeb.ComponentCacheHider.SEE_TINY_WEB_S_DEPENDENCY_TESTS;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,9 +40,9 @@ public class DependenciesTests {
     {
         describe("When endpoint and filters can depend on components", () -> {
             before(() -> {
-                TinyWeb.DefaultComponentCache cache = new TinyWeb.DefaultComponentCache() {{
+                final TinyWeb.ComponentCache cache = new TinyWeb.ComponentCacheHider(new TinyWeb.DefaultComponentCache() {{
                     put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
-                }};
+                }});
                 webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(cache){
 
                     // Note: this is not Dependency Injection
@@ -58,18 +60,17 @@ public class DependenciesTests {
 
                 }) {{
                     endPoint(GET, "/testCacheIsOutOfScope", (rq, rs, ctx) -> {
-                        // can't use cache as it is not final or "effectively final" ...
+                        // cache (above) is final and can be used here breaking IoC.
+                        // We could not use cache here if it was not final or "effectively final" ...
 
-                        // cache.getOrCreate(ShoppingCart.class, () ->
-                        //        new ShoppingCart(getOrCreateProductInventory(cache));
+                        cache.getOrCreate(ShoppingCart.class, () ->
+                                new ShoppingCart(getOrCreateProductInventory(cache))).pickItem("abc");
 
                         // "Effectively final" includes method arguments to the in-scope lambda
                         // Thus, no secrets or privileged instances in method args when doing an idiomatic `new TinyServer() {{ }}`
 
                     });
                 }};
-
-                cache = null;
 
                 new TinyWeb.ServerComposition(webServer) {
 
@@ -107,6 +108,13 @@ public class DependenciesTests {
                 }};
                 webServer.start();
 
+            });
+            only().it("Then it should be able to bypass IoC", () -> {
+                try {
+                    httpGet("/testCacheIsOutOfScope");
+                } catch (AssertionError e) {
+                    assertThat(e.getMessage(), Matchers.equalTo(SEE_TINY_WEB_S_DEPENDENCY_TESTS));
+                }
             });
             it("Then it should be able to get dep to function", () -> {
                 bodyAndResponseCodeShouldBe(httpGet("/api/howManyOrderInBook"),

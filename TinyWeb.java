@@ -79,7 +79,11 @@ public class TinyWeb {
         protected final ComponentCache cache;
 
         public DependencyManager(ComponentCache cache) {
-            this.cache = cache;
+            if (cache instanceof ComponentCacheHider) {
+                this.cache = ((ComponentCacheHider) cache).getHidden();
+            } else {
+                this.cache = cache;
+            }
         }
 
         public <T> T instantiateDep(Class<T> clazz, ComponentCache requestCache, Matcher matcher) {
@@ -414,7 +418,7 @@ public class TinyWeb {
                     stats.put("endpoint", route.getKey().pattern());
                     stats.put("status", response.exchange.getResponseCode());
 
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     stats.put("endpoint", route.getKey().pattern() + " -Exception");
                     stats.put("status", 500);
                     exceptionDuringHandling(e, exchange);
@@ -510,7 +514,7 @@ public class TinyWeb {
         /**
          * Most likely a RuntimeException or Error in a endPoint() or filter() code block
          */
-        protected void exceptionDuringHandling(Exception e, HttpExchange exchange) {
+        protected void exceptionDuringHandling(Throwable e, HttpExchange exchange) {
             sendErrorResponse(exchange, 500, "Server error");
             //System.err.println(e.getMessage() + "\nStack Trace:");
             //e.printStackTrace(System.err);
@@ -774,6 +778,40 @@ public class TinyWeb {
         ComponentCache getParent();
 
         <T> void put(Class<T> clazz, T instance);
+    }
+
+    public static class ComponentCacheHider implements ComponentCache
+    {
+        public static final String SEE_TINY_WEB_S_DEPENDENCY_TESTS = "See TinyWeb's DependencyTests";
+        private ComponentCache hidden;
+
+        public ComponentCacheHider(ComponentCache hidden) {
+            this.hidden = hidden;
+        }
+
+        @Override
+        public <T> T getOrCreate(Class<T> clazz, Supplier<T> supplier) {
+            throw new AssertionError(SEE_TINY_WEB_S_DEPENDENCY_TESTS);
+        }
+
+        @Override
+        public ComponentCache getParent() {
+            throw new AssertionError(SEE_TINY_WEB_S_DEPENDENCY_TESTS);
+        }
+
+        @Override
+        public <T> void put(Class<T> clazz, T instance) {
+            throw new AssertionError(SEE_TINY_WEB_S_DEPENDENCY_TESTS);
+        }
+        public ComponentCache getHidden() {
+            if (hidden != null) {
+                ComponentCache toReturn = hidden;
+                hidden = null;
+                return toReturn;
+            } else {
+                throw new AssertionError("See TinyWeb's DependencyTests");
+            }
+        }
     }
 
     public static class DefaultComponentCache implements ComponentCache {
