@@ -20,12 +20,10 @@ import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 import org.hamcrest.Matchers;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-import static com.paulhammant.tnywb.TinyWeb.ComponentCacheHider.SEE_TINY_WEB_S_DEPENDENCY_TESTS;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,7 +38,7 @@ public class DependenciesTests {
     {
         describe("When endpoint and filters can depend on components", () -> {
             before(() -> {
-                final TinyWeb.ComponentCache cache = new TinyWeb.ComponentCacheHider(new TinyWeb.DefaultComponentCache() {{
+                final TinyWeb.ComponentCache cache = new TinyWeb.UseOnceComponentCache(new TinyWeb.DefaultComponentCache() {{
                     put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
                 }});
                 webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(cache){
@@ -60,14 +58,19 @@ public class DependenciesTests {
 
                 }) {{
                     endPoint(GET, "/testCacheIsOutOfScope", (rq, rs, ctx) -> {
-                        // cache (above) is final and can be used here breaking IoC.
+                        // cache (above) is final and CAN be used here breaking IoC.
                         // We could not use cache here if it was not final or "effectively final" ...
+
+                        // "Effectively final" includes method-arguments to the in-scope lambda
+                        // Thus, no secrets or privileged instances in method args when doing
+                        // an idiomatic `new TinyServer() {{ }}`
 
                         cache.getOrCreate(ShoppingCart.class, () ->
                                 new ShoppingCart(getOrCreateProductInventory(cache))).pickItem("abc");
 
-                        // "Effectively final" includes method arguments to the in-scope lambda
-                        // Thus, no secrets or privileged instances in method args when doing an idiomatic `new TinyServer() {{ }}`
+                        // The intention is that this endPount should fail if hit as its attemot
+                        // to cheat and use `cache` directly should be thwarted by it "use once"
+                        // wrapper. That once was the constructor to DependencyManager(..)
 
                     });
                 }};
@@ -101,15 +104,15 @@ public class DependenciesTests {
                                 // You don't have to try/catch DependencyException as an end-user
                                 // you'll discover such things during development, not at deploy-to-production time
                                 dependencyException = true;
-                                res.write("Oh noes some problem server side: ", 500);
+                                res.write("Oh no, some problem server side: ", 500);
                             }
                         });
                     });
                 }};
                 webServer.start();
-
             });
-            only().it("Then it should not be able to bypass IoC", () -> {
+
+            it("Then it should not be able to bypass IoC", () -> {
 
                 bodyAndResponseCodeShouldBe(httpGet("/testCacheIsOutOfScope"),
                         "Server error", 500);
@@ -125,7 +128,7 @@ public class DependenciesTests {
             });
             it("Then it should not be able to depend on items outside request scope", () -> {
                 bodyAndResponseCodeShouldBe(httpGet("/api/howBooksInTheInventory"),
-"Oh noes some problem server side: ", 500);
+    "Oh no, some problem server side: ", 500);
                 assertThat(dependencyException, Matchers.is(true));
             });
             after(() -> {
@@ -135,7 +138,6 @@ public class DependenciesTests {
         });
         
     }
-
 
     public static class ProductInventory {
 

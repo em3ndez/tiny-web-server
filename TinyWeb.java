@@ -79,8 +79,8 @@ public class TinyWeb {
         protected final ComponentCache cache;
 
         public DependencyManager(ComponentCache cache) {
-            if (cache instanceof ComponentCacheHider) {
-                this.cache = ((ComponentCacheHider) cache).getHidden();
+            if (cache instanceof UseOnceComponentCache) {
+                this.cache = ((UseOnceComponentCache) cache).getHidden();
             } else {
                 this.cache = cache;
             }
@@ -780,12 +780,12 @@ public class TinyWeb {
         <T> void put(Class<T> clazz, T instance);
     }
 
-    public static class ComponentCacheHider implements ComponentCache
+    public static class UseOnceComponentCache implements ComponentCache
     {
         public static final String SEE_TINY_WEB_S_DEPENDENCY_TESTS = "See TinyWeb's DependencyTests";
         private ComponentCache hidden;
 
-        public ComponentCacheHider(ComponentCache hidden) {
+        public UseOnceComponentCache(ComponentCache hidden) {
             this.hidden = hidden;
         }
 
