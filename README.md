@@ -34,22 +34,25 @@ to the SocketServer.
 
 ## Rationale
 
-I wanted to make something that:
+**I wanted to make something that**
 
 1. A reliance on Java-8's lambdas - as close as regular Java can get to Groovy's builders for now
-2. ** Related: Have a `path(..)` construct that allows nesting of other sub-paths (and endpoints and filters). To me, this feels more representative and maintainable. 
-3. ** Support a multi-module compositions. This for web-module separation to aid deployment and testing flexibility
-4. Have no dependencies at all, outside the JDK
+2. -- Related: Have a nested `path` construct for elegance and maintainability
+3. Support a multi-module compositions. This for web-module separation to aid deployment and testing flexibility
 
-And in a second tier of goals:
+**And in a second tier of must have features**
+
+1. An attempt to coerce websockets into the same "nested path" composition
+1. Follows Inversion of Control (IoC) idioms for dependency lookup
+1. Aids testability wherever it can
+
+**And a third tier of admittedly gratuitous or pet-peeve wishes**
 
 1. No shared static state
-1. An attempt to coerce websockets into the same "nested path" composition 
 1. Exist in a single source file, for no good reason
-1. Use JDK's own command for its build technology. Well, bash too.
+1. A back-to-basics JDK & make build technology
 1. Does not itself pollute stdout or force a logging framework on users.
-1. Loosely follows Inversion of Control (IoC) idioms
-1. Aids testability wherever it can
+4. Have no dependencies at all, outside the JDK
 
 # Table of Contents
 
@@ -530,16 +533,16 @@ TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
 ```
 
 The problem is that method `endPoint(..)` has a fixed parameter list. It can't be extended to suit each specific use
-of `endPoint` in an app that would list dependencies to be injected. Java itself does not allow this. Instead, we have chosen to have a `getDep(..)` method on context `RequestContext` object. We acknowledge this is no longer Dependency
+of `endPoint` in an app that would list dependencies to be injected. Java itself does not allow this (yet). Instead, I have chosen to have a `getDep(..)` method on context `RequestContext` object. We acknowledge this is no longer Dependency
 Injection. 
 
-We think we are instead following the framing **Inversion of Control** (IoC) idiom with a lookup-style (interface
-injection) way of getting dependencies into a endpoint (or filter). I contrast the differences 21 years
+I think we are following the framing **Inversion of Control** (IoC) idioms with a lookup-style (interface
+injection) way of getting dependencies into a endpoint (or filter). I contrasted the differences 21 years
 ago - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf,
 and I've built something rudimentary into TinyWeb that fits "interface injection" style.
 The debate on Dependency Injection (DI) vs a possibly global-static Service Locator (that was popular before it) was put front and center by Martin Fowler
 in https://www.martinfowler.com/articles/injection.html (I get a mention in the footnotes, but people occasionally
-tell me to read it). "Interface Injection" is mention in that article, and predates the trend for D.I when Apache's defunct Avalon Framework promoted it.
+tell me to read it). "Interface Injection" is mentioned in that article, and predated the trend for D.I when Apache's defunct "Avalon Framework" promoted it.
 
 Here's an example of our way. Again, this is not D.I., but is IoC from the pre-DI era.
 
@@ -562,7 +565,7 @@ endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
     res.write("Cart items count: " + sc.cartCount());
 });
     
-// classic singleton design-pattern (not the Spring idiom) style - should not do this, IMO
+// classic "singleton" design pattern (not the Spring idiom) style - should not do this, IMO
 
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
     // Eww - shared static state
@@ -571,7 +574,7 @@ endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
 });
 ```
 
-This one again is more questionable - omething registered at the same level as new `TinyWeb.Server() { .. };`
+This one again is more questionable - something registered at the same level as new `TinyWeb.Server() { .. };`
 
 ```java
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
@@ -582,12 +585,14 @@ endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
 ```
 
 Say `ShoppingCart` depends on `ProductInventory`, but because you're following Inversion of Control you do not
-want the `ProductInventory` instance directly used in any endPoint or filter. You would hide its instantiation in a scope of execution that would not be accessible to the endPoint or filter lambdas. Of course, if it is in the classpath, any code could do `new ProductInventory(..)` but we presume there are some secrets passed in through the constructor that ALSO are hidden from or filter lambdas making that pointless.
+want the `ProductInventory` instance directly used in any endPoint or filter. You would hide its instantiation in a scope of execution that would not be accessible to the endPoint() or filter() lambdas. Of course, if it is in the classpath, any code could do `new ProductInventory(..)` but we presume there are some secrets passed in through the constructor that ALSO are hidden from or filter lambdas making that pointless.
 
 If you were using Spring Framework, you would have `ProductInventory` as `@Singleton` scope (a Spring idiom, not the Gang-of-Four design pattern). You would also have `ShoppingCart` as `@Scope("request")`
 
-In the tests for TinbyWeb, we have an example of use that features `endPoint(..)`, `ShoppingCart`
+In the tests for TinyWeb, we have an example of use that features `endPoint(..)`, `ShoppingCart`
 and `ProductInventory`
+
+#### Actual Resolution
 
 # TinyWeb usage statistics
 
