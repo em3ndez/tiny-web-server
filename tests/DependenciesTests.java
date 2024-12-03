@@ -148,6 +148,7 @@ public class DependenciesTests {
             put("bagged bannana", 33);
         }};
 
+        // not real life, just simple enough for a test
         public boolean customerReserves(String item) {
             if (stockItems.containsKey(item)) {
                 if (stockItems.get(item) > 0) {
