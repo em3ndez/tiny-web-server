@@ -42,8 +42,7 @@ public class DependenciesTests {
                 cache.put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
                 webServer = new TinyWeb.Server(8080, 8081, new TinyWeb.DependencyManager(cache){
 
-                    // This is not Dependency Injection
-                    // This also does not use reflection so is fast.
+                    // Note: this is not Dependency Injection
 
                     @Override
                     public <T> T  instantiateDep(Class<T> clazz, TinyWeb.ComponentCache requestCache, Matcher matcher) {
@@ -57,6 +56,7 @@ public class DependenciesTests {
                     }
 
                 });
+
                 new TinyWeb.ServerComposition(webServer) {
 
                     {
