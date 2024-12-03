@@ -74,7 +74,7 @@ public class WebServerTests {
                             });
                         }
                         @Override
-                        protected void exceptionDuringHandling(Exception e, HttpExchange exchange) {
+                        protected void exceptionDuringHandling(Throwable e, HttpExchange exchange) {
                             appHandlingExceptions.append("appHandlingException exception: " + e.getMessage());
                             super.exceptionDuringHandling(e, exchange);
                         }
@@ -157,7 +157,7 @@ public class WebServerTests {
                     }
 
                         @Override
-                        protected void exceptionDuringHandling(Exception e, HttpExchange exchange) {
+                        protected void exceptionDuringHandling(Throwable e, HttpExchange exchange) {
                             appHandlingExceptions.append("appHandlingException exception: " + e.getMessage());
                             super.exceptionDuringHandling(e, exchange);
                         }

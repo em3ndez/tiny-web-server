@@ -109,12 +109,11 @@ public class DependenciesTests {
                 webServer.start();
 
             });
-            only().it("Then it should be able to bypass IoC", () -> {
-                try {
-                    httpGet("/testCacheIsOutOfScope");
-                } catch (AssertionError e) {
-                    assertThat(e.getMessage(), Matchers.equalTo(SEE_TINY_WEB_S_DEPENDENCY_TESTS));
-                }
+            only().it("Then it should not be able to bypass IoC", () -> {
+
+                bodyAndResponseCodeShouldBe(httpGet("/testCacheIsOutOfScope"),
+                        "Server error", 500);
+                assertThat(dependencyException, Matchers.is(false));
             });
             it("Then it should be able to get dep to function", () -> {
                 bodyAndResponseCodeShouldBe(httpGet("/api/howManyOrderInBook"),
