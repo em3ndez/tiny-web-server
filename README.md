@@ -1,6 +1,7 @@
 # TinyWeb 
 
-A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `TinyWeb.java`
+A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `TinyWeb.java`. 
+Just a fun pair-programmed project, really. Use for small web/medium applications - perhaps not on the public web.
 
 ## License
 
@@ -89,22 +90,6 @@ to the SocketServer.
   - [TinyWeb's own test results](#tinywebs-own-test-results)
 - [Project & Source Repository](#project--source-repository)
 - [Known Limitations](#known-limitations)
-
-# Other pros and cons
-
-Well cons, really (Batteries not included):
-
-* No template-engine bindings or examples or linkages to front-end techs (Angular/React/Vue), 
-* No integrations with event techs (Kafka, etc) or databases 
-* No Kotlin enablers or examples 
-* No GraalVM / native support 
-* No reactive examples
-* No easy/automatic OpenAPI or Swagger
-* No built-in HTTPS support, let alone LetsEncrypt cert fu
-* No ram caching for things that don't change with lots of GET traffic
-* Not perf/load tested
-* No opinion on user sessions
-* Utilizes some regex wrapping of Java's built-in webserver tech - either could have vulns versus Netty, etc.
 
 # User guide
 
@@ -879,20 +864,54 @@ Notes:
 
 Stats about TinyWeb:
 
-Source file `TinyWeb.java` has Approximately 666 lines of consequential code. 
+Source file `TinyWeb.java` has Approximately 755 lines of consequential code, via:
 
 ``` 
 # `cloc` counts lines of code
 # don't count } on their own on a line, or }); or }};
 cat TinyWeb.java | sed '/\w*}\w*/d' | sed '/\w*}];\w*/d' | sed '/\w*});\w*/d' > tmpfile.java
 cloc tmpfile.java
-rm tempfile.java
+rm tmpfile.java
 ```
 
 The README and tests are heading toward that size but are still under.
 
 ## Known Limitations
 
-* The missing HTTPS and WSS side of it, as mentioned
+Mostly "Batteries not included" ...
+
+* No template-engine bindings or examples or linkages to front-end techs (Angular/React/Vue),
+* No integrations with event techs (Kafka, etc) or databases
+* No Kotlin enablers or examples
+* No GraalVM / native support
+* No reactive examples
+* No easy/automatic OpenAPI or Swagger
+* No built-in HTTPS / WSS support, let alone LetsEncrypt cert fu
+* No ram caching for things that don't change with lots of GET traffic
+* Not perf/load tested
+* No opinion on user sessions
 * No examples of participating in idle or socket timeouts. There's a hint in the source, but it lacks sophistication.
-* No Maven-central publication - you could curl the single source file into your codebase if you wanted. It adds 3-4 seconds to the compile step
+* Utilizes some regex wrapping of Java's built-in webserver tech - either could have vulns versus Netty, etc.
+* No Maven-central publication - you could curl the single source file into your codebase if you wanted - see below
+
+# Contributions & Published versions
+
+Pull requests accepted. If you don't want to grant me copyright, I'll add "Portions copyright, YOUR NAME (year)"
+
+**Before committing to main for an impending release, I will do the following, if I remember**
+
+``` 
+cat TinyWeb.java | sed '/SHA256_OF_SOURCE_LINES/d' > tmpfile.java
+SHA=$(sha256sum tmpfile.java | cut -d ' ' -f1)
+rm tmpfile.java
+echo $SHA
+sed "s/.*SHA256_OF_SOURCE_LINES.*/    public static final String SHA256_OF_SOURCE_LINES = \"$SHA\"; \/\/ this line not included in SHA256 calc/" -i TinyWeb.java
+```
+
+**Curl statements for you to copy, per release:**
+
+TODO
+
+Ask me to do a release if you wish to depend on something unreleased in `main` - paul@hammant.org
+
+TinyWeb.java adds 2-3 seconds to your compile step depending on your CPU. I have a VERSION const in the TinyWeb source for you to check if you want.
