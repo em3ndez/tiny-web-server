@@ -77,8 +77,11 @@ to the SocketServer.
     - [TinyWeb's Overridable Exception Methods](#tinywebs-overridable-exception-methods)
   - [Integrating other frameworks](#integrating-other-frameworks)
     - [Dependency Injection](#dependency-injection)
+    - [TinyWeb usage statistics](#tinyweb-usage-statistics)
     - [Database/ ORM Technologies](#database-orm-technologies)
   - [Pitfalls](#pitfalls)
+    - [Code in a 'path { }' block](#code-in-a-path--block)
+    - [Application-scoped components](#application-scoped-components)
 - [Secure Channels](#secure-channels)
   - [Securing HTTP Channels](#securing-http-channels)
   - [Securing WebSocket Channels](#securing-websocket-channels)
@@ -90,6 +93,7 @@ to the SocketServer.
   - [TinyWeb's own test results](#tinywebs-own-test-results)
 - [Project & Source Repository](#project--source-repository)
 - [Known Limitations](#known-limitations)
+- [Contributions & Published versions](#contributions--published-versions)
 
 # User guide
 
