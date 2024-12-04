@@ -88,12 +88,19 @@ to the SocketServer.
 
 # Other pros and cons
 
-Well cons, really:
+Well cons, really (Batteries not included):
 
-* Batteries not included.
+* No template-engine bindings or examples or linkages to front-end techs (Angular/React/Vue), 
+* No integrations with event techs (Kafka, etc) or databases 
+* No Kotlin enablers or examples 
+* No GraalVM / native support 
+* No reactive examples
+* No easy/automatic OpenAPI or Swagger
+* No built-in HTTPS support, let alone LetsEncrypt cert fu
+* No ram caching for things that don't change with lots of GET traffic
 * Not perf/load tested
-* No built-in HTTPS support.
-* Utilizes some regex wrapping of Java's build-in webserver tech - either could have vulns.
+* No opinion on user sessions
+* Utilizes some regex wrapping of Java's built-in webserver tech - either could have vulns versus Netty, etc.
 
 # User guide
 
