@@ -48,6 +48,8 @@ import java.util.regex.Pattern;
 public class TinyWeb {
 
     public static final String VERSION = "1.0-SNAPSHOT";
+    // SHA256 of all lines EXCEPT the following one ...
+    public static final String SHA256_OF_SOURCE_LINES = "TODO";
 
     /* ==========================
      * Enums
