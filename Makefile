@@ -32,7 +32,7 @@ get-test-deps:
 	$(CURL) -s https://raw.githubusercontent.com/paul-hammant/mvn-dep-getter/refs/heads/main/mvn-dep-getter.py | $(PYTHON) - org.forgerock.cuppa:cuppa:1.7.0,org.hamcrest:hamcrest:3.0,com.squareup.okhttp3:okhttp:5.0.0-alpha.14,org.mockito:mockito-core:5.14.2,org.seleniumhq.selenium:selenium-java:4.26.0 $(TEST_LIBS)
 
 # Compile and run tests
-tests: $(TARGET_TEST_CLASSES) TinyWeb.java
+tests: $(TARGET_TEST_CLASSES)
 	$(MAKE) compile
 	$(JAVA) -cp "$$(find $(TEST_LIBS) -name '*.jar' | tr '\n' ':')$(TARGET_TEST_CLASSES):$(TARGET_CLASSES)" $(MAIN_CLASS)
 
