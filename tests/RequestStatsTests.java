@@ -19,12 +19,7 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Random;
 import java.util.regex.Pattern;
 
 import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
@@ -36,7 +31,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static tests.Suite.httpGet;
 
 @Test
-public class NewTests {
+public class RequestStatsTests {
     TinyWeb.Server webServer;
     StringBuilder statsStr = new StringBuilder();
 

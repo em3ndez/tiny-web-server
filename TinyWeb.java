@@ -118,7 +118,7 @@ public class TinyWeb {
                 Map<Pattern, EndPoint> methodEndPoints = this.endPoints.get(method);
                 if (methodEndPoints != null) {
                     for (Pattern pattern : methodEndPoints.keySet()) {
-                        if (pattern.pattern().equals("^" + basePath + "$")) {
+                        if (pattern.pattern().startsWith("^" + basePath + "/")) {
                             throw new IllegalStateException("Path already registered: " + basePath);
                         }
                     }
