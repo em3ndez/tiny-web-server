@@ -1,6 +1,7 @@
 tests/WebSocketTests.java
-tests/ServerCompositionTests.java
-tests/NewTests.java
+tests/BasicServerCompositionTests.java
+tests/AdvancedServerCompositionTests.java
+tests/PathRegistrationTests.java
 tests/ChunkedTests.java
 tests/FilterTests.java
 tests/ServerSideEventsTests.java
@@ -8,6 +9,7 @@ tests/WebServerTests.java
 tests/ExampleApp.java
 tests/Suite.java
 tests/CompositionReuseTests.java
+tests/RequestStatsTests.java
 tests/IntegrationTests.java
 tests/DependenciesTests.java
 tests/ConcreteExtensionToServerComposition.java
