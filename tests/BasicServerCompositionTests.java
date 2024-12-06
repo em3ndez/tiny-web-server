@@ -12,7 +12,7 @@ import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
 @Test
-public class ServerCompositionTests {
+public class BasicServerCompositionTests {
     TinyWeb.Server webServer;
 
     {
