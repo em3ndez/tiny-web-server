@@ -113,6 +113,7 @@ public class TinyWeb {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add paths after the server has started.");
             }
+            // TODO veto path addition if path already registered
             Map<Method, Map<Pattern, EndPoint>> previousEndPoints = this.endPoints;
             Map<Pattern, SocketMessageHandler> previousWsEndPoints = this.wsEndPoints;
             Map<Method, List<FilterEntry>> previousFilters = this.filters;
