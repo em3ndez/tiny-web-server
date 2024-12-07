@@ -27,6 +27,7 @@ public class ExampleDotComDemo {
                     <head>
                         <meta charset="UTF-8">
                         <title>Counter</title>
+                        <script src="/javascriptWebSocketClient.js"></script>
                         <script>
                             const socket = new WebSocket('ws://example.com:8081/ctr');
                             socket.onmessage = function(event) {
