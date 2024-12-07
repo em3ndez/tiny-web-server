@@ -863,7 +863,7 @@ Notes:
 
 Stats about TinyWeb:
 
-Source file `TinyWeb.java` has Approximately 755 lines of consequential code, via:
+Source file `TinyWeb.java` has Approximately 771 lines of consequential code, via:
 
 ``` 
 # `cloc` counts lines of code
@@ -873,7 +873,7 @@ cloc tmpfile.java
 rm tmpfile.java
 ```
 
-The README and tests are heading toward that size but are still under.
+The README is bigger. The tests are twice as big.
 
 ## Known Limitations
 
