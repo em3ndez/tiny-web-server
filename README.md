@@ -872,7 +872,7 @@ Source file `TinyWeb.java` has Approximately 771 lines of consequential code, vi
 
 ``` 
 # `cloc` counts lines of code
-# don't count } on their own on a line, or }); or }};
+# don't count } on their own on a line, or }); or }};  See https://github.com/AlDanial/cloc/issues/865
 cat TinyWeb.java | sed '/\w*}\w*/d' | sed '/\w*}];\w*/d' | sed '/\w*});\w*/d' > tmpfile.java
 cloc tmpfile.java
 rm tmpfile.java
