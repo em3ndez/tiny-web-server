@@ -85,7 +85,6 @@ to the SocketServer.
 - [Secure Channels](#secure-channels)
   - [Securing HTTP Channels](#securing-http-channels)
   - [Securing WebSocket Channels](#securing-websocket-channels)
-- [TinyWeb Performance](#tinyweb-performance)
 - [Build and Test of TinyWeb itself](#build-and-test-of-tinyweb-itself)
   - [Compiling TinyWeb](#compiling-tinyweb)
   - [Tests](#tests)
@@ -717,10 +716,6 @@ reverse-reverse proxies (tunnels) that with code I have not done yet, could work
 
 Same notes as above - the current implementation is `ws://` not `wss://` 
 
-## TinyWeb Performance
-
-Performance testing for TinyWeb has not been extensively conducted. However, due to its lightweight nature and minimal 
-dependencies, TinyWeb is expected to perform efficiently for small to medium-sized applications, but nor 10K class application serving.
 
 # Build and Test of TinyWeb itself
 
@@ -892,7 +887,8 @@ Mostly "Batteries not included" ...
 * No easy/automatic OpenAPI or Swagger
 * No built-in HTTPS / WSS support, let alone LetsEncrypt cert fu
 * No ram caching for things that don't change with lots of GET traffic
-* Not perf/load tested
+* Not perf/load tested. Expected to perform efficiently for small to medium-sized applications, but nor 10K class application serving.
+* Doesn't have an async nature to request handling
 * No opinion on user sessions
 * No examples of participating in idle or socket timeouts. There's a hint in the source, but it lacks sophistication.
 * Utilizes some regex wrapping of Java's built-in webserver tech - either could have vulns versus Netty, etc.
