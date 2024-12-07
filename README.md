@@ -760,48 +760,87 @@ These commands will instrument the code for coverage, run the tests, and generat
 As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so:
 
 ``` 
-When using the ExampleApp server via sockets
-    and accessing the Echoing GET endpoint
-      ✓ returns the user profile for Jimmy
-      ✓ returns the user profile for Thelma
-    and accessing a nested path with parameters
-      ✓ extracts parameters correctly from the nested path
-      ✓ returns 404 for an incorrect nested path
-    and applying filters
-      ✓ allows access when the 'sucks' header is absent
-      ✓ denies access when the 'sucks' header is present
-    and serving static files
-      ✓ returns 200 and serves a text file
-      ✓ returns 404 for non-existent files
-      ✓ returns 200 and serves a file from a subdirectory
-      ✓ returns 200 and serves a non-text file
-  When using the ExampleApp with Mockito
-    and accessing the Greeting GET endpoint
-      ✓ invokes the ExampleApp foobar method
-  When testing the application inlined in Cuppa
-    and the endpoint can extract parameters
-      ✓ extracts parameters correctly from the path
-      ✓ returns 404 when two parameters are provided for a one-parameter path
-    and the endpoint can extract query parameters
-      ✓ handles query parameters correctly
-    and an application exception is thrown from an endpoint
-      ✓ returns 500 and an error message for a runtime exception
-    and the endpoint has query-string parameters
-      ✓ parses query parameters correctly
-    and response headers are sent to the client
-      ✓ sets the custom header correctly
-    and an exception is thrown from a filter
-      ✓ returns 500 and an error message for a runtime exception in a filter
-    and testing static file serving
-      ✓ serves a static file correctly
-      ✓ returns 404 for a non-existent static file
-      ✓ prevents directory traversal attacks
-    and using TinyWeb.SocketServer without TinyWeb.Server
-      ✓ echoes three messages plus -1 -2 -3 back to the client
-    and using TinyWeb.SocketServer with TinyWeb.Server
-      ✓ echoes three messages plus -1 -2 -3 back to the client
-    and using Selenium to subscribe in a browser
-      ✓ echoes three messages plus -1 -2 -3 back to the client
+Given a TinyWeb server with a reusable composition
+    ✓ Then it should respond correctly to requests at the first composed endpoint
+    ✓ Then it should respond correctly to requests at the second composed endpoint
+    ✓ Then it should respond correctly to requests at the third composed endpoint
+  When endpoint and filters can depend on components
+    ✓ Then it should not be able to bypass IoC
+    ✓ Then it should be able to get dep to function
+    ✓ Then it should not be able to depend on items outside request scope
+  When passing attributes from filter to endpoint
+    ✓ Then an attribute 'user' can be passed from filter to endPoint for authentication
+    ✓ Then an attribute 'user' should not be passed from filter to endPoint for when inauthentic
+  When applying filters
+    ✓ Then a filter can conditionally allow access to an endpoint
+    ✓ Then a filter can conditionally deny access to an endpoint
+    ✓ Then an endpoint outside that conditionally filters isn't blocked
+  When a server is started
+    ✓ Then a method filter can't be added anymore
+    ✓ Then a 'all' filter can't be added anymore
+  When a filter is already added
+    ✓ Then an identical filter path can't be added again
+  When using Selenium to subscribe in a browser
+    ✓ Then it should echo three messages plus -1 -2 -3 back to the client
+  Given a TinyWeb server with a path registered
+    ✓ Then it should not be able to register the same path again
+  Given a TinyWeb server with a path registered
+    ✓ Then it should not be able to register the same path again
+  Given a TinyWeb server with filters and an endpoint
+    ✓ Then it should collect statistics for filters and endpoint
+    ✓ Then it should collect statistics for missing endpoints
+    ✓ Then it should not collect statistics filter that notionally match when the endPoint is a 404
+  Given a TinyWeb server with composed paths
+    ✓ Then it should respond correctly to requests at the composed endpoint
+  When additional composition can happen on a previously instantiated TinyWeb.Server
+    ✓ Then both endpoints should be accessible via GET
+  Given a TinyWeb server with ConcreteExtensionToServerComposition
+    When that concrete class is mounted within another path
+      ✓ Then endPoints should be able to work relatively
+  Given a started TinyWeb server
+    When additional composition happens
+      ✓ Then illegal state errors should happen for new paths()
+      ✓ Then illegal state errors should happen for new 'all' filters()
+      ✓ Then illegal state errors should happen for new filters()
+      ✓ Then illegal state errors should happen for new endPoints()
+      ✓ Then illegal state errors should happen for new endPoints()
+  Given a TinyWeb server with an SSE endpoint
+    ✓ Then it should receive server-sent events
+  Given an inlined Cuppa application
+    When the endpoint can extract parameters
+      ✓ Then it should extract parameters correctly from the path
+      ✓ Then it should return 404 when two parameters are provided for a one-parameter path
+    When the endpoint can extract query parameters
+      ✓ Then it should handle query parameters correctly
+    When an application exception is thrown from an endpoint
+      ✓ Then it should return 500 and an error message for a runtime exception
+    When the endpoint has query-string parameters
+      ✓ Then it should parse query parameters correctly
+    When response headers are sent to the client
+      ✓ Then it should set the custom header correctly
+    When an exception is thrown from a filter
+      ✓ Then it should return 500 and an error message for a runtime exception in a filter
+    When testing static file serving
+      ✓ Then it should serve a static file correctly
+      ✓ Then it should return 404 for a non-existent static file
+      ✓ Then it should prevent directory traversal attacks
+    When accessing a nested path with parameters
+      ✓ Then it should extract parameters correctly from the nested path
+      ✓ Then it should return 404 for an incorrect nested path
+    When accessing the Echoing GET endpoint
+      ✓ Then it should return the user profile for Jimmy
+      ✓ Then it should return the user profile for Thelma
+    When a server is started
+      ✓ Then a endpoint can't be added anymore
+  When using standalone TinyWeb.SocketServer without TinyWeb.Server
+    ✓ Then it should echo three messages plus -1 -2 -3 back to the client
+  When using TinyWeb.SocketServer with TinyWeb.Server and a contrived webSocket endpoint
+    ✓ Then it should echo three modified messages back to the client (twice)
+  When using standalone TinyWeb.SocketServer without TinyWeb.Server
+    ✓ Then it should echo three messages plus -1 -2 -3 back to the client
+  Given a mocked ExampleApp
+    When accessing the Greeting GET endpoint
+      ✓ Then it should invoke the ExampleApp foobar method
 ```
 
 ChatGPT estimates the path coverage for the TinyWeb class to be around 90-95%. 
