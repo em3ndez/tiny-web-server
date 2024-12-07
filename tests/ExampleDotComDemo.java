@@ -30,10 +30,26 @@ public class ExampleDotComDemo {
                         <title>Counter</title>
                         <script src="/javascriptWebSocketClient.js"></script>
                         <script>
-                            const socket = new WebSocket('ws://example.com:8081/ctr');
-                            socket.onmessage = function(event) {
-                                document.getElementById('counter').textContent = event.data;
-                            };
+                            const tinyWebSocketClient = new TinyWeb.SocketClient('example.com', 8081);
+
+                            async function example() {
+                                try {
+                                    await tinyWebSocketClient.waitForOpen();
+                                    await tinyWebSocketClient.sendMessage('/ctr', 'Hello WebSocket');
+
+                                    for (let i = 0; i < 3; i++) {
+                                        const response = await tinyWebSocketClient.receiveMessage();
+                                        if (response) {
+                                            document.getElementById('counter').textContent = response;
+                                        }
+                                    }
+                                    await tinyWebSocketClient.close();
+                                } catch (error) {
+                                    console.error('WebSocket error:', error);
+                                }
+                            }
+
+                            example();
                         </script>
                     </head>
                     <body>
