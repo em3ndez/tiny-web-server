@@ -114,7 +114,13 @@ public class ExampleDotComDemo {
 
             // HTTP PUT endpoint to reset the counter
             endPoint(TinyWeb.Method.PUT, "/resetCtr", (req, res, ctx) -> {
-                counter.set(0);
+                String sessionId = req.getHeaders().get("Session-ID").getFirst();
+                if (sessionId != null && !sessionId.isEmpty()) {
+                    AtomicInteger counter = sessionCounters.get(sessionId);
+                    if (counter != null) {
+                        counter.set(0);
+                    }
+                }
                 res.write("Counter reset", 200);
             });
         }};
