@@ -32,15 +32,19 @@ public class ExampleDotComDemo {
                         <script>
                             const tinyWebSocketClient = new TinyWeb.SocketClient('example.com', 8081);
 
-                            async function updateCounter() {
-                                try {
-                                    await tinyWebSocketClient.waitForOpen();
-                                    tinyWebSocketClient.socket.onmessage = function(event) {
-                                        document.getElementById('counter').textContent = event.data;
-                                    };
-                                } catch (error) {
-                                    console.error('WebSocket error:', error);
-                                }
+                            async function subscribeToCounter() {
+
+                                await tinyWebSocketClient.waitForOpen();
+                                console.log("WebSocket readyState after open:", tinyWebSocketClient.socket.readyState);
+                                await tinyWebSocketClient.sendMessage('/ctr', 'Hello WebSocket');
+ 
+                                 for (let i = 0; i < 300; i++) {
+                                    const response = await tinyWebSocketClient.receiveMessage();
+                                    console.log("Received message:", response);
+                                    if (response) {
+                                        document.getElementById('counter').textContent = (response + "\\n");
+                                    }
+                                }                                        
                             }
 
                             async function resetCounter() {
@@ -56,7 +60,7 @@ public class ExampleDotComDemo {
                                 }
                             }
 
-                            updateCounter();
+                            subscribeToCounter();
                         </script>
                     </head>
                     <body>
@@ -69,8 +73,10 @@ public class ExampleDotComDemo {
 
             // WebSocket endpoint to update the counter
             webSocket("/ctr", (message, sender) -> {
-                int currentCount = counter.incrementAndGet();
-                sender.sendBytesFrame(("Counter: " + currentCount).getBytes(StandardCharsets.UTF_8));
+                while (true) {
+                    int currentCount = counter.incrementAndGet();
+                    sender.sendBytesFrame(("" + currentCount).getBytes(StandardCharsets.UTF_8));
+                }
             });
 
             // HTTP PUT endpoint to reset the counter
