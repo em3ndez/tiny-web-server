@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ExampleDotComDemo {
 
-    private static final AtomicInteger counter = new AtomicInteger(0);
+    private static final Map<String, AtomicInteger> sessionCounters = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         TinyWeb.Server server = new TinyWeb.Server(new InetSocketAddress("example.com", 8080), 8081) {{
@@ -21,6 +21,11 @@ public class ExampleDotComDemo {
 
             // Serve the static HTML/JS page
             endPoint(TinyWeb.Method.GET, "/", (req, res, ctx) -> {
+                String sessionId = req.getHeaders().getFirst("Session-ID");
+                if (sessionId == null || sessionId.isEmpty()) {
+                    sessionId = UUID.randomUUID().toString();
+                    res.setHeader("Session-ID", sessionId);
+                }
                 res.setHeader("Content-Type", "text/html");
                 res.write("""
                     <!DOCTYPE html>
@@ -32,24 +37,43 @@ public class ExampleDotComDemo {
                         <script>
                             const tinyWebSocketClient = new TinyWeb.SocketClient('example.com', 8081);
 
+                            function getSessionId() {
+                                let sessionId = localStorage.getItem('sessionId');
+                                if (!sessionId) {
+                                    sessionId = Math.random().toString(36).substring(2);
+                                    localStorage.setItem('sessionId', sessionId);
+                                }
+                                return sessionId;
+                            }
+
                             async function subscribeToCounter() {
+                                const sessionId = getSessionId();
 
                                 await tinyWebSocketClient.waitForOpen();
                                 console.log("WebSocket readyState after open:", tinyWebSocketClient.socket.readyState);
-                                await tinyWebSocketClient.sendMessage('/ctr', 'Hello WebSocket');
- 
-                                 for (let i = 0; i < 300; i++) {
+                                await tinyWebSocketClient.sendMessage('/ctr', 'Hello WebSocket', {
+                                    'Session-ID': sessionId
+                                });
+
+                                while (true) {
                                     const response = await tinyWebSocketClient.receiveMessage();
                                     console.log("Received message:", response);
                                     if (response) {
-                                        document.getElementById('counter').textContent = (response + "\\n");
+                                        document.getElementById('counter').textContent = response;
                                     }
-                                }                                        
+                                    await new Promise(resolve => setTimeout(resolve, 1000)); // Pause for 1 second
+                                }
                             }
 
                             async function resetCounter() {
                                 try {
-                                    const response = await fetch('/resetCtr', { method: 'PUT' });
+                                    const sessionId = getSessionId();
+                                    const response = await fetch('/resetCtr', {
+                                        method: 'PUT',
+                                        headers: {
+                                            'Session-ID': sessionId
+                                        }
+                                    });
                                     if (response.ok) {
                                         console.log('Counter reset');
                                     } else {
@@ -73,7 +97,9 @@ public class ExampleDotComDemo {
 
             // WebSocket endpoint to update the counter
             webSocket("/ctr", (message, sender) -> {
-                while (true) {
+                String sessionId = new String(message, StandardCharsets.UTF_8);
+                sessionCounters.putIfAbsent(sessionId, new AtomicInteger(0));
+                AtomicInteger counter = sessionCounters.get(sessionId);
                     try {
                         int currentCount = counter.incrementAndGet();
                         sender.sendBytesFrame(("" + currentCount).getBytes(StandardCharsets.UTF_8));
