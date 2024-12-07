@@ -15,6 +15,9 @@ public class ExampleDotComDemo {
 
     public static void main(String[] args) {
         TinyWeb.Server server = new TinyWeb.Server(new InetSocketAddress("example.com", 8080), 8081) {{
+            // Serve the JavaScript WebSocket client library
+            endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.JavascriptSocketClient());
+
             // Serve the static HTML/JS page
             endPoint(TinyWeb.Method.GET, "/", (req, res, ctx) -> {
                 res.setHeader("Content-Type", "text/html");
