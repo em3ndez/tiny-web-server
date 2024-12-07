@@ -225,11 +225,12 @@ public class TinyWeb {
 
             FilterEntry o = new FilterEntry(Pattern.compile("^" + path + "$"), filter);
             List<FilterEntry> filterEntries = filters.get(method);
-            if (filterEntries.contains(o)) {
-                throw new IllegalStateException("Filter already registered for " + path);
-            } else {
-                filterEntries.add(o);
+            for (FilterEntry filterEntry : filterEntries) {
+                if (o.pattern.pattern().equals(filterEntry.pattern.pattern())) {
+                    throw new IllegalStateException("Filter already registered for " + path);
+                }
             }
+            filterEntries.add(o);
             return this;
         }
 

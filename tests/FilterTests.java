@@ -161,20 +161,16 @@ public class FilterTests {
                      });
                 }};
             });
-            only().it("Then a filter can't be added again", () -> {
+            it("Then an identical filter path can't be added again", () -> {
                 new TinyWeb.ServerComposition(webServer) {{
                     try {
-                        filter("/foo", (req, res, ctx) -> {
+                        filter("/foo.*", (req, res, ctx) -> {
                             res.setHeader("x", "2");
                             return CONTINUE;
                         });
-                        webServer.start();
-                        Response response = httpGet("/foo/bar");
-                        bodyAndResponseCodeShouldBe(response, "Hello", 200);
-                        assertThat(response.header("x"), equalTo("1"));
-                    } catch (Throwable e) {
-                        System.out.println(e.getMessage());
-                        e.printStackTrace();
+                        throw new AssertionError("should have thrown above");
+                    } catch (IllegalStateException e) {
+                        assertThat(e.getMessage(), equalTo("Filter already registered for /foo.*"));
                     }
                 }};
             });
