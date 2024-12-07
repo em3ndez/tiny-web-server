@@ -107,8 +107,8 @@ public class ExampleDotComDemo {
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt(); // Restore interrupted status
                     }
-                }
             });
+        }};
 
             // HTTP PUT endpoint to reset the counter
             endPoint(TinyWeb.Method.PUT, "/resetCtr", (req, res, ctx) -> {
