@@ -284,6 +284,7 @@ public class TinyWeb {
         private final HttpServer httpServer;
         private final SocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
+        private final InetSocketAddress inetSocketAddress;
         private final DependencyManager dependencyManager;
 
         public Server(int httpPort, int wsPort) {
@@ -308,13 +309,19 @@ public class TinyWeb {
 
         public Server(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, DependencyManager dependencyManager) {
             super(new ServerState());
+            this.inetSocketAddress = inetSocketAddress;
             this.dependencyManager = dependencyManager;
             try {
-                httpServer = makeHttpServer(inetSocketAddress);
+                httpServer = makeHttpServer();
             } catch (IOException e) {
-                throw new ServerException("Can't listen on port " + inetSocketAddress.getPort(), e);
+                throw new ServerException("Could not create HttpServer", e);
             }
             httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+
+            for (Method method : Method.values()) {
+                endPoints.put(method, new HashMap<>());
+                filters.put(method, new ArrayList<>());
+            }
 
             if (wsPort > 0) {
                 socketServer = new SocketServer(wsPort, wsBacklog, wsBindAddr) {
@@ -330,6 +337,7 @@ public class TinyWeb {
                         System.out.println("No websocket handler for " + path);
                         return (message, sender) -> {
                             try {
+                                // TODO incorporate path in reply
                                 sender.sendBytesFrame("no matching path on the server side".getBytes("UTF-8"));
                             } catch (IOException e) {
                                 throw new TinyWeb.ServerException("Nonsensical IOE");
@@ -339,11 +347,6 @@ public class TinyWeb {
                 };
             } else {
                 socketServer = null;
-            }
-
-            for (Method method : Method.values()) {
-                endPoints.put(method, new HashMap<>());
-                filters.put(method, new ArrayList<>());
             }
 
             httpServer.createContext("/", exchange -> {
@@ -474,9 +477,9 @@ public class TinyWeb {
             }
         }
 
-        protected HttpServer makeHttpServer(InetSocketAddress inetSocketAddress) throws IOException {
+        protected HttpServer makeHttpServer() throws IOException {
 
-            return HttpServer.create(inetSocketAddress, 0);
+            return HttpServer.create();
 
             // How to participate in Idle Timeouts - override this method
             //ServerSocket socket = server.getAddress().getSocket();
@@ -537,6 +540,13 @@ public class TinyWeb {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Server has already been started.");
             }
+            try {
+                httpServer.bind(inetSocketAddress, 0);
+            } catch (IOException e) {
+                throw new ServerException("Can't listen on port " + inetSocketAddress.getPort(), e);
+            }
+
+
             httpServer.start();
             serverState.start();
             if (socketServer != null) {
