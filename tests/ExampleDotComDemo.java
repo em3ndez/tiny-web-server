@@ -29,31 +29,40 @@ public class ExampleDotComDemo {
                         <meta charset="UTF-8">
                         <title>Counter</title>
                         <script src="/javascriptWebSocketClient.js"></script>
+                        <script src="/javascriptWebSocketClient.js"></script>
                         <script>
                             const tinyWebSocketClient = new TinyWeb.SocketClient('example.com', 8081);
 
-                            async function example() {
+                            async function updateCounter() {
                                 try {
                                     await tinyWebSocketClient.waitForOpen();
-                                    await tinyWebSocketClient.sendMessage('/ctr', 'Hello WebSocket');
-
-                                    for (let i = 0; i < 3; i++) {
-                                        const response = await tinyWebSocketClient.receiveMessage();
-                                        if (response) {
-                                            document.getElementById('counter').textContent = response;
-                                        }
-                                    }
-                                    await tinyWebSocketClient.close();
+                                    tinyWebSocketClient.socket.onmessage = function(event) {
+                                        document.getElementById('counter').textContent = event.data;
+                                    };
                                 } catch (error) {
                                     console.error('WebSocket error:', error);
                                 }
                             }
 
-                            example();
+                            async function resetCounter() {
+                                try {
+                                    const response = await fetch('/resetCtr', { method: 'PUT' });
+                                    if (response.ok) {
+                                        console.log('Counter reset');
+                                    } else {
+                                        console.error('Failed to reset counter');
+                                    }
+                                } catch (error) {
+                                    console.error('Error resetting counter:', error);
+                                }
+                            }
+
+                            updateCounter();
                         </script>
                     </head>
                     <body>
                         <h1>Counter: <span id="counter">0</span></h1>
+                        <button onclick="resetCounter()">Reset Counter</button>
                     </body>
                     </html>
                 """);
