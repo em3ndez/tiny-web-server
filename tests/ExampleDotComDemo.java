@@ -8,6 +8,7 @@ import com.paulhammant.tnywb.TinyWeb.RequestContext;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,16 +19,26 @@ public class ExampleDotComDemo {
     private static final Map<String, AtomicInteger> sessionCounters = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
-        TinyWeb.Server server = new TinyWeb.Server(new InetSocketAddress("example.com", 8080), 8081) {{
+        TinyWeb.Server server = new TinyWeb.Server(new InetSocketAddress("example.com", 8080), 8081)
+
+        {
+
+            @Override
+            protected void serverException(TinyWeb.ServerException e) {
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            {
             // Serve the JavaScript WebSocket client library
             endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.JavascriptSocketClient());
 
             // Serve the static HTML/JS page
             endPoint(TinyWeb.Method.GET, "/", (req, res, ctx) -> {
-                String sessionId = req.getHeaders().get("Session-ID").getFirst();
-                if (sessionId == null || sessionId.isEmpty()) {
-                    sessionId = UUID.randomUUID().toString();
-                    res.setHeader("Session-ID", sessionId);
+                List<String> strings = req.getHeaders().get("Session-ID");
+                if (strings == null || strings.isEmpty()) {
+                    res.setHeader("Session-ID", UUID.randomUUID().toString());
                 }
                 res.setHeader("Content-Type", "text/html");
                 res.write("""
