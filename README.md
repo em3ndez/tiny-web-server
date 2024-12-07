@@ -721,74 +721,34 @@ Same notes as above - the current implementation is `ws://` not `wss://`
 
 ## Compiling TinyWeb
 
-To compile `TinyWeb.java` into the `target/classes/` directory, use the following command:
+To compile `TinyWeb.java`, simply run:
 
 ```bash
-mkdir -p target/classes
-javac -d target/classes/ TinyWeb.java
+make compile
 ```
 
-That's it - no deps, and 1.5 seconds of compilation time on my mid-range Chromebook. That makes 31 `.class` files
-
-See also `make compile`
-
-```bash
-jar cf TinyWeb-$(cat TinyWeb.java | grep VERSION | cut -d '"' -f 2).jar -C target/classes/ .
-```
-
-that is about 37K in size.
+This will compile the source file into the `target/classes/` directory.
 
 ## Tests
 
-To compile TinyWeb's tests into the `target/test-classes/` directory you WILL need jar dependencies: (in `test_libs/`). 
-Use the following to go get them:
+To compile and run the tests, including downloading necessary dependencies, use:
 
 ```bash
-curl -s https://raw.githubusercontent.com/paul-hammant/mvn-dep-getter/refs/heads/main/mvn-dep-getter.py | python3 - org.forgerock.cuppa:cuppa:1.7.0,org.hamcrest:hamcrest:3.0,com.squareup.okhttp3:okhttp:5.0.0-alpha.14,org.mockito:mockito-core:5.14.2,org.seleniumhq.selenium:selenium-java:4.26.0 test_libs
+make tests
 ```
 
-That is a Python script, so you'll need Python installed. Also Maven, but THIS project does not use Maven in any other way - just for getting deps for the tests.
+This command will handle downloading test dependencies, compiling the test classes, and executing the test suite.
 
-See also `make get-test-deps`
+## Coverage Reports
 
-Then you can compile the tests class:
+To generate coverage reports using JaCoCo, execute:
 
 ```bash
-mkdir -p target/test-classes
-find tests -name "*.java" > tests/sources.txt
-javac -d target/test-classes -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/classes" @tests/sources.txt
+make coverage
+make report
 ```
 
-To run the main method of `Suite.java`, which executes the test suite using the Cuppa framework, use the following command:
-
-```bash
-java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
-```
-
-See also `make tests`
-
-### Getting coverage reports for TinyWeb
-
-Get JaCoCo
-
-``` 
-curl -L -o jacocoagent.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.12-runtime.jar
-curl -L -o jacococli.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.cli/0.8.12/org.jacoco.cli-0.8.12-nodeps.jar       
-```
-
-Instrument 
-
-``` 
-java -javaagent:jacocoagent.jar=destfile=jacoco.exec -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
-```
-
-Print report
-
-``` 
-mkdir -p target/srcForJaCoCo/com/paulhammant/tnywb/
-cp TinyWeb.java target/srcForJaCoCo/com/paulhammant/tnywb/
-java -jar jacococli.jar report jacoco.exec --classfiles target/classes --sourcefiles target/srcForJaCoCo --html jacoco-report
-```
+These commands will instrument the code for coverage, run the tests, and generate an HTML report in the `jacoco-report` directory.
 
 ## TinyWeb's own test results
 
