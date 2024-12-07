@@ -17,7 +17,10 @@
 package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
+import okhttp3.Response;
 import org.forgerock.cuppa.Test;
+
+import java.io.InvalidObjectException;
 
 import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
 import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
@@ -142,6 +145,41 @@ public class FilterTests {
                 }};
             });
             after(() -> {
+                webServer = null;
+            });
+        });
+
+        describe("When a filter is already added", () -> {
+            before(() -> {
+                webServer = new TinyWeb.Server(8080, 8081) {{
+                    filter("/foo.*", (req, res, ctx) -> {
+                        res.setHeader("x", "1");
+                        return CONTINUE;
+                    });
+                    endPoint(GET, "/foo/bar", (req, res, ctx) -> {
+                        res.write("Hello");
+                     });
+                }};
+            });
+            only().it("Then a filter can't be added again", () -> {
+                new TinyWeb.ServerComposition(webServer) {{
+                    try {
+                        filter("/foo", (req, res, ctx) -> {
+                            res.setHeader("x", "2");
+                            return CONTINUE;
+                        });
+                        webServer.start();
+                        Response response = httpGet("/foo/bar");
+                        bodyAndResponseCodeShouldBe(response, "Hello", 200);
+                        assertThat(response.header("x"), equalTo("1"));
+                    } catch (Throwable e) {
+                        System.out.println(e.getMessage());
+                        e.printStackTrace();
+                    }
+                }};
+            });
+            after(() -> {
+                webServer.stop();
                 webServer = null;
             });
         });

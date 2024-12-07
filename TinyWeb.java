@@ -222,8 +222,14 @@ public class TinyWeb {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add filters after the server has started.");
             }
-            filters.computeIfAbsent(method, k -> new ArrayList<>())
-                    .add(new FilterEntry(Pattern.compile("^" + path + "$"), filter));
+
+            FilterEntry o = new FilterEntry(Pattern.compile("^" + path + "$"), filter);
+            List<FilterEntry> filterEntries = filters.get(method);
+            if (filterEntries.contains(o)) {
+                throw new IllegalStateException("Filter already registered for " + path);
+            } else {
+                filterEntries.add(o);
+            }
             return this;
         }
 
