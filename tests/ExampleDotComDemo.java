@@ -7,6 +7,7 @@ import com.paulhammant.tnywb.TinyWeb.RequestContext;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ExampleDotComDemo {
@@ -45,7 +46,7 @@ public class ExampleDotComDemo {
             // WebSocket endpoint to update the counter
             webSocket("/ctr", (message, sender) -> {
                 int currentCount = counter.incrementAndGet();
-                sender.sendBytesFrame(("Counter: " + currentCount).getBytes("UTF-8"));
+                sender.sendBytesFrame(("Counter: " + currentCount).getBytes(StandardCharsets.UTF_8));
             });
 
             // HTTP PUT endpoint to reset the counter
