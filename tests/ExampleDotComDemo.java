@@ -74,8 +74,13 @@ public class ExampleDotComDemo {
             // WebSocket endpoint to update the counter
             webSocket("/ctr", (message, sender) -> {
                 while (true) {
-                    int currentCount = counter.incrementAndGet();
-                    sender.sendBytesFrame(("" + currentCount).getBytes(StandardCharsets.UTF_8));
+                    try {
+                        int currentCount = counter.incrementAndGet();
+                        sender.sendBytesFrame(("" + currentCount).getBytes(StandardCharsets.UTF_8));
+                        Thread.sleep(1000); // Pause for 1 second
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt(); // Restore interrupted status
+                    }
                 }
             });
 
