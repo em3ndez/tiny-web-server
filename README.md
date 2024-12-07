@@ -50,10 +50,14 @@ to the SocketServer.
 **And a third tier of admittedly gratuitous or pet-peeve wishes**
 
 1. No shared static state
-1. Exist in a single source file, for no good reason
-1. A back-to-basics JDK & make build technology
+1. Exist in a single source file, for no good reason.
+1. A back-to-basics JDK & make build technology (Maven/Gradle not used for day to day bits)
 1. Does not itself pollute stdout or force a logging framework on users.
 4. Have no dependencies at all, outside the JDK
+
+Single source file and no-maven used to be top level goals, but there's no strong rationale - they are firmly in 
+the "let us see if that is possible" territory.  At one stage there was no build file at all, (just copy-pastable javac, 
+java commands), then there was a shell script, then there was a makefile, which is where I should have started.
 
 # Table of Contents
 
@@ -92,6 +96,7 @@ to the SocketServer.
   - [TinyWeb's own test results](#tinywebs-own-test-results)
 - [Project & Source Repository](#project--source-repository)
 - [Known Limitations](#known-limitations)
+- [WIKI](#Wiki)
 - [Contributions & Published versions](#contributions--published-versions)
 
 # User guide
@@ -752,9 +757,7 @@ These commands will instrument the code for coverage, run the tests, and generat
 
 ## TinyWeb's own test results
 
-As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so, 
-from `TinyWebTests.java`, and part of the tested code is from `TinyWeb.ExampleApp` including the 
-`TinyWeb.ExampleApp.exampleComposition(..)` launch of a whole app to test.
+As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so:
 
 ``` 
 When using the ExampleApp server via sockets
@@ -801,9 +804,12 @@ When using the ExampleApp server via sockets
       ✓ echoes three messages plus -1 -2 -3 back to the client
 ```
 
-ChatGPT estimates the path coverage for the TinyWeb class to be around 90-95% It is difficult to say precisely as the test coverage with jacoco misses some of the Java-8 lambda paths. 
+ChatGPT estimates the path coverage for the TinyWeb class to be around 90-95%. 
+It is difficult to say precisely as the test coverage with jacoco misses some of the Java-8 lambda paths. 
 
-I wish I could use Cuppa to generate example code in markdown, too. It would need to have the same Java source parsing fu of the javac compiler, and that may never happen. An AI could copy tests into markdown documentation quickly, and repeatably, I guess.
+It would be nice to use Cuppa to generate example code in markdown, too. 
+That would need to have the same Java source parsing fu of the javac compiler, and that may never happen. 
+An AI could copy tests into markdown documentation quickly, and repeatably, I guess.
 
 ## Project & Source Repository
 
@@ -818,7 +824,7 @@ The project is organized as follows:
 
 Notes:
 
-1. `target` is what Maven would use, but we're not using Maven for this repo (we did to discover the dependency tree)
+1. `target/` is what Maven would use, but we're not using Maven for this repo (we did to discover the dependency tree - a python3 script)
 2. Both Java sources have packages. While it is conventional to have sources in a dir tree that represents the package, you don't have to
 
 Stats about TinyWeb:
@@ -854,6 +860,10 @@ Mostly "Batteries not included" ...
 * Utilizes some regex wrapping of Java's built-in webserver tech - either could have vulns versus Netty, etc.
 * No Java Platform Module System (JPMS) participation
 * No Maven-central publication - you could curl the single source file into your codebase if you wanted - see below
+
+## Wiki
+
+See [https://github.com/paul-hammant/tinyweb/wiki]
 
 # Contributions & Published versions
 
