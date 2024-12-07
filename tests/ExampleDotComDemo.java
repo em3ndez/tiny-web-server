@@ -8,6 +8,9 @@ import com.paulhammant.tnywb.TinyWeb.RequestContext;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ExampleDotComDemo {
@@ -21,7 +24,7 @@ public class ExampleDotComDemo {
 
             // Serve the static HTML/JS page
             endPoint(TinyWeb.Method.GET, "/", (req, res, ctx) -> {
-                String sessionId = req.getHeaders().getFirst("Session-ID");
+                String sessionId = req.getHeaders().get("Session-ID").getFirst();
                 if (sessionId == null || sessionId.isEmpty()) {
                     sessionId = UUID.randomUUID().toString();
                     res.setHeader("Session-ID", sessionId);
@@ -108,7 +111,6 @@ public class ExampleDotComDemo {
                         Thread.currentThread().interrupt(); // Restore interrupted status
                     }
             });
-        }};
 
             // HTTP PUT endpoint to reset the counter
             endPoint(TinyWeb.Method.PUT, "/resetCtr", (req, res, ctx) -> {
