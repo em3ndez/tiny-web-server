@@ -55,13 +55,12 @@ public class IntegrationTests {
                                         console.log("WebSocket readyState after open:", tinyWebSocketclient.socket.readyState);
                                         await tinyWebSocketclient.sendMessage('/baz', 'Hello WebSocket');
                                         
-                                        for (let i = 0; i < 3; i++) {
-                                            const response = await tinyWebSocketclient.receiveMessage();
+                                        tinyWebSocketclient.receiveMessages((response) => {
                                             console.log("Received message:", response);
                                             if (response) {
                                                 document.getElementById('messageDisplay').textContent += (response + "\\n");
                                             }
-                                        }
+                                        });
                                         await tinyWebSocketclient.close();
                                     } catch (error) {
                                         console.error('WebSocket error:', error);

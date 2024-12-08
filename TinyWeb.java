@@ -1315,34 +1315,27 @@ public class TinyWeb {
                             });
                         }
             
-                        async receiveMessage() {
-                            return new Promise((resolve, reject) => {
-                                const handleMessage = (event) => {
-                                    // Remove the listener to prevent multiple triggers
-                                    this.socket.removeEventListener('message', handleMessage);
-            
-                                    try {
-                                        let data;
-                                        if (event.data instanceof ArrayBuffer) {
-                                            data = new Uint8Array(event.data);
-                                        } else if (typeof event.data === 'string') {
-                                            // If the server sends data as text, convert it to Uint8Array
-                                            data = new TextEncoder().encode(event.data);
-                                        } else {
-                                            reject(new Error('Unsupported data type received'));
-                                            return;
-                                        }
-                                        const message = new TextDecoder('utf-8').decode(data);
-                                        resolve(message);
-                                    } catch (error) {
-                                        reject(error);
+                        receiveMessages(callback) {
+                            this.socket.addEventListener('message', (event) => {
+                                try {
+                                    let data;
+                                    if (event.data instanceof ArrayBuffer) {
+                                        data = new Uint8Array(event.data);
+                                    } else if (typeof event.data === 'string') {
+                                        data = new TextEncoder().encode(event.data);
+                                    } else {
+                                        console.error('Unsupported data type received');
+                                        return;
                                     }
-                                };
-            
-                                this.socket.addEventListener('message', handleMessage);
-                                this.socket.addEventListener('error', (error) => {
-                                    reject(error);
-                                });
+                                    const message = new TextDecoder('utf-8').decode(data);
+                                    callback(message);
+                                } catch (error) {
+                                    console.error('Error processing message:', error);
+                                }
+                            });
+
+                            this.socket.addEventListener('error', (error) => {
+                                console.error('WebSocket error:', error);
                             });
                         }
             
