@@ -1315,7 +1315,7 @@ public class TinyWeb {
                             });
                         }
             
-                        receiveMessages(callback) {
+                        receiveMessages(stopPhrase, callback) {
                             this.socket.addEventListener('message', (event) => {
                                 try {
                                     let data;
@@ -1328,7 +1328,11 @@ public class TinyWeb {
                                         return;
                                     }
                                     const message = new TextDecoder('utf-8').decode(data);
-                                    callback(message);
+                                    if (message === stopPhrase) {
+                                        this.socket.close();
+                                    } else {
+                                        callback(message);
+                                    }
                                 } catch (error) {
                                     console.error('Error processing message:', error);
                                 }
