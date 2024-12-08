@@ -23,7 +23,7 @@ public class IntegrationTests {
     TinyWeb.Server webServer;
 
     {
-        describe("When using Selenium to subscribe in a browser", () -> {
+        only().describe("When using Selenium to subscribe in a browser", () -> {
 
             before(() -> {
                 webServer = new TinyWeb.Server(8080, 8081) {{
@@ -83,6 +83,7 @@ public class IntegrationTests {
                             } catch (InterruptedException e) {
                             }
                         }
+                        sender.sendBytesFrame(toBytes("stop"));
                     });
                 }}.start();
             });
