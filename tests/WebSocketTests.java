@@ -21,7 +21,7 @@ public class WebSocketTests {
     TinyWeb.SocketServer webSocketServer;
 
     {
-        only().describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
+        describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
             before(() -> {
                 webSocketServer = new TinyWeb.SocketServer(8081) {{
@@ -70,7 +70,7 @@ public class WebSocketTests {
             });
         });
 
-        only().describe("When using TinyWeb.SocketServer with TinyWeb.Server and a contrived webSocket endpoint", () -> {
+        describe("When using TinyWeb.SocketServer with TinyWeb.Server and a contrived webSocket endpoint", () -> {
 
             before(() -> {
                 webServer = new TinyWeb.Server(8080, 8081) {{
@@ -142,7 +142,7 @@ public class WebSocketTests {
                 webServer = null;
             });
         });
-        only().describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
+        describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
             before(() -> {
                 webSocketServer = new TinyWeb.SocketServer(8081) {{

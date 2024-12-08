@@ -1311,13 +1311,16 @@ public class TinyWeb {
                                     resolve();
                                 } catch (error) {
                                     reject(error);
-                              receiveMessages  }
+                                    receiveMessages
+                                }
                             });
                         }
             
                         receiveMessages(stopPhrase, callback) {
+                            console.log("receiveMessages 1")
                             this.socket.addEventListener('message', (event) => {
                                 try {
+                            console.log("receiveMessages 2")
                                     let data;
                                     if (event.data instanceof ArrayBuffer) {
                                         data = new Uint8Array(event.data);
@@ -1327,10 +1330,12 @@ public class TinyWeb {
                                         console.error('Unsupported data type received');
                                         return;
                                     }
+                                    console.log("receiveMessages 3")
                                     const message = new TextDecoder('utf-8').decode(data);
                                     if (message === stopPhrase) {
                                         this.socket.close();
                                     } else {
+                                        console.log("receiveMessages 4")
                                         callback(message);
                                     }
                                 } catch (error) {
@@ -1338,6 +1343,8 @@ public class TinyWeb {
                                 }
                             });
 
+                            console.log("receiveMessages 5")
+                            
                             this.socket.addEventListener('error', (error) => {
                                 console.error('WebSocket error:', error);
                             });

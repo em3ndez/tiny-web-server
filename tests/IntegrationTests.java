@@ -55,7 +55,7 @@ public class IntegrationTests {
                                         console.log("WebSocket readyState after open:", tinyWebSocketclient.socket.readyState);
                                         await tinyWebSocketclient.sendMessage('/baz', 'Hello WebSocket');
                                         
-                                        tinyWebSocketclient.receiveMessages((response) => {
+                                        tinyWebSocketclient.receiveMessages("stop", (response) => {
                                             console.log("Received message:", response);
                                             if (response) {
                                                 document.getElementById('messageDisplay').textContent += (response + "\\n");
@@ -106,7 +106,7 @@ public class IntegrationTests {
                             "Server sent: Hello WebSocket-3";
                     assertThat(messageElement.getText(), equalTo(expectedMessages));
                 } finally {
-                    driver.quit();
+                    //driver.quit();
                 }
             });
 
