@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.function.Consumer;
 
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
@@ -16,10 +17,11 @@ import static tests.Suite.*;
 @Test
 public class WebSocketTests {
     TinyWeb.Server webServer;
+    TinyWeb.SocketClient client;
     TinyWeb.SocketServer webSocketServer;
 
     {
-        describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
+        only().describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
             before(() -> {
                 webSocketServer = new TinyWeb.SocketServer(8081) {{
@@ -32,48 +34,43 @@ public class WebSocketTests {
                             } catch (InterruptedException e) {
                             }
                         }
+                        sender.sendBytesFrame(toBytes("stop"));
                     });
                 }};
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
+                Thread.sleep(50);
+                client = new TinyWeb.SocketClient("localhost", 8081);
+                client.performHandshake();
             });
 
             it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
-                try {
-                    sleep(1000); // Wait for server startup
-                } catch (InterruptedException e) {
-                }
 
                 // Example client usage
-                try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
-                    client.performHandshake();
-                    client.sendMessage("/foo/baz", "Hello WebSocket");
+                client.sendMessage("/foo/baz", "Hello WebSocket");
 
-                    StringBuilder messages = new StringBuilder();
+                StringBuilder messages = new StringBuilder();
 
-                    // Read all three response frames
-                    for (int i = 0; i < 3; i++) {
-                        String response = client.receiveMessage();
-                        if (response != null) {
-                            messages.append(response);
-                        }
-                    }
-                    assertThat(messages.toString(), equalTo(
-                            "Server sent: Hello WebSocket-1" +
-                                    "Server sent: Hello WebSocket-2" +
-                                    "Server sent: Hello WebSocket-3"));
+                client.receiveMessages("stop", response -> {
+                    messages.append(response);
+                });
 
-                }
+                assertThat(messages.toString(), equalTo(
+                        "Server sent: Hello WebSocket-1" +
+                                "Server sent: Hello WebSocket-2" +
+                                "Server sent: Hello WebSocket-3"));
 
             });
 
             after(() -> {
+                client.close();
+                client = null;
                 webSocketServer.stop();
                 webSocketServer = null;
             });
         });
 
-        describe("When using TinyWeb.SocketServer with TinyWeb.Server and a contrived webSocket endpoint", () -> {
+        only().describe("When using TinyWeb.SocketServer with TinyWeb.Server and a contrived webSocket endpoint", () -> {
 
             before(() -> {
                 webServer = new TinyWeb.Server(8080, 8081) {{
@@ -93,64 +90,59 @@ public class WebSocketTests {
                                 } catch (InterruptedException e) {
                                 }
                             }
+                            sender.sendBytesFrame(toBytes("stop"));
                         });
                     });
                 }}.start();
+                Thread.sleep(50);
+                client = new TinyWeb.SocketClient("localhost", 8081);
+                client.performHandshake();
+
             });
 
             it("Then it should echo three modified messages back to the client (twice)", () -> {
-                try {
-                    sleep(1000); // Wait for server startup
-                } catch (InterruptedException e) {}
 
                 bodyAndResponseCodeShouldBe(httpGet("/foo/bar"),
                         "OK", 200);
 
                 // Example client usage
-                try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
-                    client.performHandshake();
-                    client.sendMessage("/foo/baz", "Hello WebSocket: 0");
+                client.sendMessage("/foo/baz", "Hello WebSocket: 0");
 
-                    StringBuilder messages = new StringBuilder();
+                final StringBuilder messages = new StringBuilder();
 
-                    // Read all three response frames
-                    for (int i = 0; i < 3; i++) {
-                        String response = client.receiveMessage();
-                        if (response != null) {
-                            messages.append(response);
-                        }
-                    }
-                    assertThat(messages.toString(),
-                            equalTo(
-                            "Server sent: Hello WebSocket: 0 -1" +
-                                    "Server sent: Hello WebSocket: 0 -2" +
-                                    "Server sent: Hello WebSocket: 0 -3"));
+                client.receiveMessages("stop", response -> {
+                    messages.append(response);
+                });
+                assertThat(messages.toString(),
+                        equalTo(
+                        "Server sent: Hello WebSocket: 0 -1" +
+                                "Server sent: Hello WebSocket: 0 -2" +
+                                "Server sent: Hello WebSocket: 0 -3"));
 
-                    client.sendMessage("/foo/baz", "Hello WebSocket: 5");
+                client.sendMessage("/foo/baz", "Hello WebSocket: 5");
 
-                    messages = new StringBuilder();
+                messages.delete(0, messages.length());
 
-                    // Read all three response frames
-                    for (int i = 0; i < 3; i++) {
-                        String response = client.receiveMessage();
-                        if (response != null) {
-                            messages.append(response);
-                        }
-                    }
+                // Read all three response frames
+                client.receiveMessages("stop", (message) -> {
+                    messages.append(message);
+                });
 
-                    assertThat(messages.toString(),
-                            equalTo(
-                            "Server sent: Hello WebSocket: 5 -6" +
-                                    "Server sent: Hello WebSocket: 5 -7" +
-                                    "Server sent: Hello WebSocket: 5 -8"));
-                }
+                assertThat(messages.toString(),
+                        equalTo(
+                        "Server sent: Hello WebSocket: 5 -6" +
+                                "Server sent: Hello WebSocket: 5 -7" +
+                                "Server sent: Hello WebSocket: 5 -8"));
+
             });
             after(() -> {
+                client.close();
+                client = null;
                 webServer.stop();
                 webServer = null;
             });
         });
-        describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
+        only().describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
             before(() -> {
                 webSocketServer = new TinyWeb.SocketServer(8081) {{
@@ -163,42 +155,38 @@ public class WebSocketTests {
                             } catch (InterruptedException e) {
                             }
                         }
+                        sender.sendBytesFrame(toBytes("stop"));
                     });
                 }};
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
+                Thread.sleep(100);
+                client = new TinyWeb.SocketClient("localhost", 8081);
+                client.performHandshake();
             });
 
             it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
-                try {
-                    sleep(1000); // Wait for server startup
-                } catch (InterruptedException e) {
-                }
 
                 // Example client usage
-                try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
-                    client.performHandshake();
-                    client.sendMessage("/foo/baz", "Hello WebSocket");
+                client.sendMessage("/foo/baz", "Hello WebSocket");
 
-                    StringBuilder messages = new StringBuilder();
+                StringBuilder messages = new StringBuilder();
 
-                    // Read all three response frames
-                    for (int i = 0; i < 3; i++) {
-                        String response = client.receiveMessage();
-                        if (response != null) {
-                            messages.append(response);
-                        }
-                    }
-                    assertThat(messages.toString(), equalTo(
-                            "Server sent: Hello WebSocket-1" +
-                                    "Server sent: Hello WebSocket-2" +
-                                    "Server sent: Hello WebSocket-3"));
+                // Read all three response frames
+                client.receiveMessages("stop", response -> {
+                    messages.append(response);
+                });
 
-                }
+                assertThat(messages.toString(), equalTo(
+                        "Server sent: Hello WebSocket-1" +
+                                "Server sent: Hello WebSocket-2" +
+                                "Server sent: Hello WebSocket-3"));
 
             });
 
             after(() -> {
+                client.close();
+                client = null;
                 webSocketServer.stop();
                 webSocketServer = null;
             });

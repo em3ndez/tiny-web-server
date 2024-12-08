@@ -41,6 +41,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1129,6 +1130,7 @@ public class TinyWeb {
 
     public static class SocketClient implements AutoCloseable {
         private final Socket socket;
+        private Consumer<String> onMessageHandler;
         private final InputStream in;
         private final OutputStream out;
         private static final SecureRandom random = new SecureRandom();
@@ -1189,35 +1191,43 @@ public class TinyWeb {
             out.flush();
         }
 
-        public String receiveMessage() throws IOException {
-            // Read frame header
-            int byte1 = in.read();
-            if (byte1 == -1) return null;
+        public void receiveMessages(String stopPhrase, Consumer<String> handle) throws IOException {
+            boolean stop = false;
+            while (!stop) {
+                // Read frame header
+                int byte1 = in.read();
+                if (byte1 == -1) break;
 
-            int byte2 = in.read();
-            if (byte2 == -1) return null;
+                int byte2 = in.read();
+                if (byte2 == -1) break;
 
-            int payloadLength = byte2 & 0x7F;
+                int payloadLength = byte2 & 0x7F;
 
-            // Handle extended payload length
-            if (payloadLength == 126) {
-                byte[] extendedLength = new byte[2];
-                SocketServer.readFully(in, extendedLength, 0, 2);
-                payloadLength = ((extendedLength[0] & 0xFF) << 8) | (extendedLength[1] & 0xFF);
-            } else if (payloadLength == 127) {
-                byte[] extendedLength = new byte[8];
-                SocketServer.readFully(in, extendedLength, 0, 8);
-                payloadLength = 0;
-                for (int i = 0; i < 8; i++) {
-                    payloadLength |= (extendedLength[i] & 0xFF) << ((7 - i) * 8);
+                // Handle extended payload length
+                if (payloadLength == 126) {
+                    byte[] extendedLength = new byte[2];
+                    SocketServer.readFully(in, extendedLength, 0, 2);
+                    payloadLength = ((extendedLength[0] & 0xFF) << 8) | (extendedLength[1] & 0xFF);
+                } else if (payloadLength == 127) {
+                    byte[] extendedLength = new byte[8];
+                    SocketServer.readFully(in, extendedLength, 0, 8);
+                    payloadLength = 0;
+                    for (int i = 0; i < 8; i++) {
+                        payloadLength |= (extendedLength[i] & 0xFF) << ((7 - i) * 8);
+                    }
+                }
+
+                byte[] payload = new byte[payloadLength];
+                int bytesRead = SocketServer.readFully(in, payload, 0, payloadLength);
+                if (bytesRead < payloadLength) break;
+
+                String message = new String(payload, 0, bytesRead, "UTF-8");
+                if (message.equals(stopPhrase)) {
+                    stop = true;
+                } else {
+                    handle.accept(message);
                 }
             }
-
-            byte[] payload = new byte[payloadLength];
-            int bytesRead = SocketServer.readFully(in, payload, 0, payloadLength);
-            if (bytesRead < payloadLength) return null;
-
-            return new String(payload, 0, bytesRead, "UTF-8");
         }
 
         private void sendClose() throws IOException {
