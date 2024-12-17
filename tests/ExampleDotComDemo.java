@@ -36,10 +36,8 @@ public class ExampleDotComDemo {
 
             // Serve the static HTML/JS page
             endPoint(TinyWeb.Method.GET, "/", (req, res, ctx) -> {
-                List<String> strings = req.getHeaders().get("Session-ID");
-                if (strings == null || strings.isEmpty()) {
-                    res.setHeader("Session-ID", UUID.randomUUID().toString());
-                }
+                String sessionId = req.getHeaders().getOrDefault("Session-ID", List.of(UUID.randomUUID().toString())).get(0);
+                res.setHeader("Session-ID", sessionId);
                 res.setHeader("Content-Type", "text/html");
                 res.write("""
                     <!DOCTYPE html>
@@ -61,7 +59,7 @@ public class ExampleDotComDemo {
                             }
 
                             async function subscribeToCounter() {
-                                const sessionId = getSessionId();
+                                const sessionId = document.cookie.split('; ').find(row => row.startsWith('Session-ID=')).split('=')[1];
 
                                 await tinyWebSocketClient.waitForOpen();
                                 console.log("WebSocket readyState after open:", tinyWebSocketClient.socket.readyState);
