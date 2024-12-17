@@ -59,7 +59,11 @@ public class ExampleDotComDemo {
                             }
 
                             async function subscribeToCounter() {
-                                const sessionId = document.cookie.split('; ').find(row => row.startsWith('Session-ID=')).split('=')[1];
+                                const sessionId = localStorage.getItem('sessionId');
+                                if (!sessionId) {
+                                    sessionId = Math.random().toString(36).substring(2);
+                                    localStorage.setItem('sessionId', sessionId);
+                                }
 
                                 await tinyWebSocketClient.waitForOpen();
                                 console.log("WebSocket readyState after open:", tinyWebSocketClient.socket.readyState);
