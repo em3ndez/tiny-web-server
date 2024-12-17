@@ -1081,27 +1081,7 @@ public class TinyWeb {
                             SocketMessageHandler handler = getHandler(path);
                             if (handler != null) {
 //                                try {
-                                    RequestContext ctx = new RequestContext() {
-                                        @Override
-                                        public String getParam(String key) {
-                                            return null; // Implement as needed
-                                        }
-
-                                        @Override
-                                        public <T> T dep(Class<T> clazz) {
-                                            return null; // Implement as needed
-                                        }
-
-                                        @Override
-                                        public void setAttribute(String key, Object value) {
-                                            // Implement as needed
-                                        }
-
-                                        @Override
-                                        public Object getAttribute(String key) {
-                                            return null; // Implement as needed
-                                        }
-                                    };
+                                    RequestContext ctx = createRequestContext(new HashMap<>(), new HashMap<>(), new DefaultComponentCache(), null);
                                     handler.handleMessage(messagePayload, sender, ctx);
 //                                } catch (IOException e) {
 //                                    System.err.println("Error handling WebSocket message: " + e.getMessage());
