@@ -23,7 +23,7 @@ public class IntegrationTests {
     TinyWeb.Server webServer;
 
     {
-        only().describe("When using Selenium to subscribe in a browser", () -> {
+        describe("When using Selenium to subscribe in a browser", () -> {
 
             before(() -> {
                 webServer = new TinyWeb.Server(8080, 8081) {{
@@ -44,30 +44,25 @@ public class IntegrationTests {
                                     <pre id="messageDisplay"></pre>
                                 </body>
                                 <script>
-                                console.log("hello 1");
+                                const client = new TinyWeb.SocketClient('localhost', 8081);
                                 
-                                const tinyWebSocketclient = new TinyWeb.SocketClient('localhost', 8081);
-                                
-                                async function example() {
-                                    try {
-                                        console.log("WebSocket readyState before open:", tinyWebSocketclient.socket.readyState);
-                                        await tinyWebSocketclient.waitForOpen();
-                                        console.log("WebSocket readyState after open:", tinyWebSocketclient.socket.readyState);
-                                        await tinyWebSocketclient.sendMessage('/baz', 'Hello WebSocket');
-                                        
-                                        tinyWebSocketclient.receiveMessages("stop", (response) => {
-                                            console.log("Received message:", response);
-                                            if (response) {
-                                                document.getElementById('messageDisplay').textContent += (response + "\\n");
-                                            }
-                                        });
-                                        await tinyWebSocketclient.close();
-                                    } catch (error) {
-                                        console.error('WebSocket error:', error);
-                                    }
+                                // Set up message handling
+                                client.receiveMessages('stop', (message) => {
+                                    document.getElementById('messageDisplay').textContent += (message + "\\n");
+                                });
+                        
+                                // To send a message (in an async context):
+                                async function sendMessage() {
+                                    await client.sendMessage('/baz', 'Hello WebSocket');
                                 }
-
-                                example();
+                        
+                                // To close (in an async context):
+                                async function closeConnection() {
+                                    await client.close();
+                                }
+                                
+                                sendMessage();
+                                                          
                                 </script>
                                 </html>
                             """, 200);
