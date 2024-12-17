@@ -331,7 +331,7 @@ public class TinyWeb {
             }
 
             if (wsPort > 0) {
-                socketServer = new SocketServer(wsPort, wsBacklog, wsBindAddr) {
+                socketServer = new SocketServer(wsPort, wsBacklog, wsBindAddr, dependencyManager) {
                     @Override
                     protected SocketMessageHandler getHandler(String path) {
                         for (Map.Entry<Pattern, SocketMessageHandler> patternWebSocketMessageHandlerEntry : wsEndPoints.entrySet()) {
@@ -341,8 +341,9 @@ public class TinyWeb {
                                 return value;
                             }
                         }
+                        //TODO handle missing case
                         System.out.println("No websocket handler for " + path);
-                        return (message, sender) -> {
+                        return (message, sender, context) -> {
                             try {
                                 // TODO incorporate path in reply
                                 sender.sendBytesFrame("no matching path on the server side".getBytes("UTF-8"));
@@ -500,31 +501,7 @@ public class TinyWeb {
         }
 
         private RequestContext createRequestContext(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher) {
-            return new RequestContext() {
-
-                @Override
-                public String getParam(String key) {
-                    return params.get(key);
-                }
-
-                @Override
-                @SuppressWarnings("unchecked")
-                public <T> T dep(Class<T> clazz) {
-                    return dependencyManager.instantiateDep(clazz, requestCache, matcher);
-                }
-
-                public void setAttribute(String key, Object value) {
-                    attributes.put(key, value);
-                }
-
-                public Object getAttribute(String key) {
-                    return attributes.get(key);
-                }
-
-                public Matcher getMatcher() {
-                    return matcher;
-                }
-            };
+            return new ServerRequestContext(params, requestCache, matcher, attributes);
         }
 
         protected void recordStatistics(String path, Map<String, Object> stats) {
@@ -573,6 +550,44 @@ public class TinyWeb {
                 simpleWebSocketServerThread.interrupt();
             }
             return this;
+        }
+
+        private static class ServerRequestContext implements RequestContext {
+
+            private final Map<String, String> params;
+            private final ComponentCache componentCache;
+            private final Matcher matcher;
+            private final Map<String, Object> attributes;
+
+            public ServerRequestContext(Map<String, String> params, ComponentCache componentCache, Matcher matcher, Map<String, Object> attributes) {
+                this.params = params;
+                this.componentCache = componentCache;
+                this.matcher = matcher;
+                this.attributes = attributes;
+            }
+
+            @Override
+            public String getParam(String key) {
+                return params.get(key);
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <T> T dep(Class<T> clazz) {
+                return dependencyManager.instantiateDep(clazz, requestCache, matcher);
+            }
+
+            public void setAttribute(String key, Object value) {
+                attributes.put(key, value);
+            }
+
+            public Object getAttribute(String key) {
+                return attributes.get(key);
+            }
+
+            public Matcher getMatcher() {
+                return matcher;
+            }
         }
     }
 
@@ -900,17 +915,26 @@ public class TinyWeb {
         private static final int SOCKET_TIMEOUT = 30000; // 30 seconds timeout
         private static final SecureRandom random = new SecureRandom();
         private Map<String, SocketMessageHandler> messageHandlers = new HashMap<>();
+        private DependencyManager dependencyManager;
 
         public SocketServer(int wsPort) {
+            this(wsPort, new DependencyManager(new DefaultComponentCache(null)));
+        }
+        public SocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr) {
+            this(wsPort, wsBacklog, wsBindAddr, new DependencyManager(new DefaultComponentCache(null)));
+        }
+        public SocketServer(int wsPort, DependencyManager dependencyManager) {
             this.wsPort = wsPort;
+            this.dependencyManager = dependencyManager;
             this.wsBacklog = 50;
             this.wsBindAddr = null;
 
         }
-        public SocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr) {
+        public SocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr, DependencyManager dependencyManager) {
             this.wsPort = wsPort;
             this.wsBacklog = wsBacklog;
             this.wsBindAddr = wsBindAddr;
+            this.dependencyManager = dependencyManager;
         }
 
         public void registerMessageHandler(String path, SocketMessageHandler handler) {
@@ -1080,12 +1104,9 @@ public class TinyWeb {
                         CompletableFuture.runAsync(() -> {
                             SocketMessageHandler handler = getHandler(path);
                             if (handler != null) {
-//                                try {
-                                    RequestContext ctx = createRequestContext(new HashMap<>(), new HashMap<>(), new DefaultComponentCache(), null);
+                                    ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
+                                    RequestContext ctx = new Server.ServerRequestContext(new HashMap<>(), requestCache, null, new HashMap<>());
                                     handler.handleMessage(messagePayload, sender, ctx);
-//                                } catch (IOException e) {
-//                                    System.err.println("Error handling WebSocket message: " + e.getMessage());
-//                                }
                             } else {
                                 System.err.println("No handler found for path: " + path + " keys:" + messageHandlers.keySet());
                             }

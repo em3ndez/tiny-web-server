@@ -895,6 +895,7 @@ Mostly "Batteries not included" ...
 * Not perf/load tested. Expected to perform efficiently for small to medium-sized applications, but nor 10K class application serving.
 * Doesn't have an async nature to request handling
 * No opinion on user sessions
+* Nothing built-in for event sourcing
 * No examples of participating in idle or socket timeouts. There's a hint in the source, but it lacks sophistication.
 * Utilizes some regex wrapping of Java's built-in webserver tech - either could have vulns versus Netty, etc.
 * No Java Platform Module System (JPMS) participation
