@@ -68,8 +68,8 @@ actix-web: Web framework with WebSocket support
 2. URL Parameters:
    - Some applications pass session tokens as URL parameters during the WebSocket handshake. This is less secure than cookies but can be used in certain scenarios.
 
-3. Custom Headers:
-   - Custom headers can be used to pass session information during the WebSocket handshake. This requires server-side support to extract and validate the session data.
+3. Initial Handshake:
+   - During the WebSocket handshake, session information can be passed using query parameters or cookies. This requires server-side support to extract and validate the session data.
 
 4. Token-based Authentication:
    - JWT (JSON Web Tokens) or other token-based systems can be used to authenticate WebSocket connections. The token is sent as part of the handshake request and validated by the server.
