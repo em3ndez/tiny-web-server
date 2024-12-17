@@ -65,18 +65,20 @@ public class ExampleDotComDemo {
 
                                 await tinyWebSocketClient.waitForOpen();
                                 console.log("WebSocket readyState after open:", tinyWebSocketClient.socket.readyState);
-                                await tinyWebSocketClient.sendMessage('/ctr', 'Hello WebSocket', {
-                                    'Session-ID': sessionId
-                                });
+                                await tinyWebSocketClient.sendMessage('/ctr', sessionId);
 
-                                while (true) {
-                                    const response = await tinyWebSocketClient.receiveMessage();
-                                    console.log("Received message:", response);
-                                    if (response) {
-                                        document.getElementById('counter').textContent = response;
+                                const receiveMessages = async () => {
+                                    while (true) {
+                                        const response = await tinyWebSocketClient.receiveMessage();
+                                        console.log("Received message:", response);
+                                        if (response) {
+                                            document.getElementById('counter').textContent = response;
+                                        }
+                                        await new Promise(resolve => setTimeout(resolve, 1000)); // Pause for 1 second
                                     }
-                                    await new Promise(resolve => setTimeout(resolve, 1000)); // Pause for 1 second
-                                }
+                                };
+
+                                receiveMessages();
                             }
 
                             async function resetCounter() {
