@@ -324,7 +324,6 @@ public class TinyWeb {
             } catch (IOException e) {
                 throw new ServerException("Could not create HttpServer", e);
             }
-            httpServer.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
             for (Method method : Method.values()) {
                 endPoints.put(method, new HashMap<>());
@@ -487,7 +486,9 @@ public class TinyWeb {
 
         protected HttpServer makeHttpServer() throws IOException {
 
-            return HttpServer.create();
+            HttpServer s = HttpServer.create();
+            s.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+            return s;
 
             // How to participate in Idle Timeouts - override this method
             //ServerSocket socket = server.getAddress().getSocket();

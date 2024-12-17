@@ -7,13 +7,24 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static com.paulhammant.tnywb.TinyWeb.Method.POST;
+
+
 public class WebSocketBroadcastDemo {
 
     public static void main(String[] args) {
         TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-            webSocket("/broadcast", (message, sender) -> {
-                // This handler doesn't need to do anything for this demo
+            webSocket("/broadcast", new TinyWeb.SocketMessageHandler() {
+                @Override
+                public void handleMessage(byte[] message, TinyWeb.MessageSender sender) {
+                    TinyWeb.SocketMessageHandler theese = this;
+                    // This handler doesn't need to do anything for this demo
+                }
             });
+            endPoint(POST, "/update", (req, rsp, ctx) -> {
+                String newVal = ctx.getParam("newValue");
+            });
+
         }};
         server.start();
 
