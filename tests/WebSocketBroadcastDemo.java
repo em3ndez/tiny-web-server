@@ -16,7 +16,7 @@ public class WebSocketBroadcastDemo {
         TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
             webSocket("/broadcast", new TinyWeb.SocketMessageHandler() {
                 @Override
-                public void handleMessage(byte[] message, TinyWeb.MessageSender sender) {
+                public void handleMessage(byte[] message, TinyWeb.MessageSender sender, TinyWeb.RequestContext ctx) {
                     TinyWeb.SocketMessageHandler theese = this;
                     // This handler doesn't need to do anything for this demo
                 }
