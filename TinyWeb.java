@@ -501,7 +501,7 @@ public class TinyWeb {
         }
 
         private RequestContext createRequestContext(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher) {
-            return new ServerRequestContext(params, requestCache, matcher, attributes);
+            return new ServerRequestContext(params, dependencyManager, requestCache, matcher, attributes);
         }
 
         protected void recordStatistics(String path, Map<String, Object> stats) {
@@ -555,13 +555,15 @@ public class TinyWeb {
         private static class ServerRequestContext implements RequestContext {
 
             private final Map<String, String> params;
-            private final ComponentCache componentCache;
+            private final DependencyManager dependencyManager;
+            private final ComponentCache requestCache;
             private final Matcher matcher;
             private final Map<String, Object> attributes;
 
-            public ServerRequestContext(Map<String, String> params, ComponentCache componentCache, Matcher matcher, Map<String, Object> attributes) {
+            public ServerRequestContext(Map<String, String> params, DependencyManager dependencyManager, ComponentCache requestCache, Matcher matcher, Map<String, Object> attributes) {
                 this.params = params;
-                this.componentCache = componentCache;
+                this.dependencyManager = dependencyManager;
+                this.requestCache = requestCache;
                 this.matcher = matcher;
                 this.attributes = attributes;
             }
@@ -1105,7 +1107,7 @@ public class TinyWeb {
                             SocketMessageHandler handler = getHandler(path);
                             if (handler != null) {
                                     ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
-                                    RequestContext ctx = new Server.ServerRequestContext(new HashMap<>(), requestCache, null, new HashMap<>());
+                                    RequestContext ctx = new Server.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new HashMap<>());
                                     handler.handleMessage(messagePayload, sender, ctx);
                             } else {
                                 System.err.println("No handler found for path: " + path + " keys:" + messageHandlers.keySet());
