@@ -998,8 +998,11 @@ public class TinyWeb {
                     s.close();
                     client.close();
                 }
+            } catch (SocketTimeoutException e) {
+                // TODO handle read timed out
             } catch (IOException e) {
                 System.err.println("Error handling client: " + e.getMessage());
+                e.printStackTrace();
             }
         }
 

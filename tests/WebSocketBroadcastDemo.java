@@ -2,6 +2,7 @@ package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
 
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -18,11 +19,21 @@ public class WebSocketBroadcastDemo {
 
         public void broadcast(String newVal) {
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            ArrayList<TinyWeb.MessageSender> closed = new ArrayList<>();
             this.forEach((handler) -> {
                 executor.execute(() -> {
-                    handler.sendBytesFrame(newVal.getBytes());
+                    try {
+                        handler.sendBytesFrame(newVal.getBytes());
+                    } catch (TinyWeb.ServerException e) {
+                        if (e.getCause() instanceof SocketException && e.getMessage().contains("Socket closed")) {
+                            closed.add(handler);
+                        } else {
+                            throw new RuntimeException(e);
+                        }
+                    }
                 });
             });
+            this.removeAll(closed);
         }
     }
 
