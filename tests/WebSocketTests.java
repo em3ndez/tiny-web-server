@@ -25,7 +25,7 @@ public class WebSocketTests {
 
             before(() -> {
                 webSocketServer = new TinyWeb.SocketServer(8081) {{
-                    registerMessageHandler("/foo/baz", (message, sender) -> {
+                    registerMessageHandler("/foo/baz", (message, sender, context) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
                             sender.sendBytesFrame(toBytes(responseMessage));
@@ -79,7 +79,7 @@ public class WebSocketTests {
                             res.write("OK");
                         });
 
-                        webSocket("/baz", (messageBytes, sender) -> {
+                        webSocket("/baz", (messageBytes, sender, context) -> {
                             for (int i = 1; i <= 3; i++) {
                                 String message = bytesToString(messageBytes);
                                 int num = Integer.parseInt(message.split(": ")[1]);
@@ -146,7 +146,7 @@ public class WebSocketTests {
 
             before(() -> {
                 webSocketServer = new TinyWeb.SocketServer(8081) {{
-                    registerMessageHandler("/foo/baz", (message, sender) -> {
+                    registerMessageHandler("/foo/baz", (message, sender, context) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
                             sender.sendBytesFrame(toBytes(responseMessage));
