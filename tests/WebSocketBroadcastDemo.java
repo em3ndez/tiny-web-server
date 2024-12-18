@@ -2,6 +2,7 @@ package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
 
+import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,10 +40,11 @@ public class WebSocketBroadcastDemo {
 
     public static void main(String[] args) {
 
+        // note: single instance
         Broadcaster broadcaster = new Broadcaster();
 
         TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-            webSocket("/broadcasts", new TinyWeb.SocketMessageHandler() {
+            webSocket("/keepMeUpdatedPlease", new TinyWeb.SocketMessageHandler() {
                 @Override
                 public void handleMessage(byte[] message, TinyWeb.MessageSender sender, TinyWeb.RequestContext ctx) {
                     broadcaster.add(sender);
@@ -63,31 +65,26 @@ public class WebSocketBroadcastDemo {
         for (int i = 0; i < 1000; i++) {
             int clientId = i;
             Thread.ofVirtual().start(() -> {
-                try {
-                    while (true) {
-                        try {
-                            TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081);
-                            client.performHandshake();
-                            client.sendMessage("/broadcasts", "Client " + clientId + " connected");
+                while (true) {
+                    try {
+                        TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081);
+                        client.performHandshake();
+                        client.sendMessage("/keepMeUpdatedPlease", "Client " + clientId + " connecting");
 
-                            client.receiveMessages("stop", message -> {
-                                clientMessageCounts.merge(clientId, 1, Integer::sum);
-                            });
+                        client.receiveMessages("stop", message -> {
+                            clientMessageCounts.merge(clientId, 1, Integer::sum);
+                        });
 
-                            client.close();
-                            break; // Exit loop if connection is successful
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            System.out.println("Reconnecting client " + clientId + " in 5 seconds...");
-                            Thread.sleep(5000); // Wait 5 seconds before retrying
-                        }
+                        client.close();
+                        break; // Exit loop if connection is successful
+                    } catch (IOException e) {
+                        // smarter re-connect policy needed
+                        System.out.println("Reconnecting client " + clientId + " in 5 seconds...");
+                        sleepMillis(5000); // Wait 5 seconds before retrying
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             });
         }
-
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(() -> {
@@ -105,5 +102,12 @@ public class WebSocketBroadcastDemo {
 
         System.out.println("WebSocket server started on ws://localhost:8081/broadcast");
         System.out.println("Press Ctrl+C to stop the server.");
+    }
+
+    private static void sleepMillis(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+        }
     }
 }
