@@ -916,7 +916,7 @@ public class TinyWeb {
         private final InetAddress wsBindAddr;
         private ServerSocket server;
         private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-        private static final int SOCKET_TIMEOUT = 300000; // 5 minutes timeout
+        private static final int SOCKET_TIMEOUT = 30000; // 5 minutes timeout
         private static final SecureRandom random = new SecureRandom();
         private Map<String, SocketMessageHandler> messageHandlers = new HashMap<>();
         private DependencyManager dependencyManager;
@@ -953,6 +953,7 @@ public class TinyWeb {
                     try {
                         Socket client = server.accept();
                         client.setSoTimeout(SOCKET_TIMEOUT);
+                        client.setKeepAlive(true);
                         clientConnected(client);
 
                         executor.execute(() -> handleClient(client));
@@ -1258,6 +1259,7 @@ public class TinyWeb {
                     handle.accept(message);
                 }
             }
+            System.out.println("No more while");
         }
 
         private void sendClose() throws IOException {
