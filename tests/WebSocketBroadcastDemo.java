@@ -30,7 +30,7 @@ public class WebSocketBroadcastDemo {
         Broadcaster broadcaster = new Broadcaster();
 
         TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-            webSocket("/broadcast", new TinyWeb.SocketMessageHandler() {
+            webSocket("/broadcasts", new TinyWeb.SocketMessageHandler() {
                 @Override
                 public void handleMessage(byte[] message, TinyWeb.MessageSender sender, TinyWeb.RequestContext ctx) {
                     broadcaster.add(sender);
