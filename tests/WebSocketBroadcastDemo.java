@@ -14,29 +14,29 @@ public class WebSocketBroadcastDemo {
 
     public static class Broadcaster extends ConcurrentLinkedQueue<TinyWeb.MessageSender> {
 
-        public void broadcast(String newVal) {
-            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-            ArrayList<TinyWeb.MessageSender> closed = new ArrayList<>();
-            try {
-                this.forEach((handler) -> {
-                    executor.execute(() -> {
-                        try {
-                            handler.sendBytesFrame(newVal.getBytes());
-                        } catch (TinyWeb.ServerException e) {
-                            if (e.getCause() instanceof SocketException && e.getMessage().contains("Socket closed")) {
-                                closed.add(handler);
-                            } else {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    });
-                });
-            } catch (ArrayIndexOutOfBoundsException e) {
-                System.err.println("eee> " + e.getMessage());
-                e.printStackTrace();
+        ConcurrentLinkedQueue<TinyWeb.MessageSender> closed;
 
+        public void broadcast(String newVal) {
+            if (closed != null) {
+                this.removeAll(closed);
             }
-            this.removeAll(closed);
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            closed = new ConcurrentLinkedQueue<>();
+            this.forEach((handler) -> {
+                executor.execute(() -> {
+                    try {
+                        handler.sendBytesFrame(newVal.getBytes());
+                    } catch (TinyWeb.ServerException e) {
+                        System.out.printf("SE: " + e.getMessage() + " " + e.getClass().getName());
+                        if (e.getCause() instanceof SocketException && e.getCause().getMessage().equals("Socket closed")) {
+                            System.out.println("closed " + handler);
+                            closed.add(handler);
+                        } else {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                });
+            });
         }
     }
 
@@ -48,11 +48,8 @@ public class WebSocketBroadcastDemo {
         long startTime = System.currentTimeMillis();
 
         TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
-            webSocket("/keepMeUpdatedPlease", new TinyWeb.SocketMessageHandler() {
-                @Override
-                public void handleMessage(byte[] message, TinyWeb.MessageSender sender, TinyWeb.RequestContext ctx) {
-                    broadcaster.add(sender);
-                }
+            webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
+                broadcaster.add(sender);
             });
 
             endPoint(POST, "/update", (req, rsp, ctx) -> {
@@ -66,7 +63,7 @@ public class WebSocketBroadcastDemo {
         ConcurrentHashMap<Integer, Integer> clientMessageCounts = new ConcurrentHashMap<>();
 
         // Launch 10 clients
-        for (int i = 0; i < 20000; i++) {
+        for (int i = 0; i < 1; i++) {
             int clientId = i;
             Thread.ofVirtual().start(() -> {
                 while (true) {
@@ -81,7 +78,7 @@ public class WebSocketBroadcastDemo {
 
                         client.close();
                         break; // Exit loop if connection is successful
-                    } catch (IOException | ArrayIndexOutOfBoundsException e) {
+                    } catch (IOException e) {
                         System.err.println("Exception in client " + clientId + ": " + e.getMessage());
                         e.printStackTrace(System.err);
                         // smarter re-connect policy needed
