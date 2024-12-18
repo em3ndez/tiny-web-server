@@ -5,18 +5,14 @@ import com.paulhammant.tnywb.TinyWeb;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static com.paulhammant.tnywb.TinyWeb.Method.POST;
 
 
 public class WebSocketBroadcastDemo {
 
-    public static class Broadcaster extends ArrayList<TinyWeb.MessageSender> {
+    public static class Broadcaster extends ConcurrentLinkedQueue<TinyWeb.MessageSender> {
 
         public void broadcast(String newVal) {
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
@@ -62,7 +58,7 @@ public class WebSocketBroadcastDemo {
         ConcurrentHashMap<Integer, Integer> clientMessageCounts = new ConcurrentHashMap<>();
 
         // Launch 10 clients
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 20000; i++) {
             int clientId = i;
             Thread.ofVirtual().start(() -> {
                 while (true) {
@@ -91,6 +87,7 @@ public class WebSocketBroadcastDemo {
             broadcaster.broadcast("Broadcast message at " + System.currentTimeMillis());
         }, 0, 1, TimeUnit.SECONDS);
 
+        sleepMillis(150);
         // Schedule a task to print the message counts every 10 seconds
         scheduler.scheduleAtFixedRate(() -> {
             int clientCount = clientMessageCounts.size();
@@ -98,7 +95,7 @@ public class WebSocketBroadcastDemo {
                 .mapToInt(Integer::intValue)
                 .average()
                 .orElse(0.0);
-            System.out.printf("Average message count per client: %.2f (Total clients: %d)%n", average, clientCount);
+            System.out.printf("Average message count per websocket client: %.2f (Total clients: %d)%n", average, clientCount);
         }, 0, 10, TimeUnit.SECONDS);
 
         System.out.println("WebSocket server started on ws://localhost:8081/broadcast");
