@@ -62,7 +62,7 @@ public class WebSocketBroadcastDemo {
         // Launch 10 clients
         for (int i = 0; i < 100; i++) {
             int clientId = i;
-            new Thread(() -> {
+            Thread.ofVirtual().start(() -> {
                 try {
                     TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081);
                     client.performHandshake();
