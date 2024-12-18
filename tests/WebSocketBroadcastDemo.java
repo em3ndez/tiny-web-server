@@ -64,15 +64,24 @@ public class WebSocketBroadcastDemo {
             int clientId = i;
             Thread.ofVirtual().start(() -> {
                 try {
-                    TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081);
-                    client.performHandshake();
-                    client.sendMessage("/broadcasts", "Client " + clientId + " connected");
+                    while (true) {
+                        try {
+                            TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081);
+                            client.performHandshake();
+                            client.sendMessage("/broadcasts", "Client " + clientId + " connected");
 
-                    client.receiveMessages("stop", message -> {
-                        clientMessageCounts.merge(clientId, 1, Integer::sum);
-                    });
+                            client.receiveMessages("stop", message -> {
+                                clientMessageCounts.merge(clientId, 1, Integer::sum);
+                            });
 
-                    client.close();
+                            client.close();
+                            break; // Exit loop if connection is successful
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            System.out.println("Reconnecting client " + clientId + " in 5 seconds...");
+                            Thread.sleep(5000); // Wait 5 seconds before retrying
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
