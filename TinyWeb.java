@@ -1159,6 +1159,11 @@ public class TinyWeb {
         }
     }
 
+    public enum ConnectionStatus {
+        CONNECTED,
+        DISCONNECTED
+    }
+
     public static class SocketClient implements AutoCloseable {
         private final Socket socket;
         private Consumer<String> onMessageHandler;
@@ -1222,7 +1227,7 @@ public class TinyWeb {
             out.flush();
         }
 
-        public void receiveMessages(String stopPhrase, Consumer<String> handle) throws IOException {
+        public ConnectionStatus receiveMessages(String stopPhrase, Consumer<String> handle) throws IOException {
             boolean stop = false;
             while (!stop) {
                 // Read frame header
@@ -1259,7 +1264,7 @@ public class TinyWeb {
                     handle.accept(message);
                 }
             }
-            System.out.println("No more while");
+            return ConnectionStatus.DISCONNECTED;
         }
 
         private void sendClose() throws IOException {
