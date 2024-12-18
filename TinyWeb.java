@@ -914,7 +914,7 @@ public class TinyWeb {
         private final InetAddress wsBindAddr;
         private ServerSocket server;
         private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-        private static final int SOCKET_TIMEOUT = 30000; // 30 seconds timeout
+        private static final int SOCKET_TIMEOUT = 300000; // 5 minutes timeout
         private static final SecureRandom random = new SecureRandom();
         private Map<String, SocketMessageHandler> messageHandlers = new HashMap<>();
         private DependencyManager dependencyManager;
