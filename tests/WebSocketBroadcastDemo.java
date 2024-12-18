@@ -60,7 +60,7 @@ public class WebSocketBroadcastDemo {
         ConcurrentHashMap<Integer, Integer> clientMessageCounts = new ConcurrentHashMap<>();
 
         // Launch 10 clients
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             int clientId = i;
             Thread.ofVirtual().start(() -> {
                 try {
@@ -76,7 +76,7 @@ public class WebSocketBroadcastDemo {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            }).start();
+            });
         }
 
 
