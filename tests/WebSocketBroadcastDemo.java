@@ -45,6 +45,8 @@ public class WebSocketBroadcastDemo {
         // note: single instance
         Broadcaster broadcaster = new Broadcaster();
 
+        long startTime = System.currentTimeMillis();
+
         TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
             webSocket("/keepMeUpdatedPlease", new TinyWeb.SocketMessageHandler() {
                 @Override
@@ -103,7 +105,8 @@ public class WebSocketBroadcastDemo {
                 .mapToInt(Integer::intValue)
                 .average()
                 .orElse(0.0);
-            System.out.printf("Average message count per websocket client: %.2f (Total clients: %d)%n", average, clientCount);
+            long elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
+            System.out.printf("Average message count per websocket client: %.2f (Total clients: %d, Elapsed time: %d seconds)%n", average, clientCount, elapsedTime);
         }, 0, 10, TimeUnit.SECONDS);
 
         System.out.println("WebSocket server started on ws://localhost:8081/broadcast");
