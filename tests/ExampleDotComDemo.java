@@ -114,7 +114,7 @@ public class ExampleDotComDemo {
             });
 
             // WebSocket endpoint to update the counter
-            webSocket("/ctr", (message, sender) -> {
+            webSocket("/ctr", (message, sender, context) -> {
                 String sessionId = new String(message, StandardCharsets.UTF_8);
                 sessionCounters.putIfAbsent(sessionId, new AtomicInteger(0));
                 AtomicInteger counter = sessionCounters.get(sessionId);
