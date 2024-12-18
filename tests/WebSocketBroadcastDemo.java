@@ -51,6 +51,26 @@ public class WebSocketBroadcastDemo {
             broadcaster.broadcast("Broadcast message at " + System.currentTimeMillis());
         }, 0, 1, TimeUnit.SECONDS);
 
+        // Launch 10 clients
+        for (int i = 0; i < 10; i++) {
+            int clientId = i;
+            new Thread(() -> {
+                try {
+                    TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081);
+                    client.performHandshake();
+                    client.sendMessage("/broadcasts", "Client " + clientId + " connected");
+
+                    client.receiveMessages("stop", message -> {
+                        System.out.println("Client " + clientId + " received: " + message);
+                    });
+
+                    client.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        }
+
         System.out.println("WebSocket server started on ws://localhost:8081/broadcast");
         System.out.println("Press Ctrl+C to stop the server.");
     }
