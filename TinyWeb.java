@@ -321,7 +321,9 @@ public class TinyWeb {
             this.dependencyManager = dependencyManager;
             try {
                 httpServer = makeHttpServer();
-            } catch (IOException e) {
+            } catch (IOException | ArrayIndexOutOfBoundsException e) {
+                System.err.println("Error handling client: " + e.getMessage());
+                e.printStackTrace(System.err);
                 throw new ServerException("Could not create HttpServer", e);
             }
 

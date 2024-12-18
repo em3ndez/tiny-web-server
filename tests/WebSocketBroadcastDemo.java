@@ -73,7 +73,9 @@ public class WebSocketBroadcastDemo {
 
                         client.close();
                         break; // Exit loop if connection is successful
-                    } catch (IOException e) {
+                    } catch (IOException | ArrayIndexOutOfBoundsException e) {
+                        System.err.println("Exception in client " + clientId + ": " + e.getMessage());
+                        e.printStackTrace(System.err);
                         // smarter re-connect policy needed
                         System.out.println("Reconnecting client " + clientId + " in 5 seconds...");
                         sleepMillis(5000); // Wait 5 seconds before retrying
