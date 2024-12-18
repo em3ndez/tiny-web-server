@@ -44,13 +44,6 @@ public class WebSocketBroadcastDemo {
         }};
         server.start();
 
-        // start 10 clients here
-
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(() -> {
-            broadcaster.broadcast("Broadcast message at " + System.currentTimeMillis());
-        }, 0, 1, TimeUnit.SECONDS);
-
         // Launch 10 clients
         for (int i = 0; i < 10; i++) {
             int clientId = i;
@@ -70,6 +63,12 @@ public class WebSocketBroadcastDemo {
                 }
             }).start();
         }
+
+
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.scheduleAtFixedRate(() -> {
+            broadcaster.broadcast("Broadcast message at " + System.currentTimeMillis());
+        }, 0, 1, TimeUnit.SECONDS);
 
         System.out.println("WebSocket server started on ws://localhost:8081/broadcast");
         System.out.println("Press Ctrl+C to stop the server.");
