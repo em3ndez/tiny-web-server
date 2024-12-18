@@ -3,6 +3,7 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,6 +45,9 @@ public class WebSocketBroadcastDemo {
         }};
         server.start();
 
+        // Concurrent map to store message counts for each client
+        ConcurrentHashMap<Integer, Integer> clientMessageCounts = new ConcurrentHashMap<>();
+
         // Launch 10 clients
         for (int i = 0; i < 10; i++) {
             int clientId = i;
@@ -54,7 +58,7 @@ public class WebSocketBroadcastDemo {
                     client.sendMessage("/broadcasts", "Client " + clientId + " connected");
 
                     client.receiveMessages("stop", message -> {
-                        System.out.println("Client " + clientId + " received: " + message);
+                        clientMessageCounts.merge(clientId, 1, Integer::sum);
                     });
 
                     client.close();
