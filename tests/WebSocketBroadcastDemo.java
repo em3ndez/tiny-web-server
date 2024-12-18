@@ -72,12 +72,18 @@ public class WebSocketBroadcastDemo {
                         client.performHandshake();
                         client.sendMessage("/keepMeUpdatedPlease", "Client " + clientId + " connecting");
 
-                        client.receiveMessages("stop", message -> {
+                        TinyWeb.ConnectionStatus status = client.receiveMessages("stop", message -> {
                             clientMessageCounts.merge(clientId, 1, Integer::sum);
                         });
 
                         client.close();
-                        break; // Exit loop if connection is successful
+
+                        if (status == TinyWeb.ConnectionStatus.DISCONNECTED) {
+                            System.out.println("Client " + clientId + " disconnected. Reconnecting in 5 seconds...");
+                            sleepMillis(5000); // Wait 5 seconds before retrying
+                        } else {
+                            break; // Exit loop if connection is successful
+                        }
                     } catch (IOException e) {
                         System.err.println("Exception in client " + clientId + ": " + e.getMessage());
                         e.printStackTrace(System.err);
