@@ -1165,7 +1165,7 @@ public class TinyWeb {
 
         public SocketClient(String host, int port) throws IOException {
             this.socket = new Socket(host, port);
-            this.socket.setSoTimeout(5000);
+            this.socket.setSoTimeout(300000); // 5 minutes timeout
             this.in = socket.getInputStream();
             this.out = socket.getOutputStream();
         }
