@@ -87,10 +87,11 @@ public class WebSocketBroadcastDemo {
 
         // Schedule a task to print the message counts every 10 seconds
         scheduler.scheduleAtFixedRate(() -> {
-            System.out.println("Current message counts per client:");
-            clientMessageCounts.forEach((clientId, count) -> {
-                System.out.println("Client " + clientId + ": " + count);
-            });
+            double average = clientMessageCounts.values().stream()
+                .mapToInt(Integer::intValue)
+                .average()
+                .orElse(0.0);
+            System.out.printf("Average message count per client: %.2f%n", average);
         }, 0, 10, TimeUnit.SECONDS);
 
         System.out.println("WebSocket server started on ws://localhost:8081/broadcast");
