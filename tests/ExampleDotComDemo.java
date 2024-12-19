@@ -36,10 +36,8 @@ public class ExampleDotComDemo {
 
             // Serve the static HTML/JS page
             endPoint(TinyWeb.Method.GET, "/", (req, res, ctx) -> {
-                List<String> strings = req.getHeaders().get("Session-ID");
-                if (strings == null || strings.isEmpty()) {
-                    res.setHeader("Session-ID", UUID.randomUUID().toString());
-                }
+                String sessionId = req.getHeaders().getOrDefault("Session-ID", List.of(UUID.randomUUID().toString())).get(0);
+                res.setHeader("Session-ID", sessionId);
                 res.setHeader("Content-Type", "text/html");
                 res.write("""
                     <!DOCTYPE html>
@@ -61,7 +59,11 @@ public class ExampleDotComDemo {
                             }
 
                             async function subscribeToCounter() {
-                                const sessionId = getSessionId();
+                                const sessionId = localStorage.getItem('sessionId');
+                                if (!sessionId) {
+                                    sessionId = Math.random().toString(36).substring(2);
+                                    localStorage.setItem('sessionId', sessionId);
+                                }
 
                                 await tinyWebSocketClient.waitForOpen();
                                 console.log("WebSocket readyState after open:", tinyWebSocketClient.socket.readyState);
@@ -112,7 +114,7 @@ public class ExampleDotComDemo {
             });
 
             // WebSocket endpoint to update the counter
-            webSocket("/ctr", (message, sender) -> {
+            webSocket("/ctr", (message, sender, context) -> {
                 String sessionId = new String(message, StandardCharsets.UTF_8);
                 sessionCounters.putIfAbsent(sessionId, new AtomicInteger(0));
                 AtomicInteger counter = sessionCounters.get(sessionId);

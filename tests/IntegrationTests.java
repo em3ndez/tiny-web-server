@@ -68,7 +68,7 @@ public class IntegrationTests {
                             """, 200);
                     });
 
-                    webSocket("/baz", (message, sender) -> {
+                    webSocket("/baz", (message, sender, context) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
                             sender.sendBytesFrame(toBytes(responseMessage));

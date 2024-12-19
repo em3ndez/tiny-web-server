@@ -35,7 +35,7 @@ public class ExampleApp {
                     res.write("Hello, World!");
                     // This endpoint is /foo/bar if that wasn't obvious
                 });
-                webSocket("/eee", (message, sender) -> {
+                webSocket("/eee", (message, sender, context) -> {
                     for (int i = 1; i <= 3; i++) {
                         String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
                         sender.sendBytesFrame(toBytes(responseMessage));

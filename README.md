@@ -224,7 +224,7 @@ TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
         });
 
         // Define a WebSocket endpoint
-        webSocket("/chatback", (message, sender) -> {
+        webSocket("/chatback", (message, sender, context) -> {
             String responseMessage = "Echo: " + new String(message, "UTF-8");
             sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
         });
@@ -327,13 +327,13 @@ Here's an example of defining two WebSocket endpoints with different paths using
 TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
     path("/api", () -> {
         // Define the first WebSocket endpoint
-        webSocket("/chat", (message, sender) -> {
+        webSocket("/chat", (message, sender, context) -> {
             String responseMessage = "Chat Echo: " + new String(message, "UTF-8");
             sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
         });
 
         // Define the second WebSocket endpoint
-        webSocket("/notifications", (message, sender) -> {
+        webSocket("/notifications", (message, sender, context) -> {
             String responseMessage = "Notification: " + new String(message, "UTF-8");
             sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
         });
@@ -895,6 +895,7 @@ Mostly "Batteries not included" ...
 * Not perf/load tested. Expected to perform efficiently for small to medium-sized applications, but nor 10K class application serving.
 * Doesn't have an async nature to request handling
 * No opinion on user sessions
+* Nothing built-in for event sourcing
 * No examples of participating in idle or socket timeouts. There's a hint in the source, but it lacks sophistication.
 * Utilizes some regex wrapping of Java's built-in webserver tech - either could have vulns versus Netty, etc.
 * No Java Platform Module System (JPMS) participation
