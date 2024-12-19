@@ -1159,11 +1159,6 @@ public class TinyWeb {
         }
     }
 
-    public enum ConnectionStatus {
-        CONNECTED,
-        DISCONNECTED
-    }
-
     public static class SocketClient implements AutoCloseable {
         private final Socket socket;
         private Consumer<String> onMessageHandler;
@@ -1227,9 +1222,9 @@ public class TinyWeb {
             out.flush();
         }
 
-        public ConnectionStatus receiveMessages(String stopPhrase, Consumer<String> handle) throws IOException {
-            boolean stop = false;
-            while (!stop) {
+        //  returns true if stop required, otherwise clients should reconnect
+        public boolean receiveMessages(String stopPhrase, Consumer<String> handle) throws IOException {
+            while (true) {
                 // Read frame header
                 int byte1 = in.read();
                 if (byte1 == -1) break;
@@ -1259,12 +1254,12 @@ public class TinyWeb {
 
                 String message = new String(payload, 0, bytesRead, "UTF-8");
                 if (message.equals(stopPhrase)) {
-                    stop = true;
+                    return true;
                 } else {
                     handle.accept(message);
                 }
             }
-            return ConnectionStatus.DISCONNECTED;
+            return false;
         }
 
         private void sendClose() throws IOException {

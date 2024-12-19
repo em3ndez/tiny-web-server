@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.paulhammant.tnywb.TinyWeb.Method.POST;
 
@@ -27,9 +28,7 @@ public class WebSocketBroadcastDemo {
                     try {
                         handler.sendBytesFrame(newVal.getBytes());
                     } catch (TinyWeb.ServerException e) {
-                        System.out.printf("SE: " + e.getMessage() + " " + e.getClass().getName());
                         if (e.getCause() instanceof SocketException && e.getCause().getMessage().equals("Socket closed")) {
-                            System.out.println("closed " + handler);
                             closed.add(handler);
                         } else {
                             throw new RuntimeException(e);
@@ -47,6 +46,9 @@ public class WebSocketBroadcastDemo {
 
         long startTime = System.currentTimeMillis();
 
+        AtomicInteger restartedClients = new AtomicInteger(0);
+        AtomicInteger unexpectedCientExceptions = new AtomicInteger(0);
+
         TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
             webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
                 broadcaster.add(sender);
@@ -63,7 +65,7 @@ public class WebSocketBroadcastDemo {
         ConcurrentHashMap<Integer, Integer> clientMessageCounts = new ConcurrentHashMap<>();
 
         // Launch 10 clients
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 20000; i++) {
             int clientId = i;
             Thread.ofVirtual().start(() -> {
                 while (true) {
@@ -72,25 +74,19 @@ public class WebSocketBroadcastDemo {
                         client.performHandshake();
                         client.sendMessage("/keepMeUpdatedPlease", "Client " + clientId + " connecting");
 
-                        TinyWeb.ConnectionStatus status = client.receiveMessages("stop", message -> {
+                        boolean shouldStop = client.receiveMessages("stop", message -> {
                             clientMessageCounts.merge(clientId, 1, Integer::sum);
                         });
 
                         client.close();
 
-                        if (status == TinyWeb.ConnectionStatus.DISCONNECTED) {
-                            System.out.println("Client " + clientId + " disconnected. Reconnecting in 5 seconds...");
-                            sleepMillis(5000); // Wait 5 seconds before retrying
-                        } else {
-                            break; // Exit loop if connection is successful
+                        if (shouldStop) {
+                            break; // Exit
                         }
                     } catch (IOException e) {
-                        System.err.println("Exception in client " + clientId + ": " + e.getMessage());
-                        e.printStackTrace(System.err);
-                        // smarter re-connect policy needed
-                        System.out.println("Reconnecting client " + clientId + " in 5 seconds...");
-                        sleepMillis(5000); // Wait 5 seconds before retrying
+                        unexpectedCientExceptions.incrementAndGet();
                     }
+                    restartedClients.incrementAndGet();
                 }
             });
         }
@@ -109,7 +105,7 @@ public class WebSocketBroadcastDemo {
                 .average()
                 .orElse(0.0);
             long elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
-            System.out.printf("Average message count per websocket client: %.2f (Total clients: %d, Elapsed time: %d seconds)%n", average, clientCount, elapsedTime);
+            System.out.printf("Elapsed time %d secs: ave message count per ws client: %.2f (Clients: %d initial, %d reconnects, %d excpts)%n", elapsedTime, average, clientCount, restartedClients.get(), unexpectedCientExceptions.get());
         }, 0, 10, TimeUnit.SECONDS);
 
         System.out.println("WebSocket server started on ws://localhost:8081/broadcast");
