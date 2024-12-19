@@ -938,6 +938,7 @@ public class TinyWeb {
 
     public static class SocketServer {
 
+        public static final Pattern ORIGIN_MATCH = Pattern.compile("Origin: (.*)");
         private final Config config;
         private ServerSocket server;
         private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
@@ -987,10 +988,11 @@ public class TinyWeb {
         }
 
         private void handleClient(Socket client) {
+            Scanner s = null;
             try {
                 InputStream in = client.getInputStream();
                 OutputStream out = client.getOutputStream();
-                Scanner s = new Scanner(in, "UTF-8");
+                s = new Scanner(in, "UTF-8");
 
                 String data = s.useDelimiter("\\r\\n\\r\\n").next();
                 Matcher get = Pattern.compile("^GET").matcher(data);
@@ -1003,7 +1005,7 @@ public class TinyWeb {
                     }
 
                     // Capture the Origin header
-                    Matcher originMatch = Pattern.compile("Origin: (.*)").matcher(data);
+                    Matcher originMatch = ORIGIN_MATCH.matcher(data);
                     String origin = originMatch.find() ? originMatch.group(1) : "Unknown";
 
                     // Handle handshake
@@ -1013,16 +1015,19 @@ public class TinyWeb {
                     // Handle WebSocket communication
                     handleWebSocketCommunication(client, in, out, origin);
                 }
-            } finally {
-                s.close();
-                client.close();
-            }
             } catch (SocketTimeoutException e) {
                 // TODO handle read timed out
             } catch (IOException e) {
                 System.err.println("Error handling client: " + e.getMessage());
                 e.printStackTrace();
+            } finally {
+                s.close();
+                try {
+                    client.close();
+                } catch (IOException e) {
+                }
             }
+
         }
 
         private String generateAcceptKey(String webSocketKey) throws UnsupportedEncodingException {
@@ -1047,6 +1052,7 @@ public class TinyWeb {
         }
 
         private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out, String origin) throws IOException {
+            System.out.println("origin= " + origin);
             TinyWeb.MessageSender sender = new TinyWeb.MessageSender(out);
             byte[] buffer = new byte[8192];
 
