@@ -1203,7 +1203,8 @@ public class TinyWeb {
                             "Upgrade: websocket\r\n" +
                             "Connection: Upgrade\r\n" +
                             "Sec-WebSocket-Key: " + key + "\r\n" +
-                            "Sec-WebSocket-Version: 13\r\n\r\n";
+                            "Sec-WebSocket-Version: 13\r\n" +
+                            "Origin: http://localhost\r\n\r\n";
 
             out.write(handshakeRequest.getBytes("UTF-8"));
             out.flush();
