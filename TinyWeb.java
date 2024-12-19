@@ -992,28 +992,31 @@ public class TinyWeb {
                 OutputStream out = client.getOutputStream();
                 Scanner s = new Scanner(in, "UTF-8");
 
-                try {
-                    String data = s.useDelimiter("\\r\\n\\r\\n").next();
-                    Matcher get = Pattern.compile("^GET").matcher(data);
+                String data = s.useDelimiter("\\r\\n\\r\\n").next();
+                Matcher get = Pattern.compile("^GET").matcher(data);
 
-                    if (get.find()) {
-                        Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
-                        if (!match.find()) {
-                            client.close();
-                            return;
-                        }
-
-                        // Handle handshake
-                        String acceptKey = generateAcceptKey(match.group(1));
-                        sendHandshakeResponse(out, acceptKey);
-
-                        // Handle WebSocket communication
-                        handleWebSocketCommunication(client, in, out);
+                if (get.find()) {
+                    Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
+                    if (!match.find()) {
+                        client.close();
+                        return;
                     }
-                } finally {
-                    s.close();
-                    client.close();
+
+                    // Capture the Origin header
+                    Matcher originMatch = Pattern.compile("Origin: (.*)").matcher(data);
+                    String origin = originMatch.find() ? originMatch.group(1) : "Unknown";
+
+                    // Handle handshake
+                    String acceptKey = generateAcceptKey(match.group(1));
+                    sendHandshakeResponse(out, acceptKey);
+
+                    // Handle WebSocket communication
+                    handleWebSocketCommunication(client, in, out, origin);
                 }
+            } finally {
+                s.close();
+                client.close();
+            }
             } catch (SocketTimeoutException e) {
                 // TODO handle read timed out
             } catch (IOException e) {
@@ -1043,7 +1046,7 @@ public class TinyWeb {
             out.flush();
         }
 
-        private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out) throws IOException {
+        private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out, String origin) throws IOException {
             TinyWeb.MessageSender sender = new TinyWeb.MessageSender(out);
             byte[] buffer = new byte[8192];
 
