@@ -2,11 +2,6 @@ package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
-import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.function.Consumer;
 
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
@@ -24,7 +19,7 @@ public class WebSocketTests {
         describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
             before(() -> {
-                webSocketServer = new TinyWeb.SocketServer(8081) {{
+                webSocketServer = new TinyWeb.SocketServer(TinyWeb.Config.create().withWebSocketPort(8081)) {{
                     registerMessageHandler("/foo/baz", (message, sender, context) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
@@ -73,7 +68,7 @@ public class WebSocketTests {
         describe("When using TinyWeb.SocketServer with TinyWeb.Server and a contrived webSocket endpoint", () -> {
 
             before(() -> {
-                webServer = new TinyWeb.Server(8080, 8081) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     path("/foo", () -> {
                         endPoint(TinyWeb.Method.GET, "/bar", (req, res, ctx) -> {
                             res.write("OK");
@@ -145,7 +140,7 @@ public class WebSocketTests {
         describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
             before(() -> {
-                webSocketServer = new TinyWeb.SocketServer(8081) {{
+                webSocketServer = new TinyWeb.SocketServer(TinyWeb.Config.create().withWebSocketPort(8081)) {{
                     registerMessageHandler("/foo/baz", (message, sender, context) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;

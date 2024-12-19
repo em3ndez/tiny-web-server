@@ -110,7 +110,7 @@ java commands), then there was a shell script, then there was a makefile, which 
 Here is a basic example of defining a GET endpoint using TinyWeb:
 
 ```java 
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
     endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
         // req gives access to headers, etc
         res.write("Hello, World!");
@@ -125,7 +125,7 @@ In this example, a GET endpoint is defined at the path `/hello`. When a request 
 Here's an example of using a filter with an endpoint in TinyWeb:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
 
     // Apply a filter to check for a custom header
     filter(TinyWeb.Method.GET, "/secure", (req, res, context) -> {
@@ -153,7 +153,7 @@ proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
 Here's an example of defining two endpoints within a single path using TinyWeb:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
     path("/api", () -> {
         // Define the first GET endpoint
         endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
@@ -174,7 +174,7 @@ Here's an example of using a filter to perform authentication and a logged-in us
 or not at all of there's no logged in user.
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(-1)) {{
     path("/shopping", () -> {
         filter(TinyWeb.Method.GET, ".*", (req, res, context) -> {
             String allegedlyLoggedInCookie = req.getCookie("logged-in");
@@ -216,7 +216,7 @@ via an attribute if all is good.
 Here's an example of defining both a WebSocket and an HTTP endpoint within a single path using TinyWeb:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/messenger", () -> {
         // Define a GET endpoint
         endPoint(TinyWeb.Method.GET, "/inboxStatus", (req, res, context) -> {
@@ -324,7 +324,7 @@ This is to honor the server-side need for path & message to be in a specific opi
 Here's an example of defining two WebSocket endpoints with different paths using TinyWeb:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/api", () -> {
         // Define the first WebSocket endpoint
         webSocket("/chat", (message, sender, context) -> {
@@ -359,7 +359,7 @@ TinyWeb can serve static files from a specified directory. This is useful for se
 We've covered paths, filters, endPoints, webSockets, and static file serving the low-level building blocks of TinyWeb applications.
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/ads", () -> {
       path("/selling", () -> {
           //TODO
@@ -415,7 +415,7 @@ public static class MyApp {
         }
 
         public static TinyWeb.Server composeApplication(String[] args, MyApp app) {
-            TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+            TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                 endPoint(GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
             }};
             return server;
@@ -472,7 +472,7 @@ logging or error handling strategies.
 Example:
 
 ```java
-svr = new TinyWeb.Server(8080, -1) {
+svr = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {
     {
       // paths, filters, endPoints setup as described before
     }
@@ -496,7 +496,7 @@ to, but they may do so, or a library they call does so. By default, this method 
 Example:
 
 ```java
-svr = new TinyWeb.Server(8080, -1) {
+svr = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {
     {
         // paths, filters, endPoints setup as described before
     }
@@ -523,7 +523,7 @@ dependencies in the `(req, resp, context)` functional interfaces, nor do those h
 For it to be true Dependency Injection capable - for say injecting a `ShoppingCart` into a endpoint or filter - you would something like:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
     endPoint(GET, "/users", /*ShoppingCart*/ cart, (req, res, context) -> {
         // do something with "cart" var
         res.write("some response");
@@ -656,7 +656,7 @@ public class MyDatabaseApp {
         final jdbi = Jdbi.create("jdbc:h2:mem:test");
         // .. `jdbi` would be in scope for all below
 
-        server = new TinyWeb.Server(8080, -1) {{
+        server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
             endPoint(GET, "/users", (req, res, context) -> {
                 List<String> users = jdbi.inTransaction(handle ->
                     handle.createQuery("SELECT name FROM users")
@@ -691,7 +691,7 @@ means that such code is not executed per request or per path hit, but rather whe
 Here's an example of what not to do:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(8080, -1) {{
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
     path("/api", () -> {
         code().that().youThink("is per '/api/.*' invocation").but("it is not");
         // This code runs per request to /api

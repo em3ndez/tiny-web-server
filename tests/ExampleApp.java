@@ -21,7 +21,7 @@ public class ExampleApp {
     }
 
     public static TinyWeb.Server exampleComposition(String[] args, ExampleApp app) {
-        TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+        TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
 
             path("/foo", () -> {
                 filter(GET, "/.*", (req, res, ctx) -> {

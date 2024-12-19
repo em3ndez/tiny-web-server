@@ -38,7 +38,7 @@ public class ChunkedTests {
         describe("Given a TinyWeb server with a chunked response endpoint", () -> {
             BigDecimal[] totalSum = { BigDecimal.ZERO };
             before(() -> {
-                webServer = new TinyWeb.Server(8080, -1) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     endPoint(TinyWeb.Method.GET, "/chunked", (req, res, ctx) -> {
                         Random random = new Random();
                         OutputStream out = res.getResponseBody();

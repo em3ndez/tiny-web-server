@@ -19,7 +19,7 @@ public class WithMockitoTests {
             describe("When accessing the Greeting GET endpoint", () -> {
                 before(() -> {
                     exampleApp = Mockito.mock(ExampleApp.class);
-                    webServer = new TinyWeb.Server(8080, 8081) {{
+                    webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                         endPoint(TinyWeb.Method.GET, "/greeting/(\\w+)/(\\w+)", exampleApp::foobar);
                     }};
                     webServer.start();

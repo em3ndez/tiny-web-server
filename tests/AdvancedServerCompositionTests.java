@@ -18,7 +18,7 @@ public class AdvancedServerCompositionTests {
     {
         describe("When additional composition can happen on a previously instantiated TinyWeb.Server", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(8080, 8081) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     endPoint(GET, "/foo", (req, res, ctx) -> {
                         res.write("Hello1");
                     });
@@ -57,11 +57,11 @@ public class AdvancedServerCompositionTests {
         });
         describe("Given a TinyWeb server with ConcreteExtensionToServerComposition", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(8080, -1) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
                     path("/a", () -> {
                         path("/b", () -> {
                             path("/c", () -> {
-                                new ConcreteExtensionToServerComposition(this);
+                                new tests.ConcreteExtensionToServerComposition(this);
                             });
                         });
                     });
@@ -84,7 +84,7 @@ public class AdvancedServerCompositionTests {
         });
         describe("Given a started TinyWeb server", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(8080, -1) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
 
                 }};
                 webServer.start();

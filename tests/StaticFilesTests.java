@@ -35,7 +35,7 @@ public class StaticFilesTests {
     {
         describe("When serving static files", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(8080, 8081) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     serveStaticFilesAsync("/static", new File(".").getAbsolutePath());
                 }};
                 webServer.start();

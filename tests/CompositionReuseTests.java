@@ -17,7 +17,7 @@ public class CompositionReuseTests {
     {
         describe("Given a TinyWeb server with a reusable composition", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(8080, -1) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     Runnable composition = () -> {
                         endPoint(GET, "/endpoint", (req, res, ctx) -> {
                             res.write("Hello from composed endpoint");

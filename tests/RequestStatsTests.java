@@ -40,7 +40,7 @@ public class RequestStatsTests {
     {
         describe("Given a TinyWeb server with filters and an endpoint", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(8080, -1) {
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {
                     @Override
                     protected void recordStatistics(String path, Map<String, Object> stats) {
                         String string = stats.toString()

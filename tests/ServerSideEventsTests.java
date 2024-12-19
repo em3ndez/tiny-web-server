@@ -38,7 +38,7 @@ public class ServerSideEventsTests {
     {
         describe("Given a TinyWeb server with an SSE endpoint", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(8080, -1) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/sse", () -> {
                         endPoint(TinyWeb.Method.GET, "/events", (req, res, ctx) -> {
                             res.setHeader("Content-Type", "text/event-stream");

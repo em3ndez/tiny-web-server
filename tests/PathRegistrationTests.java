@@ -21,7 +21,7 @@ public class PathRegistrationTests {
         describe("Given a TinyWeb server with a path registered", () -> {
 
             before(() -> {
-                server = new TinyWeb.Server(8080, -1) {{
+                server = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/duplicate", () -> {
                         endPoint(GET, "/endpoint", (req, res, ctx) -> {
                             res.write("First registration");
@@ -50,7 +50,7 @@ public class PathRegistrationTests {
         describe("Given a TinyWeb server with a path registered", () -> {
 
             before(() -> {
-                server = new TinyWeb.Server(8080, -1) {{
+                server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
                     path("/dupli", () -> {
                         path("/cate", () -> {
                             endPoint(GET, "/endpoint", (req, res, ctx) -> {

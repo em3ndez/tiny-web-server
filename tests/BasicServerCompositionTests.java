@@ -18,7 +18,7 @@ public class BasicServerCompositionTests {
     {
         describe("Given a TinyWeb server with composed paths", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(8080, -1) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/composed", () -> {
                         path("/nested", () -> {
                             endPoint(GET, "/endpoint", (req, res, ctx) -> {

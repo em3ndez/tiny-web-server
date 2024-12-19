@@ -4,7 +4,6 @@ import com.paulhammant.tnywb.TinyWeb;
 
 import java.io.IOException;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -49,7 +48,8 @@ public class WebSocketBroadcastDemo {
         AtomicInteger restartedClients = new AtomicInteger(0);
         AtomicInteger unexpectedClientExceptions = new AtomicInteger(0);
 
-        TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
+        TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+
             webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
                 broadcaster.add(sender);
             });

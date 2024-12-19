@@ -26,7 +26,7 @@ public class IntegrationTests {
         describe("When using Selenium to subscribe in a browser", () -> {
 
             before(() -> {
-                webServer = new TinyWeb.Server(8080, 8081) {{
+                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.JavascriptSocketClient());
 
                     endPoint(TinyWeb.Method.GET, "/", (req, res, ctx) -> {

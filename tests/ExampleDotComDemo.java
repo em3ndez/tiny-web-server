@@ -1,11 +1,7 @@
 package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
-import com.paulhammant.tnywb.TinyWeb.Request;
-import com.paulhammant.tnywb.TinyWeb.Response;
-import com.paulhammant.tnywb.TinyWeb.RequestContext;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -19,7 +15,7 @@ public class ExampleDotComDemo {
     private static final Map<String, AtomicInteger> sessionCounters = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
-        TinyWeb.Server server = new TinyWeb.Server(new InetSocketAddress("example.com", 8080), 8081)
+        TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withInetSocketAddress(new InetSocketAddress("example.com", 8080)).withWebSocketPort(8081))
 
         {
 
