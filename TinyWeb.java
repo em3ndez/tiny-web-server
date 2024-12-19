@@ -100,9 +100,9 @@ public class TinyWeb {
 
     public static abstract class AbstractServerContext implements ServerContext {
 
-        Map<Method, Map<Pattern, EndPoint>> endPoints = new HashMap<>();
-        Map<Pattern, SocketMessageHandler> wsEndPoints = new HashMap<>();
-        Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
+        protected Map<Method, Map<Pattern, EndPoint>> endPoints = new HashMap<>();
+        protected Map<Pattern, SocketMessageHandler> wsEndPoints = new HashMap<>();
+        protected Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
         protected final ServerState serverState;
 
         public AbstractServerContext(ServerState serverState) {
@@ -485,7 +485,7 @@ public class TinyWeb {
                 sendErrorResponse(exchange, 500, "Internal server error: " + e.getMessage());
                 return FilterResult.STOP;
             }
-        }
+         }
 
         protected HttpServer makeHttpServer() throws IOException {
 

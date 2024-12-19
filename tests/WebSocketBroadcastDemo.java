@@ -47,7 +47,7 @@ public class WebSocketBroadcastDemo {
         long startTime = System.currentTimeMillis();
 
         AtomicInteger restartedClients = new AtomicInteger(0);
-        AtomicInteger unexpectedCientExceptions = new AtomicInteger(0);
+        AtomicInteger unexpectedClientExceptions = new AtomicInteger(0);
 
         TinyWeb.Server server = new TinyWeb.Server(8080, 8081) {{
             webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
@@ -84,7 +84,7 @@ public class WebSocketBroadcastDemo {
                             break; // Exit
                         }
                     } catch (IOException e) {
-                        unexpectedCientExceptions.incrementAndGet();
+                        unexpectedClientExceptions.incrementAndGet();
                     }
                     restartedClients.incrementAndGet();
                 }
@@ -105,7 +105,7 @@ public class WebSocketBroadcastDemo {
                 .average()
                 .orElse(0.0);
             long elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
-            System.out.printf("Elapsed time %d secs: ave message count per ws client: %.2f (Clients: %d initial, %d reconnects, %d excpts)%n", elapsedTime, average, clientCount, restartedClients.get(), unexpectedCientExceptions.get());
+            System.out.printf("Elapsed time %d secs: ave message count per ws client: %.2f (Clients: %d initial, %d reconnects, %d excpts)%n", elapsedTime, average, clientCount, restartedClients.get(), unexpectedClientExceptions.get());
         }, 0, 10, TimeUnit.SECONDS);
 
         System.out.println("WebSocket server started on ws://localhost:8081/broadcast");
