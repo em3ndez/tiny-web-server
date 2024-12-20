@@ -1233,7 +1233,6 @@ public class TinyWeb {
             byte[] responseBuffer = new byte[1024];
             int responseBytes = in.read(responseBuffer);
             String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
-            System.out.println(response);
             if (!response.equals("HTTP/1.1 101 Switching Protocols\r\n" +
                     "Connection: Upgrade\r\n" +
                     "Upgrade: websocket\r\n" +
