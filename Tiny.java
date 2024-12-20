@@ -119,16 +119,6 @@ public class Tiny {
         private boolean hasStarted;
         public boolean hasStarted() {
             return hasStarted;
-            this.connectionTimeoutMs = connectionTimeoutMs;
-            this.serverOperationTimeoutMs = serverOperationTimeoutMs;
-        }
-
-        public int getConnectionTimeoutMs() {
-            return connectionTimeoutMs;
-        }
-
-        public int getServerOperationTimeoutMs() {
-            return serverOperationTimeoutMs;
         }
 
         public void start() {
@@ -360,6 +350,8 @@ public class Tiny {
             this.wsBacklog = wsBacklog;
             this.wsBindAddr = wsBindAddr;
             this.socketTimeoutMs = socketTimeoutMs;
+            this.connectionTimeoutMs = connectionTimeoutMs;
+            this.serverOperationTimeoutMs = serverOperationTimeoutMs;
         }
 
         public static Config create() {
@@ -996,7 +988,7 @@ public class Tiny {
                 while (!server.isClosed()) {
                     try {
                         Socket client = server.accept();
-                        client.setSoTimeout(config.getConnectionTimeoutMs());
+                        client.setSoTimeout(config.connectionTimeoutMs);
                         client.setKeepAlive(true);
                         clientConnected(client);
 
