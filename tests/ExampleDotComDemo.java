@@ -20,7 +20,7 @@ public class ExampleDotComDemo {
         {
 
             @Override
-            protected void serverException(com.paulhammant.tiny.Tiny.ServerException e) {
+            protected void serverException(Tiny.ServerException e) {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
                 System.exit(1);

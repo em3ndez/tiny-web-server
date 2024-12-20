@@ -12,9 +12,9 @@ import static com.paulhammant.tiny.Tiny.HttpMethods.POST;
 
 public class WebSocketBroadcastDemo {
 
-    public static class Broadcaster extends ConcurrentLinkedQueue<com.paulhammant.tiny.Tiny.MessageSender> {
+    public static class Broadcaster extends ConcurrentLinkedQueue<Tiny.MessageSender> {
 
-        ConcurrentLinkedQueue<com.paulhammant.tiny.Tiny.MessageSender> closed;
+        ConcurrentLinkedQueue<Tiny.MessageSender> closed;
 
         public void broadcast(String newVal) {
             if (closed != null) {
@@ -26,7 +26,7 @@ public class WebSocketBroadcastDemo {
                 executor.execute(() -> {
                     try {
                         handler.sendBytesFrame(newVal.getBytes());
-                    } catch (com.paulhammant.tiny.Tiny.ServerException e) {
+                    } catch (Tiny.ServerException e) {
                         if (e.getCause() instanceof SocketException && e.getCause().getMessage().equals("Socket closed")) {
                             closed.add(handler);
                         } else {
@@ -48,7 +48,7 @@ public class WebSocketBroadcastDemo {
         AtomicInteger restartedClients = new AtomicInteger(0);
         AtomicInteger unexpectedClientExceptions = new AtomicInteger(0);
 
-        com.paulhammant.tiny.Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
 
             webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
                 broadcaster.add(sender);

@@ -18,9 +18,9 @@ package tests;
 
 import com.paulhammant.tiny.Tiny;
 
-public class ConcreteExtensionToServerComposition extends com.paulhammant.tiny.Tiny.ServerComposition {
+public class ConcreteExtensionToServerComposition extends Tiny.ServerComposition {
 
-    public ConcreteExtensionToServerComposition(com.paulhammant.tiny.Tiny.WebServer server) {
+    public ConcreteExtensionToServerComposition(Tiny.WebServer server) {
         super(server);
         path("/bar", () -> {
             endPoint(Tiny.HttpMethods.GET, "/baz", (req, res, ctx) -> {

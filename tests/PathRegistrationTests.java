@@ -12,7 +12,7 @@ import static tests.Suite.httpGet;
 @Test
 public class PathRegistrationTests {
 
-    private com.paulhammant.tiny.Tiny.WebServer server;
+    private Tiny.WebServer server;
 
     {
         describe("Given a Tiny web server with a path registered", () -> {

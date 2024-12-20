@@ -24,9 +24,9 @@ public class WithMockitoTests {
                     }};
                     webServer.start();
                     Mockito.doAnswer(invocation -> {
-                        invocation.<com.paulhammant.tiny.Tiny.Response>getArgument(1).write("invoked");
+                        invocation.<Tiny.Response>getArgument(1).write("invoked");
                         return null;
-                    }).when(exampleApp).foobar(Mockito.any(com.paulhammant.tiny.Tiny.Request.class), Mockito.any(com.paulhammant.tiny.Tiny.Response.class), Mockito.<com.paulhammant.tiny.Tiny.RequestContext>any());
+                    }).when(exampleApp).foobar(Mockito.any(Tiny.Request.class), Mockito.any(Tiny.Response.class), Mockito.<Tiny.RequestContext>any());
                 });
 
                 it("Then it should invoke the ExampleApp foobar method", () -> {
@@ -36,9 +36,9 @@ public class WithMockitoTests {
 
                 after(() -> {
                     webServer.stop();
-                    Mockito.verify(exampleApp).foobar(Mockito.any(com.paulhammant.tiny.Tiny.Request.class),
-                            Mockito.any(com.paulhammant.tiny.Tiny.Response.class),
-                            Mockito.<com.paulhammant.tiny.Tiny.RequestContext>any());
+                    Mockito.verify(exampleApp).foobar(Mockito.any(Tiny.Request.class),
+                            Mockito.any(Tiny.Response.class),
+                            Mockito.<Tiny.RequestContext>any());
                     webServer = null;
                 });
             });

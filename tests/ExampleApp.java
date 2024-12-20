@@ -16,12 +16,12 @@ import static tests.Suite.toBytes;
 
 public class ExampleApp {
 
-    public void foobar(Request req, Response res, com.paulhammant.tiny.Tiny.RequestContext ctx) {
+    public void foobar(Request req, Response res, Tiny.RequestContext ctx) {
         res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
     }
 
-    public static com.paulhammant.tiny.Tiny.WebServer exampleComposition(String[] args, ExampleApp app) {
-        com.paulhammant.tiny.Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+    public static Tiny.WebServer exampleComposition(String[] args, ExampleApp app) {
+        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
 
             path("/foo", () -> {
                 filter(GET, "/.*", (req, res, ctx) -> {

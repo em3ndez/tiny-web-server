@@ -38,7 +38,7 @@ public class DependenciesTests {
     {
         describe("When endpoint and filters can depend on components", () -> {
             before(() -> {
-                final com.paulhammant.tiny.Tiny.ComponentCache cache = new Tiny.UseOnceComponentCache(new Tiny.DefaultComponentCache() {{
+                final Tiny.ComponentCache cache = new Tiny.UseOnceComponentCache(new Tiny.DefaultComponentCache() {{
                     put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
                 }});
                 webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081), new Tiny.DependencyManager(cache){
@@ -46,8 +46,8 @@ public class DependenciesTests {
                     // Note: this is not Dependency Injection
 
                     @Override
-                    public <T> T  instantiateDep(Class<T> clazz, com.paulhammant.tiny.Tiny.ComponentCache requestCache, Matcher matcher) {
-                        // all your request scoped deps here in a if/else sequence
+                    public <T> T  instantiateDep(Class<T> clazz, Tiny.ComponentCache requestCache, Matcher matcher) {
+                        // all your request scoped deps here in an if/else sequence
                         if (clazz == ShoppingCart.class) {
                             return (T) createOrGetShoppingCart(requestCache);
                         }
@@ -100,7 +100,7 @@ public class DependenciesTests {
                             try {
                                 pi = ctx.dep(ProductInventory.class);
                                 res.write("blah blah never gets here: " + pi.stockItems.size());
-                            } catch (com.paulhammant.tiny.Tiny.DependencyException e) {
+                            } catch (Tiny.DependencyException e) {
                                 // You don't have to try/catch DependencyException as an end-user
                                 // you'll discover such things during development, not at deploy-to-production time
                                 dependencyException = true;
@@ -192,13 +192,13 @@ public class DependenciesTests {
     }
 
 
-    public static ShoppingCart createOrGetShoppingCart(com.paulhammant.tiny.Tiny.ComponentCache cache) {
+    public static ShoppingCart createOrGetShoppingCart(Tiny.ComponentCache cache) {
         return cache.getOrCreate(ShoppingCart.class, () ->
                 new ShoppingCart(getOrCreateProductInventory(cache))
         );
     }
 
-    public static ProductInventory getOrCreateProductInventory(com.paulhammant.tiny.Tiny.ComponentCache cache) {
+    public static ProductInventory getOrCreateProductInventory(Tiny.ComponentCache cache) {
         return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
     }
     
