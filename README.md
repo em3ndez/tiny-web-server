@@ -352,7 +352,32 @@ four concurrently connected channels.
 
 TinyWeb can serve static files from a specified directory. This is useful for serving assets like images, CSS, and JavaScript files directly from the server.
 
-//TODO more details of that.
+### How to Serve Static Files
+
+To serve static files, use the `serveStaticFilesAsync` method in your server configuration. This method takes two parameters: the base path for the static files and the directory from which to serve them.
+
+Example:
+```java
+TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+    serveStaticFilesAsync("/static", "/path/to/static/files");
+}}.start();
+```
+
+In this example, any request to `/static` will be mapped to the files located in `/path/to/static/files`. For instance, a request to `/static/image.png` will serve the `image.png` file from the specified directory.
+
+### Best Practices
+
+1. **Directory Structure**: Organize your static files in a clear directory structure. For example, separate images, stylesheets, and scripts into different folders.
+
+2. **Caching**: Consider setting cache headers for static files to improve performance. This can be done by modifying the response headers in the `serveStaticFilesAsync` method.
+
+3. **Security**: Ensure that your static file serving does not expose sensitive files. Use appropriate file permissions and validate file paths to prevent directory traversal attacks.
+
+4. **Content Types**: Ensure that the correct content type is set for each file type. This can be handled automatically by the server, but it's good to verify.
+
+5. **Performance**: For high-traffic applications, consider using a Content Delivery Network (CDN) to offload the serving of static files.
+
+By following these guidelines, you can efficiently serve static files while maintaining security and performance.
 
 ## Composition
 
