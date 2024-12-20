@@ -295,6 +295,7 @@ public class TinyWeb {
         private final int wsPort;
         private final int wsBacklog;
         private final InetAddress wsBindAddr;
+        public int socketTimeoutMs = 30000; // 5 mins
 
         private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr) {
             this.inetSocketAddress = inetSocketAddress;
@@ -938,7 +939,6 @@ public class TinyWeb {
         private final Config config;
         private ServerSocket server;
         private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-        private static final int SOCKET_TIMEOUT = 30000; // 5 minutes timeout
         private static final SecureRandom random = new SecureRandom();
         private Map<String, SocketMessageHandler> messageHandlers = new HashMap<>();
         private final DependencyManager dependencyManager;
@@ -962,7 +962,7 @@ public class TinyWeb {
                 while (!server.isClosed()) {
                     try {
                         Socket client = server.accept();
-                        client.setSoTimeout(SOCKET_TIMEOUT);
+                        client.setSoTimeout(config.socketTimeoutMs);
                         client.setKeepAlive(true);
                         clientConnected(client);
 
