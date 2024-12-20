@@ -65,7 +65,9 @@ public class Suite {
                 ServerSideEventsTests.class,
                 WebServerTests.class,
                 WebSocketTests.class,
-                WithMockitoTests.class
+                WithMockitoTests.class,
+                ChunkedTests.class,
+                StaticFilesTests.class
         )), new DefaultReporter());
     }
 }
