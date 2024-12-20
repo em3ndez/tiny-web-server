@@ -1,7 +1,7 @@
 # TinyWeb 
 
 A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `Tiny.java`. 
-Just a fun pair-programmed project, really. Use for small web/medium applications - perhaps not on the public web.
+Just a fun pair-programmed project, really. Imperfectly pair programmed with AIs. It is for use for to make small web/medium applications - perhaps not on the public web.
 
 ## License
 
@@ -31,7 +31,7 @@ There are paths too, to which filters and endpoints can be attached, but don't t
 A coupled `Tiny.WebSocketServer` class provides WebSocket support, enabling communication back from the server to 
 attached clients.  It can be used alone, but also integrated into the same path structure of the main server.
 Admittedly that's a trick as the path and the length of the path are tge leftmost part of the message up
-to the SocketServer.
+to the SocketServer. 
 
 ## Rationale
 
@@ -347,6 +347,10 @@ WebSocket endpoint at `/api/notifications` echoes back messages prefixed with "N
 big map of paths and websockets open to clients, and if this were a single web-app for one person, it'd be two
 websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
 four concurrently connected channels.
+
+### WebSockets performance
+
+//tODO talk about WebSocketBroadcastDemo here - 20K concurrently connected pub/sun style clients tested.
 
 ## Static File Serving
 
@@ -879,7 +883,7 @@ An AI could copy tests into markdown documentation quickly, and repeatably, I gu
 
 The project is organized as follows:
 
-- **`Tiny.java`**: The main source file containing the implementation of the Tiny Webserver and related classes. No deps outside the JDK.
+- **`Tiny.java`**: The main source file containing the implementation of the Tiny Webserver and related classes. This "production code" has no dependencies outside the JDK.
 - **`tests/`**: Contains tests for the Tiny web server using the Cuppa framework. Package is different to the Tiny production class in order to not accidentally take advantage of public/package/private visibility mistakes which can't neatly be tested for otherwise.
 - **`README.md`**: This file, providing an overview and documentation of the project.
 - **`test_libs/`**: Directory containing dependencies required for running tests - built by curl scripts in this README
@@ -917,7 +921,7 @@ Mostly "Batteries not included" ...
 * No easy/automatic OpenAPI or Swagger
 * No built-in HTTPS / WSS support, let alone LetsEncrypt cert fu
 * No ram caching for things that don't change with lots of GET traffic
-* Not perf/load tested. Expected to perform efficiently for small to medium-sized applications, but nor 10K class application serving.
+* No extensively performance or load tested. Expected to perform efficiently for small to medium-sized applications, but nor 10K class application serving.
 * Doesn't have an async nature to request handling
 * No opinion on user sessions
 * Nothing built-in for event sourcing
