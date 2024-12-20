@@ -1192,7 +1192,7 @@ public class Tiny {
         }
     }
 
-    public static class SocketClient implements AutoCloseable {
+    public static class WebSocketClient implements AutoCloseable {
         private final Socket socket;
         private final String host;
         private final int port;
@@ -1202,7 +1202,7 @@ public class Tiny {
         private final OutputStream out;
         private static final SecureRandom random = new SecureRandom();
 
-        public SocketClient(String host, int port, String originUrl) throws IOException {
+        public WebSocketClient(String host, int port, String originUrl) throws IOException {
             this.host = host;
             this.port = port;
             this.originUrl = originUrl;
@@ -1359,7 +1359,7 @@ public class Tiny {
      * Miscellaneous
      * ==========================
      */
-    public static class JavascriptSocketClient implements EndPoint {
+    public static class JavascriptWebSocketClient implements EndPoint {
         @Override
         public void handle(Request request, Response response, RequestContext context) {
             response.setHeader("Content-Type", "javascript");

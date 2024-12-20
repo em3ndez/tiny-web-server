@@ -28,7 +28,7 @@ public class ExampleDotComDemo {
 
             {
             // Serve the JavaScript WebSocket client library
-            endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js", new com.paulhammant.tnywb.Tiny.JavascriptSocketClient());
+            endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js", new Tiny.JavascriptWebSocketClient());
 
             // Serve the static HTML/JS page
             endPoint(Tiny.HttpMethods.GET, "/", (req, res, ctx) -> {

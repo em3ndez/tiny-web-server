@@ -12,7 +12,7 @@ import static tests.Suite.*;
 @Test
 public class WebSocketTests {
     com.paulhammant.tnywb.Tiny.WebServer webServer;
-    com.paulhammant.tnywb.Tiny.SocketClient client;
+    Tiny.WebSocketClient client;
     Tiny.WebSocketServer webSocketServer;
 
     {
@@ -35,7 +35,7 @@ public class WebSocketTests {
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
                 Thread.sleep(50);
-                client = new com.paulhammant.tnywb.Tiny.SocketClient("localhost", 8081, "http://localhost:8080");
+                client = new Tiny.WebSocketClient("localhost", 8081, "http://localhost:8080");
                 client.performHandshake();
             });
 
@@ -91,7 +91,7 @@ public class WebSocketTests {
                     });
                 }}.start();
                 Thread.sleep(50);
-                client = new com.paulhammant.tnywb.Tiny.SocketClient("localhost", 8081, "http://localhost:8080");
+                client = new Tiny.WebSocketClient("localhost", 8081, "http://localhost:8080");
                 client.performHandshake();
 
             });
@@ -179,7 +179,7 @@ public class WebSocketTests {
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
                 Thread.sleep(100);
-                client = new com.paulhammant.tnywb.Tiny.SocketClient("localhost", 8081, "https://localhost:8080");
+                client = new Tiny.WebSocketClient("localhost", 8081, "https://localhost:8080");
                 client.performHandshake();
             });
 
@@ -225,7 +225,7 @@ public class WebSocketTests {
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
                 Thread.sleep(50);
-                client = new com.paulhammant.tnywb.Tiny.SocketClient("localhost", 8081, "http://example:8080");
+                client = new Tiny.WebSocketClient("localhost", 8081, "http://example:8080");
                 client.performHandshake();
             });
 

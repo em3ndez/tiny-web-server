@@ -1,5 +1,7 @@
 package tests;
 
+import com.paulhammant.tnywb.Tiny;
+
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.concurrent.*;
@@ -68,7 +70,7 @@ public class WebSocketBroadcastDemo {
             Thread.ofVirtual().start(() -> {
                 while (true) {
                     try {
-                        com.paulhammant.tnywb.Tiny.SocketClient client = new com.paulhammant.tnywb.Tiny.SocketClient("localhost", 8081, "http://localhost:8080");
+                        Tiny.WebSocketClient client = new Tiny.WebSocketClient("localhost", 8081, "http://localhost:8080");
                         client.performHandshake();
                         client.sendMessage("/keepMeUpdatedPlease", "Client " + clientId + " connecting");
 

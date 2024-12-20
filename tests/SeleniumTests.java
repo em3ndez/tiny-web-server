@@ -27,7 +27,7 @@ public class SeleniumTests {
 
             before(() -> {
                 webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
-                    endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js", new com.paulhammant.tnywb.Tiny.JavascriptSocketClient());
+                    endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js", new Tiny.JavascriptWebSocketClient());
 
                     endPoint(Tiny.HttpMethods.GET, "/", (req, res, ctx) -> {
                         res.setHeader("Content-Type", "text/html");

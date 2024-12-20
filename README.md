@@ -314,7 +314,7 @@ connection to open, sends a message to the `/messenger/chatback` path, and displ
 In the example where we connect to a WebSocket using the JavaScript `Tiny.WebSocketClient`, the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint that responds with the JavaScript code when requested:
 
 ```java
-endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js",new Tiny.JavascriptSocketClient());
+endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js", new Tiny.JavascriptWebSocketClient());
 // or your preferred path
 ```
 This is to honor the server-side need for path & message to be in a specific opinionated structure.
