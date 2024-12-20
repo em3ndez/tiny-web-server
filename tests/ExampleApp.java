@@ -6,8 +6,8 @@ import com.paulhammant.tnywb.TinyWeb.Response;
 
 import java.io.File;
 
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
+import static com.paulhammant.tnywb.TinyWeb.FilterAction.CONTINUE;
+import static com.paulhammant.tnywb.TinyWeb.FilterAction.STOP;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static com.paulhammant.tnywb.TinyWeb.Method.POST;
 import static com.paulhammant.tnywb.TinyWeb.Method.PUT;
@@ -20,8 +20,8 @@ public class ExampleApp {
         res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
     }
 
-    public static TinyWeb.Server exampleComposition(String[] args, ExampleApp app) {
-        TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+    public static TinyWeb.WebServer exampleComposition(String[] args, ExampleApp app) {
+        TinyWeb.WebServer server = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
 
             path("/foo", () -> {
                 filter(GET, "/.*", (req, res, ctx) -> {

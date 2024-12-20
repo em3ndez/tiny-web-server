@@ -60,9 +60,55 @@ public class TinyWeb {
     public enum Method { ALL, GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE, LINK, UNLINK, LOCK,
         UNLOCK, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, REPORT, SEARCH, PURGE, REBIND, UNBIND, ACL}
 
-    public enum FilterResult {
+    public enum FilterAction {
         CONTINUE, STOP
     }
+
+    /* ==========================
+     * Interfaces
+     * ==========================
+     */
+
+    public interface WebServerContext {
+        PathContext path(String basePath, Runnable runnable);
+        WebServerContext endPoint(Method method, String path, EndPoint endPoint);
+        WebServerContext webSocket(String path, WebSocketMessageHandler wsHandler);
+        WebServerContext filter(Method method, String path, Filter filter);
+        WebServerContext filter(String path, Filter filter);
+        WebServerContext serveStaticFilesAsync(String basePath, String directory);
+        void sendErrorResponse(HttpExchange exchange, int code, String message);
+    }
+
+    public interface RequestContext {
+        String getParam(String key);
+        @SuppressWarnings("unchecked")
+        <T> T dep(Class<T> clazz);
+
+        void setAttribute(String key, Object value);
+        Object getAttribute(String key);
+
+    }
+
+    @FunctionalInterface
+    public interface EndPoint {
+        void handle(Request request, Response response, RequestContext ctx);
+    }
+
+    @FunctionalInterface
+    public interface Filter {
+        FilterAction filter(Request request, Response response, RequestContext ctx);
+    }
+
+    @FunctionalInterface
+    public interface WebSocketMessageHandler {
+        void handleMessage(byte[] message, TinyWeb.MessageSender sender, RequestContext ctx);
+    }
+
+    @FunctionalInterface
+    public interface InterruptibleConsumer<T> {
+        boolean accept(T t);
+    }
+
 
     /* ==========================
      * Core Classes
@@ -100,14 +146,14 @@ public class TinyWeb {
         }
     }
 
-    public static abstract class AbstractServerContext implements ServerContext {
+    public static abstract class AbstractWebServerContext implements WebServerContext {
 
         protected Map<Method, Map<Pattern, EndPoint>> endPoints = new HashMap<>();
-        protected Map<Pattern, SocketMessageHandler> wsEndPoints = new HashMap<>();
+        protected Map<Pattern, WebSocketMessageHandler> wsEndPoints = new HashMap<>();
         protected Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
         protected final ServerState serverState;
 
-        public AbstractServerContext(ServerState serverState) {
+        public AbstractWebServerContext(ServerState serverState) {
             this.serverState = serverState;
         }
 
@@ -129,7 +175,7 @@ public class TinyWeb {
             }
 
             Map<Method, Map<Pattern, EndPoint>> previousEndPoints = this.endPoints;
-            Map<Pattern, SocketMessageHandler> previousWsEndPoints = this.wsEndPoints;
+            Map<Pattern, WebSocketMessageHandler> previousWsEndPoints = this.wsEndPoints;
             Map<Method, List<FilterEntry>> previousFilters = this.filters;
 
             // Create new maps to collect endpoints and filters within this path
@@ -164,9 +210,9 @@ public class TinyWeb {
             }
 
             // Prefix basePath to WebSocket handlers
-            for (Map.Entry<Pattern, SocketMessageHandler> entry : this.wsEndPoints.entrySet()) {
+            for (Map.Entry<Pattern, WebSocketMessageHandler> entry : this.wsEndPoints.entrySet()) {
                 Pattern pattern = entry.getKey();
-                SocketMessageHandler wsHandler = entry.getValue();
+                WebSocketMessageHandler wsHandler = entry.getValue();
                 Pattern newPattern = Pattern.compile("^" + basePath + pattern.pattern().substring(1));
                 previousWsEndPoints.put(newPattern, wsHandler);
             }
@@ -204,7 +250,7 @@ public class TinyWeb {
                 new Response(exchange).write(message, code);
         }
 
-        public ServerContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
+        public WebServerContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add endpoints after the server has started.");
             }
@@ -213,7 +259,7 @@ public class TinyWeb {
             return this;
         }
 
-        public ServerContext webSocket(String path, SocketMessageHandler wsHandler) {
+        public WebServerContext webSocket(String path, WebSocketMessageHandler wsHandler) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add WebSocket handlers after the server has started.");
             }
@@ -221,7 +267,7 @@ public class TinyWeb {
             return this;
         }
 
-        public ServerContext filter(TinyWeb.Method method, String path, Filter filter) {
+        public WebServerContext filter(TinyWeb.Method method, String path, Filter filter) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add filters after the server has started.");
             }
@@ -237,11 +283,11 @@ public class TinyWeb {
             return this;
         }
 
-        public ServerContext filter(String path, Filter filter) {
+        public WebServerContext filter(String path, Filter filter) {
             return filter(Method.ALL, path, filter);
         }
 
-        public ServerContext serveStaticFilesAsync(String basePath, String directory) {
+        public WebServerContext serveStaticFilesAsync(String basePath, String directory) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add static serving after the server has started.");
             }
@@ -279,15 +325,13 @@ public class TinyWeb {
         }
     }
 
-    public static class PathContext extends AbstractServerContext {
+    public static class PathContext extends AbstractWebServerContext {
 
         public PathContext(ServerState serverState) {
             super(serverState);
         }
 
     }
-
-    public static record FilterStat (String path, String result, long duration) {}
 
     public static class Config {
         public final InetSocketAddress inetSocketAddress;
@@ -338,7 +382,7 @@ public class TinyWeb {
         }
     }
 
-    public static class Server extends AbstractServerContext {
+    public static class WebServer extends AbstractWebServerContext {
 
         private final HttpServer httpServer;
         private final SocketServer socketServer;
@@ -346,11 +390,11 @@ public class TinyWeb {
         private Config config;
         private final DependencyManager dependencyManager;
 
-        public Server(Config config) {
+        public WebServer(Config config) {
             this(config, new DependencyManager(new DefaultComponentCache(null)));
         }
 
-        public Server(Config config, DependencyManager dependencyManager) {
+        public WebServer(Config config, DependencyManager dependencyManager) {
             super(new ServerState());
             this.config = config;
             this.dependencyManager = dependencyManager;
@@ -370,10 +414,10 @@ public class TinyWeb {
             if (config.wsPort > 0) {
                 socketServer = new SocketServer(config, dependencyManager) {
                     @Override
-                    protected SocketMessageHandler getHandler(String path) {
-                        for (Map.Entry<Pattern, SocketMessageHandler> patternWebSocketMessageHandlerEntry : wsEndPoints.entrySet()) {
+                    protected WebSocketMessageHandler getHandler(String path) {
+                        for (Map.Entry<Pattern, WebSocketMessageHandler> patternWebSocketMessageHandlerEntry : wsEndPoints.entrySet()) {
                             Pattern key = patternWebSocketMessageHandlerEntry.getKey();
-                            SocketMessageHandler value = patternWebSocketMessageHandlerEntry.getValue();
+                            WebSocketMessageHandler value = patternWebSocketMessageHandlerEntry.getValue();
                             if (key.matcher(path).matches()) {
                                 return value;
                             }
@@ -434,7 +478,7 @@ public class TinyWeb {
                         for (FilterEntry filterEntry : methodFilters) {
                             Matcher filterMatcher = filterEntry.pattern.matcher(path);
                             if (filterMatcher.matches()) {
-                                if (handleFilterMatch(exchange, filterEntry, filterMatcher, request, response, attributes, requestCache, matcher, filterSequence) == FilterResult.STOP) {
+                                if (handleFilterMatch(exchange, filterEntry, filterMatcher, request, response, attributes, requestCache, matcher, filterSequence) == FilterAction.STOP) {
                                     // stop chain of execution
                                     return;
                                 }
@@ -488,14 +532,14 @@ public class TinyWeb {
             }
         }
 
-        private FilterResult handleFilterMatch(HttpExchange exchange, FilterEntry filterEntry, Matcher filterMatcher, Request request, Response response, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher, List<FilterStat> filterSequence) {
+        private FilterAction handleFilterMatch(HttpExchange exchange, FilterEntry filterEntry, Matcher filterMatcher, Request request, Response response, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher, List<FilterStat> filterSequence) {
             Map<String, String> filterParams = new HashMap<>();
             for (int i = 1; i <= filterMatcher.groupCount(); i++) {
                 filterParams.put(String.valueOf(i), filterMatcher.group(i));
             }
             long filterStartTime = System.currentTimeMillis();
             try {
-                FilterResult result;
+                FilterAction result;
                 try {
                     result = filterEntry.filter.filter(request, response, createRequestContext(filterParams, attributes, requestCache, matcher));
                     filterSequence.add(new FilterStat(filterEntry.pattern.pattern(), "ok", System.currentTimeMillis() - filterStartTime));
@@ -503,13 +547,13 @@ public class TinyWeb {
                 } catch (Exception e) {
                     filterSequence.add(new FilterStat(filterEntry.pattern.pattern(), "exception", System.currentTimeMillis() - filterStartTime));
                     exceptionDuringHandling(e, exchange);
-                    return FilterResult.STOP;
+                    return FilterAction.STOP;
                 }
             } catch (ServerException e) {
                 filterSequence.add(new FilterStat(filterEntry.pattern.pattern(), "server-exception", System.currentTimeMillis() - filterStartTime));
                 serverException(e);
                 sendErrorResponse(exchange, 500, "Internal server error: " + e.getMessage());
-                return FilterResult.STOP;
+                return FilterAction.STOP;
             }
          }
 
@@ -550,7 +594,7 @@ public class TinyWeb {
             //e.printStackTrace(System.err);
         }
 
-        public TinyWeb.Server start() {
+        public WebServer start() {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Server has already been started.");
             }
@@ -571,7 +615,7 @@ public class TinyWeb {
             return this;
         }
 
-        public TinyWeb.Server stop() {
+        public WebServer stop() {
             httpServer.stop(0);
             if (simpleWebSocketServerThread != null) {
                 socketServer.stop();
@@ -621,10 +665,10 @@ public class TinyWeb {
         }
     }
 
-    public static class ServerComposition implements ServerContext {
-        private final Server server;
+    public static class ServerComposition implements WebServerContext {
+        private final WebServer server;
 
-        public ServerComposition(Server server) {
+        public ServerComposition(WebServer server) {
             this.server = server;
         }
 
@@ -639,70 +683,31 @@ public class TinyWeb {
         }
 
         @Override
-        public ServerContext endPoint(Method method, String path, EndPoint endPoint) {
+        public WebServerContext endPoint(Method method, String path, EndPoint endPoint) {
             return server.endPoint(method, path, endPoint);
         }
 
         @Override
-        public ServerContext webSocket(String path, SocketMessageHandler wsHandler) {
+        public WebServerContext webSocket(String path, WebSocketMessageHandler wsHandler) {
             return server.webSocket(path, wsHandler);
         }
 
         @Override
-        public ServerContext filter(Method method, String path, Filter filter) {
+        public WebServerContext filter(Method method, String path, Filter filter) {
             return server.filter(method, path, filter);
         }
 
         @Override
-        public ServerContext filter(String path, Filter filter) {
+        public WebServerContext filter(String path, Filter filter) {
             return server.filter(path, filter);
         }
 
         @Override
-        public ServerContext serveStaticFilesAsync(String basePath, String directory) {
+        public WebServerContext serveStaticFilesAsync(String basePath, String directory) {
             return server.serveStaticFilesAsync(basePath, directory);
         }
     }
 
-    /* ==========================
-     * Interfaces
-     * ==========================
-     */
-
-    public interface ServerContext {
-        PathContext path(String basePath, Runnable runnable);
-        ServerContext endPoint(Method method, String path, EndPoint endPoint);
-        ServerContext webSocket(String path, SocketMessageHandler wsHandler);
-        ServerContext filter(Method method, String path, Filter filter);
-        ServerContext filter(String path, Filter filter);
-        ServerContext serveStaticFilesAsync(String basePath, String directory);
-        void sendErrorResponse(HttpExchange exchange, int code, String message);
-    }
-
-    public interface RequestContext {
-        String getParam(String key);
-        @SuppressWarnings("unchecked")
-        <T> T dep(Class<T> clazz);
-
-        void setAttribute(String key, Object value);
-        Object getAttribute(String key);
-
-    }
-
-    @FunctionalInterface
-    public interface EndPoint {
-        void handle(Request request, Response response, RequestContext ctx);
-    }
-
-    @FunctionalInterface
-    public interface Filter {
-        FilterResult filter(Request request, Response response, RequestContext ctx);
-    }
-
-    @FunctionalInterface
-    public interface SocketMessageHandler {
-        void handleMessage(byte[] message, TinyWeb.MessageSender sender, RequestContext ctx);
-    }
 
     /* ==========================
      * Supporting Classes
@@ -857,8 +862,8 @@ public class TinyWeb {
         <T> void put(Class<T> clazz, T instance);
     }
 
-    public static class UseOnceComponentCache implements ComponentCache
-    {
+    // I'm not sure about this class - Paul
+    public static class UseOnceComponentCache implements ComponentCache {
         public static final String SEE_TINY_WEB_S_DEPENDENCY_TESTS = "See TinyWeb's DependencyTests";
         private ComponentCache hidden;
 
@@ -929,6 +934,9 @@ public class TinyWeb {
         }
     }
 
+    public record FilterStat (String path, String result, long duration) {}
+
+
     /* ==========================
      * WebSocket Classes
      * ==========================
@@ -938,13 +946,13 @@ public class TinyWeb {
     public static class SocketServer {
 
         public static final Pattern ORIGIN_MATCH = Pattern.compile("Origin: (.*)");
-        public static final SocketMessageHandler BAD_ORIGIN = (message, sender, ctx) -> sender.sendBytesFrame(toBytes("Error: Bad Origin"));
-        public static final SocketMessageHandler FOUR_OH_FOUR = (message, sender, ctx) -> sender.sendBytesFrame(toBytes("Error: 404"));
+        public static final WebSocketMessageHandler BAD_ORIGIN = (message, sender, ctx) -> sender.sendBytesFrame(toBytes("Error: Bad Origin"));
+        public static final WebSocketMessageHandler FOUR_OH_FOUR = (message, sender, ctx) -> sender.sendBytesFrame(toBytes("Error: 404"));
         private final Config config;
         private ServerSocket server;
         private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
         private static final SecureRandom random = new SecureRandom();
-        private Map<String, SocketMessageHandler> messageHandlers = new HashMap<>();
+        private Map<String, WebSocketMessageHandler> messageHandlers = new HashMap<>();
         private final DependencyManager dependencyManager;
 
         public SocketServer(Config config) {
@@ -955,7 +963,7 @@ public class TinyWeb {
             this.dependencyManager = dependencyManager;
 
         }
-        public void registerMessageHandler(String path, SocketMessageHandler handler) {
+        public void registerMessageHandler(String path, WebSocketMessageHandler handler) {
             this.messageHandlers.put(path, handler);
         }
 
@@ -1139,7 +1147,7 @@ public class TinyWeb {
                                 BAD_ORIGIN.handleMessage(null, sender, null);
                             } else{
                                 ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
-                                RequestContext ctx = new Server.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new HashMap<>());
+                                RequestContext ctx = new WebServer.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new HashMap<>());
                                 getHandler(path).handleMessage(messagePayload, sender, ctx); // could be 404 handler
 
                             }
@@ -1154,7 +1162,7 @@ public class TinyWeb {
             System.err.println("Invalid path length: " + pathLength + " (payload length: " + payload.length + ")");
         }
 
-        protected SocketMessageHandler getHandler(String path) {
+        protected WebSocketMessageHandler getHandler(String path) {
             return messageHandlers.get(path);
         }
 
@@ -1182,11 +1190,6 @@ public class TinyWeb {
                 throw new ServerException("Can't stop WebSocket Server", e);
             }
         }
-    }
-
-    @FunctionalInterface
-    public interface StoppableConsumer<T> {
-        boolean accept(T t);
     }
 
     public static class SocketClient implements AutoCloseable {
@@ -1267,7 +1270,7 @@ public class TinyWeb {
         }
 
         //  returns true if stop required, otherwise clients should reconnect
-        public boolean receiveMessages(String stopPhrase, StoppableConsumer<String> handle) throws IOException {
+        public boolean receiveMessages(String stopPhrase, InterruptibleConsumer<String> handle) throws IOException {
             boolean keepGoing = true;
             while (keepGoing) {
                 // Read frame header

@@ -3,7 +3,7 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
+import static com.paulhammant.tnywb.TinyWeb.FilterAction.CONTINUE;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -13,12 +13,12 @@ import static tests.Suite.httpGet;
 
 @Test
 public class AdvancedServerCompositionTests {
-    TinyWeb.Server webServer;
+    TinyWeb.WebServer webServer;
 
     {
         describe("When additional composition can happen on a previously instantiated TinyWeb.Server", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     endPoint(GET, "/foo", (req, res, ctx) -> {
                         res.write("Hello1");
                     });
@@ -57,7 +57,7 @@ public class AdvancedServerCompositionTests {
         });
         describe("Given a TinyWeb server with ConcreteExtensionToServerComposition", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
                     path("/a", () -> {
                         path("/b", () -> {
                             path("/c", () -> {
@@ -84,7 +84,7 @@ public class AdvancedServerCompositionTests {
         });
         describe("Given a started TinyWeb server", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
 
                 }};
                 webServer.start();

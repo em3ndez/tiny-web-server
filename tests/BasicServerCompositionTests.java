@@ -3,22 +3,20 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static tests.Suite.bodyAndResponseCodeShouldBe;
 import static tests.Suite.httpGet;
 
 @Test
 public class BasicServerCompositionTests {
-    TinyWeb.Server webServer;
+    TinyWeb.WebServer webServer;
 
     {
         describe("Given a TinyWeb server with composed paths", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/composed", () -> {
                         path("/nested", () -> {
                             endPoint(GET, "/endpoint", (req, res, ctx) -> {

@@ -17,13 +17,10 @@
 package tests;
 
 import com.paulhammant.tnywb.TinyWeb;
-import okhttp3.Response;
 import org.forgerock.cuppa.Test;
 
-import java.io.InvalidObjectException;
-
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.CONTINUE;
-import static com.paulhammant.tnywb.TinyWeb.FilterResult.STOP;
+import static com.paulhammant.tnywb.TinyWeb.FilterAction.CONTINUE;
+import static com.paulhammant.tnywb.TinyWeb.FilterAction.STOP;
 import static com.paulhammant.tnywb.TinyWeb.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,12 +30,12 @@ import static tests.Suite.httpGet;
 
 @Test
 public class FilterTests {
-    TinyWeb.Server webServer;
+    TinyWeb.WebServer webServer;
 
     {
         describe("When passing attributes from filter to endpoint", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/api", () -> {
                         filter(".*", (req, res, ctx) -> {
                             String allegedlyLoggedInCookie = req.getCookie("logged-in");
@@ -76,7 +73,7 @@ public class FilterTests {
         });
         describe("When applying filters", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     path("/foo", () -> {
                         filter(GET, "/.*", (req, res, ctx) -> {
                             if (req.getHeaders().containsKey("sucks")) {
@@ -117,7 +114,7 @@ public class FilterTests {
         });
         describe("When a server is started", () -> {
             it("Then a method filter can't be added anymore", () -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     start();
                     try {
                         filter(GET, "/foo", (req, res, ctx) -> {
@@ -131,7 +128,7 @@ public class FilterTests {
                 }};
             });
             it("Then a 'all' filter can't be added anymore", () -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     start();
                     try {
                         filter("/foo", (req, res, ctx) -> {
@@ -151,7 +148,7 @@ public class FilterTests {
 
         describe("When a filter is already added", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     filter("/foo.*", (req, res, ctx) -> {
                         res.setHeader("x", "1");
                         return CONTINUE;

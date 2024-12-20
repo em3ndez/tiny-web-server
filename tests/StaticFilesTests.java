@@ -30,12 +30,12 @@ import static tests.Suite.httpGet;
 
 @Test
 public class StaticFilesTests {
-    TinyWeb.Server webServer;
+    TinyWeb.WebServer webServer;
 
     {
         describe("When serving static files", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     serveStaticFilesAsync("/static", new File(".").getAbsolutePath());
                 }};
                 webServer.start();

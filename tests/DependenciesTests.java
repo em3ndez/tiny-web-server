@@ -32,7 +32,7 @@ import static tests.Suite.httpGet;
 
 @Test
 public class DependenciesTests {
-    TinyWeb.Server webServer;
+    TinyWeb.WebServer webServer;
     boolean dependencyException = false;
 
     {
@@ -41,7 +41,7 @@ public class DependenciesTests {
                 final TinyWeb.ComponentCache cache = new TinyWeb.UseOnceComponentCache(new TinyWeb.DefaultComponentCache() {{
                     put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
                 }});
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081), new TinyWeb.DependencyManager(cache){
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081), new TinyWeb.DependencyManager(cache){
 
                     // Note: this is not Dependency Injection
 

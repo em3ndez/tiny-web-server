@@ -33,12 +33,12 @@ import static tests.Suite.httpGet;
 
 @Test
 public class ServerSideEventsTests {
-    TinyWeb.Server webServer;
+    TinyWeb.WebServer webServer;
 
     {
         describe("Given a TinyWeb server with an SSE endpoint", () -> {
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/sse", () -> {
                         endPoint(TinyWeb.Method.GET, "/events", (req, res, ctx) -> {
                             res.setHeader("Content-Type", "text/event-stream");

@@ -3,9 +3,6 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
-import java.io.IOException;
-import java.util.function.Consumer;
-
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -14,7 +11,7 @@ import static tests.Suite.*;
 
 @Test
 public class WebSocketTests {
-    TinyWeb.Server webServer;
+    TinyWeb.WebServer webServer;
     TinyWeb.SocketClient client;
     TinyWeb.SocketServer webSocketServer;
 
@@ -72,7 +69,7 @@ public class WebSocketTests {
         describe("When using TinyWeb.SocketServer with TinyWeb.Server and a contrived webSocket endpoint", () -> {
 
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     path("/foo", () -> {
                         endPoint(TinyWeb.Method.GET, "/bar", (req, res, ctx) -> {
                             res.write("OK");
@@ -144,7 +141,7 @@ public class WebSocketTests {
 
                 StringBuilder message = new StringBuilder();
 
-                client.receiveMessages("stop", new TinyWeb.StoppableConsumer<String>() {
+                client.receiveMessages("stop", new TinyWeb.InterruptibleConsumer<String>() {
                     @Override
                     public boolean accept(String response) {
                         message.append(response);

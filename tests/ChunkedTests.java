@@ -32,13 +32,13 @@ import static tests.Suite.httpGet;
 
 @Test
 public class ChunkedTests {
-    TinyWeb.Server webServer;
+    TinyWeb.WebServer webServer;
 
     {
         describe("Given a TinyWeb server with a chunked response endpoint", () -> {
             BigDecimal[] totalSum = { BigDecimal.ZERO };
             before(() -> {
-                webServer = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
+                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     endPoint(TinyWeb.Method.GET, "/chunked", (req, res, ctx) -> {
                         Random random = new Random();
                         OutputStream out = res.getResponseBody();

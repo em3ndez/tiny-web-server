@@ -15,7 +15,7 @@ public class ExampleDotComDemo {
     private static final Map<String, AtomicInteger> sessionCounters = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
-        TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withInetSocketAddress(new InetSocketAddress("example.com", 8080)).withWebSocketPort(8081))
+        TinyWeb.WebServer server = new TinyWeb.WebServer(TinyWeb.Config.create().withInetSocketAddress(new InetSocketAddress("example.com", 8080)).withWebSocketPort(8081))
 
         {
 

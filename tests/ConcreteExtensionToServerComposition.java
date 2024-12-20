@@ -20,7 +20,7 @@ import com.paulhammant.tnywb.TinyWeb;
 
 public class ConcreteExtensionToServerComposition extends TinyWeb.ServerComposition {
 
-    public ConcreteExtensionToServerComposition(TinyWeb.Server server) {
+    public ConcreteExtensionToServerComposition(TinyWeb.WebServer server) {
         super(server);
         path("/bar", () -> {
             endPoint(TinyWeb.Method.GET, "/baz", (req, res, ctx) -> {

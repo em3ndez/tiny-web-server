@@ -48,7 +48,7 @@ public class WebSocketBroadcastDemo {
         AtomicInteger restartedClients = new AtomicInteger(0);
         AtomicInteger unexpectedClientExceptions = new AtomicInteger(0);
 
-        TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+        TinyWeb.WebServer server = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
 
             webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
                 broadcaster.add(sender);
