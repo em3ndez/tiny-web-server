@@ -1134,16 +1134,10 @@ public class TinyWeb {
                             if (!origin.endsWith(expectedOrigin)) {
                                 BAD_ORIGIN.handleMessage(null, sender, null);
                             } else{
+                                ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
+                                RequestContext ctx = new Server.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new HashMap<>());
+                                getHandler(path).handleMessage(messagePayload, sender, ctx); // could be 404 handler
 
-                                SocketMessageHandler handler = getHandler(path);
-                                if (handler != null) {
-                                    ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
-                                    RequestContext ctx = new Server.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new HashMap<>());
-                                    handler.handleMessage(messagePayload, sender, ctx);
-                                } else {
-                                    FOUR_OH_FOUR.handleMessage(null, sender, null);
-                                    System.err.println("No handler found for path: " + path + " keys:" + messageHandlers.keySet());
-                                }
                             }
                         });
                     }
