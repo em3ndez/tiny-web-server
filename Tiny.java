@@ -574,7 +574,22 @@ public class Tiny {
         protected HttpServer makeHttpServer() throws IOException {
 
             HttpServer s = HttpServer.create();
-            s.setExecutor(Executors.newVirtualThreadPerTaskExecutor()); // Use serverOperationTimeoutMs if needed
+            s.setExecutor(Executors.newVirtualThreadPerTaskExecutor()); // Default executor
+            // Custom executor with timeout
+            ExecutorService executor = Executors.newCachedThreadPool();
+            s.setExecutor(command -> {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        command.run();
+                    } catch (Exception e) {
+                        System.err.println("Task execution error: " + e.getMessage());
+                    }
+                }, executor).orTimeout(config.serverOperationTimeoutMs, TimeUnit.MILLISECONDS)
+                .exceptionally(ex -> {
+                    System.err.println("Task timed out: " + ex.getMessage());
+                    return null;
+                });
+            });
             return s;
 
             // How to participate in Idle Timeouts - override this method
