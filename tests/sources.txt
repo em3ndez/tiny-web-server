@@ -7,7 +7,7 @@ tests/ConcreteExtensionToServerComposition.java
 tests/DependenciesTests.java
 tests/ExampleApp.java
 tests/FilterTests.java
-tests/IntegrationTests.java
+tests/SeleniumTests.java
 tests/PathRegistrationTests.java
 tests/RequestStatsTests.java
 tests/ServerSideEventsTests.java
