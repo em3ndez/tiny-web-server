@@ -337,60 +337,53 @@ public class Tiny {
         public final int wsBacklog;
         public final InetAddress wsBindAddr;
         public final int socketTimeoutMs;
+        public final boolean clientKeepAlive;
 
-        private final int connectionTimeoutMs;
-        private final int serverOperationTimeoutMs;
-
-        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs, int connectionTimeoutMs, int serverOperationTimeoutMs) {
+        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs, boolean clientKeepAlive) {
             this.inetSocketAddress = inetSocketAddress;
             this.wsPort = wsPort;
             this.wsBacklog = wsBacklog;
             this.wsBindAddr = wsBindAddr;
             this.socketTimeoutMs = socketTimeoutMs;
-            this.connectionTimeoutMs = connectionTimeoutMs;
-            this.serverOperationTimeoutMs = serverOperationTimeoutMs;
+            this.clientKeepAlive = clientKeepAlive;
         }
 
         public static Config create() {
-            return new Config(null, 0, 50, null, 30000, 10000, 60000);
+            return new Config(null, 0, 50, null, 30000, true);
         }
 
         public Config withInetSocketAddress(InetSocketAddress inetSocketAddress) {
-            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
+            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
         }
 
         public Config withWebSocketPort(int wsPort) {
-            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
+            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
         }
 
         public Config withWsBacklog(int wsBacklog) {
-            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
+            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
         }
 
         public Config withHostAndWebPort(String host, int webPort) {
-            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
+            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
         }
 
         public Config withWsBindAddr(InetAddress wsBindAddr) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
         }
 
         public Config withSocketTimeoutMillis(int socketTimeoutMs) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, socketTimeoutMs, this.clientKeepAlive);
         }
 
         public Config withWebPort(int webPort) {
-            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
+            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
         }
 
-        public Config withConnectionTimeoutMillis(int connectionTimeoutMs) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, connectionTimeoutMs, this.serverOperationTimeoutMs);
+        public Config withClientKeepAlive(boolean clientKeepAlive) {
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, clientKeepAlive);
         }
 
-        public Config withServerOperationTimeoutMillis(int serverOperationTimeoutMs) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, serverOperationTimeoutMs);
-
-        }
     }
 
     public static class WebServer extends AbstractWebServerContext {
@@ -572,22 +565,6 @@ public class Tiny {
 
             HttpServer s = HttpServer.create();
             s.setExecutor(Executors.newVirtualThreadPerTaskExecutor()); // Default executor
-            // Custom executor with timeout
-            ExecutorService executor = Executors.newCachedThreadPool();
-            s.setExecutor(command -> {
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        command.run();
-                    } catch (Exception e) {
-                        System.err.println("Task execution error: " + e.getMessage());
-                    }
-                }, executor).orTimeout(config.serverOperationTimeoutMs, TimeUnit.MILLISECONDS)
-                .exceptionally(ex -> {
-                    System.err.println("Task timed out: " + ex.getMessage());
-                    return null;
-                });
-            });
-            return s;
 
             // How to participate in Idle Timeouts - override this method
             //ServerSocket socket = server.getAddress().getSocket();
@@ -596,6 +573,7 @@ public class Tiny {
             // Socket timeouts is harder, google for: "HttpServer in the com.sun.net.httpserver package lacks direct
             //    support for setting a custom ServerSocket with SO_TIMEOUT but how do I make it work with subclasses?"
 
+            return s;
         }
 
         private RequestContext createRequestContext(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher) {
@@ -1000,8 +978,8 @@ public class Tiny {
                 while (!server.isClosed()) {
                     try {
                         Socket client = server.accept();
-                        client.setSoTimeout(config.connectionTimeoutMs);
-                        client.setKeepAlive(true);
+                        client.setSoTimeout(config.socketTimeoutMs);
+                        client.setKeepAlive(config.clientKeepAlive);
                         clientConnected(client);
 
                         executor.execute(() -> handleClient(client));
