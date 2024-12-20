@@ -119,6 +119,16 @@ public class Tiny {
         private boolean hasStarted;
         public boolean hasStarted() {
             return hasStarted;
+            this.connectionTimeoutMs = connectionTimeoutMs;
+            this.serverOperationTimeoutMs = serverOperationTimeoutMs;
+        }
+
+        public int getConnectionTimeoutMs() {
+            return connectionTimeoutMs;
+        }
+
+        public int getServerOperationTimeoutMs() {
+            return serverOperationTimeoutMs;
         }
 
         public void start() {
@@ -341,7 +351,10 @@ public class Tiny {
         public final InetAddress wsBindAddr;
         public final int socketTimeoutMs;
 
-        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs) {
+        private final int connectionTimeoutMs;
+        private final int serverOperationTimeoutMs;
+
+        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs, int connectionTimeoutMs, int serverOperationTimeoutMs) {
             this.inetSocketAddress = inetSocketAddress;
             this.wsPort = wsPort;
             this.wsBacklog = wsBacklog;
@@ -350,35 +363,43 @@ public class Tiny {
         }
 
         public static Config create() {
-            return new Config(null, 0, 50, null, 30000);
+            return new Config(null, 0, 50, null, 30000, 10000, 60000);
         }
 
         public Config withInetSocketAddress(InetSocketAddress inetSocketAddress) {
-            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
+            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
         }
 
         public Config withWebSocketPort(int wsPort) {
-            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
+            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
         }
 
         public Config withWsBacklog(int wsBacklog) {
-            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
+            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
         }
 
         public Config withHostAndWebPort(String host, int webPort) {
-            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
+            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
         }
 
         public Config withWsBindAddr(InetAddress wsBindAddr) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
         }
 
         public Config withSocketTimeoutMillis(int socketTimeoutMs) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, socketTimeoutMs);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
         }
 
         public Config withWebPort(int webPort) {
-            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
+            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, this.serverOperationTimeoutMs);
+        }
+
+        public Config withConnectionTimeoutMillis(int connectionTimeoutMs) {
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, connectionTimeoutMs, this.serverOperationTimeoutMs);
+        }
+
+        public Config withServerOperationTimeoutMillis(int serverOperationTimeoutMs) {
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.connectionTimeoutMs, serverOperationTimeoutMs);
 
         }
     }
@@ -561,7 +582,7 @@ public class Tiny {
         protected HttpServer makeHttpServer() throws IOException {
 
             HttpServer s = HttpServer.create();
-            s.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+            s.setExecutor(Executors.newVirtualThreadPerTaskExecutor()); // Use serverOperationTimeoutMs if needed
             return s;
 
             // How to participate in Idle Timeouts - override this method
@@ -975,7 +996,7 @@ public class Tiny {
                 while (!server.isClosed()) {
                     try {
                         Socket client = server.accept();
-                        client.setSoTimeout(config.socketTimeoutMs);
+                        client.setSoTimeout(config.getConnectionTimeoutMs());
                         client.setKeepAlive(true);
                         clientConnected(client);
 
