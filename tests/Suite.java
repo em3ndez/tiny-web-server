@@ -54,6 +54,7 @@ public class Suite {
         Runner runner = new Runner();
         runner.run(runner.defineTests(Arrays.asList(
                 CompositionReuseTests.class,
+                ConfigTests.class,
                 DependenciesTests.class,
                 FilterTests.class,
                 IntegrationTests.class,
