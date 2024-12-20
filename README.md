@@ -14,7 +14,7 @@ system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Nett
 
 ## Web Server 
 
-The `TinyWeb.Server` class allows you to create an HTTP server with minimal configuration. You can define filters and 
+The `TinyWeb.WebServer` class allows you to create an HTTP server with minimal configuration. You can define filters and 
 endpoints for different HTTP methods (GET, POST, PUT, DELETE and others), and process requests. 
 
 The server supports:
@@ -28,7 +28,7 @@ There are paths too, to which filters and endpoints can be attached, but don't t
 
 ## Web Sockets Server
 
-A coupled `TinyWeb.SocketServer` class provides WebSocket support, enabling communication back from the server to 
+A coupled `TinyWeb.WebSocketServer` class provides WebSocket support, enabling communication back from the server to 
 attached clients.  It can be used alone, but also integrated into the same path structure of the main server.
 Admittedly that's a trick as the path and the length of the path are tge leftmost part of the message up
 to the SocketServer.
@@ -236,9 +236,9 @@ In this example, a GET endpoint is defined at `/messenger/inboxStatus` that resp
 Additionally, a WebSocket endpoint is defined at `/messenger/chatback` that echoes back any message it
 receives, prefixed with "Echo: ", which we admit isn't a real world example.
 
-#### Connecting to a WebSocket using TinyWeb.SocketClient
+#### Connecting to a WebSocket using TinyWeb.WebSocketClient
 
-Here's an example of how a client connects to a server WebSocket using `TinyWeb.SocketClient`:
+Here's an example of how a client connects to a server WebSocket using `TinyWeb.WebSocketClient`:
 
 ```java
 public class WebSocketClientExample {
@@ -261,7 +261,7 @@ public class WebSocketClientExample {
 }
 ```
 
-In this example, a `TinyWeb.SocketClient` is created to connect to a WebSocket server running on `localhost` at
+In this example, a `TinyWeb.WebSocketClient` is created to connect to a WebSocket server running on `localhost` at
 port 8081. The client performs a WebSocket handshake, sends a message to the `/messenger/chatback` path, and prints the
 response received from the server. On the wire, the path and message are put in a specific structure for sending to
 the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not. This is to make the webSockets
@@ -306,7 +306,7 @@ Here's an example of how to connect to a TinyWeb.Socket using the JavaScript ver
 </html>
 ```
 
-In this example, a JavaScript version of `TinyWeb.SocketClient` (via `TinyWeb.JavaScriptSocketClient` Jav class) is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
+In this example, a JavaScript version of `TinyWeb.WebSocketClient` (via `TinyWeb.JavaScriptWebSocketClient` Java class) is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
 connection to open, sends a message to the `/messenger/chatback` path, and displays the response received from the server in the browser (html code not shown).
 
 **Making the JavaScript WebSocket Client available to webapps**
