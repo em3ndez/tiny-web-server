@@ -49,8 +49,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static tests.Suite.toBytes;
-
 public class Tiny {
 
     public static final String VERSION = "1.0-SNAPSHOT";
@@ -1485,4 +1483,13 @@ public class Tiny {
             this.clazz = clazz;
         }
     }
+
+    public static byte [] toBytes(String responseMessage) {
+        try {
+            return responseMessage.getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("never happens");
+        }
+    }
+
 }

@@ -11,8 +11,8 @@ import static com.paulhammant.tiny.Tiny.FilterAction.STOP;
 import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
 import static com.paulhammant.tiny.Tiny.HttpMethods.POST;
 import static com.paulhammant.tiny.Tiny.HttpMethods.PUT;
+import static com.paulhammant.tiny.Tiny.toBytes;
 import static tests.Suite.bytesToString;
-import static tests.Suite.toBytes;
 
 public class ExampleApp {
 

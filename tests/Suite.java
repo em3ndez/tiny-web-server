@@ -34,14 +34,6 @@ public class Suite {
         }
     }
 
-    public static byte [] toBytes(String responseMessage) {
-        try {
-            return responseMessage.getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new AssertionError("never happens");
-        }
-    }
-
     public static String bytesToString(byte[] messageBytes) {
         try {
             return new String(messageBytes, "UTF-8");

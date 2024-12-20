@@ -3,6 +3,7 @@ package tests;
 import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
 
+import static com.paulhammant.tiny.Tiny.toBytes;
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;

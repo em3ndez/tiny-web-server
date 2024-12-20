@@ -11,12 +11,12 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 
+import static com.paulhammant.tiny.Tiny.toBytes;
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static tests.Suite.bytesToString;
-import static tests.Suite.toBytes;
 
 @Test
 public class SeleniumTests {

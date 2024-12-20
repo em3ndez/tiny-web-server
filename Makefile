@@ -20,9 +20,9 @@ JACOCO_REPORT = jacoco-report
 # Default target
 all: compile get-test-deps tests
 
-# Compile TinyWeb.java
+# Compile Tiny.java
 compile: $(TARGET_CLASSES)
-	$(JAVAC) -d $(TARGET_CLASSES) TinyWeb.java
+	$(JAVAC) -d $(TARGET_CLASSES) Tiny.java
 
 $(TARGET_CLASSES):
 	$(MKDIR) $(TARGET_CLASSES)
@@ -53,8 +53,8 @@ coverage: $(JACOCO_AGENT) $(JACOCO_CLI)
 
 # Generate coverage report
 report: $(JACOCO_EXEC) $(JACOCO_CLI)
-	$(MKDIR) target/srcForJaCoCo/com/paulhammant/tnywb/
-	$(CP) TinyWeb.java target/srcForJaCoCo/com/paulhammant/tnywb/
+	$(MKDIR) target/srcForJaCoCo/com/paulhammant/tiny/
+	$(CP) Tiny.java target/srcForJaCoCo/com/paulhammant/tiny/
 	$(JAVA) -jar $(JACOCO_CLI) report $(JACOCO_EXEC) --classfiles $(TARGET_CLASSES) --sourcefiles target/srcForJaCoCo --html $(JACOCO_REPORT)
 
 $(JACOCO_AGENT):
