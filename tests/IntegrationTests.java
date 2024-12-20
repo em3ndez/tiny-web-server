@@ -101,7 +101,7 @@ public class IntegrationTests {
                             "Server sent: Hello WebSocket-3";
                     assertThat(messageElement.getText(), equalTo(expectedMessages));
                 } finally {
-                    //driver.quit();
+                    driver.quit();
                 }
             });
 

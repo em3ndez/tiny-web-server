@@ -1180,6 +1180,11 @@ public class TinyWeb {
         }
     }
 
+    @FunctionalInterface
+    public interface StoppableConsumer<T> {
+        boolean accept(T t);
+    }
+
     public static class SocketClient implements AutoCloseable {
         private final Socket socket;
         private final String host;
@@ -1258,8 +1263,9 @@ public class TinyWeb {
         }
 
         //  returns true if stop required, otherwise clients should reconnect
-        public boolean receiveMessages(String stopPhrase, Consumer<String> handle) throws IOException {
-            while (true) {
+        public boolean receiveMessages(String stopPhrase, StoppableConsumer<String> handle) throws IOException {
+            boolean keepGoing = true;
+            while (keepGoing) {
                 // Read frame header
                 int byte1 = in.read();
                 if (byte1 == -1) break;
@@ -1287,11 +1293,12 @@ public class TinyWeb {
                 int bytesRead = SocketServer.readFully(in, payload, 0, payloadLength);
                 if (bytesRead < payloadLength) break;
 
+
                 String message = new String(payload, 0, bytesRead, "UTF-8");
                 if (message.equals(stopPhrase)) {
                     return true;
                 } else {
-                    handle.accept(message);
+                    keepGoing = handle.accept(message);
                 }
             }
             return false;

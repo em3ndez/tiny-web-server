@@ -3,6 +3,9 @@ package tests;
 import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
+import java.io.IOException;
+import java.util.function.Consumer;
+
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,6 +51,7 @@ public class WebSocketTests {
 
                 client.receiveMessages("stop", response -> {
                     messages.append(response);
+                    return true;
                 });
 
                 assertThat(messages.toString(), equalTo(
@@ -107,6 +111,7 @@ public class WebSocketTests {
 
                 client.receiveMessages("stop", response -> {
                     messages.append(response);
+                    return true;
                 });
                 assertThat(messages.toString(),
                         equalTo(
@@ -121,6 +126,7 @@ public class WebSocketTests {
                 // Read all three response frames
                 client.receiveMessages("stop", (message) -> {
                     messages.append(message);
+                    return true;
                 });
 
                 assertThat(messages.toString(),
@@ -131,18 +137,21 @@ public class WebSocketTests {
 
             });
 
-            only().it("Then it should do a 404 equivalent for a missing path", () -> {
+            it("Then it should do a 404 equivalent for a missing path", () -> {
 
                 // Example client usage
                 client.sendMessage("/foo/doesNotExist", "Hello WebSocket: 0");
 
-                final StringBuilder messages = new StringBuilder();
+                StringBuilder message = new StringBuilder();
 
-                client.receiveMessages("stop", response -> {
-                    messages.append(response);
+                client.receiveMessages("stop", new TinyWeb.StoppableConsumer<String>() {
+                    @Override
+                    public boolean accept(String response) {
+                        message.append(response);
+                        return false;
+                    }
                 });
-
-                assertThat(messages.toString(), equalTo("Error: 404"));
+                assertThat(message.toString(), equalTo("Error: 404"));
 
             });
 
@@ -187,6 +196,7 @@ public class WebSocketTests {
                 // Read all three response frames
                 client.receiveMessages("stop", response -> {
                     messages.append(response);
+                    return true;
                 });
 
                 assertThat(messages.toString(), equalTo(
@@ -203,6 +213,49 @@ public class WebSocketTests {
                 webSocketServer = null;
             });
         });
+
+        /// / eeee
+
+        describe("When mismatching domains on SocketServer client lib", () -> {
+
+            before(() -> {
+                webSocketServer = new TinyWeb.SocketServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                    registerMessageHandler("/foo/baz", (message, sender, context) -> {
+                        sender.sendBytesFrame(toBytes("hi"));
+                        sender.sendBytesFrame(toBytes("stop"));
+                    });
+                }};
+                Thread serverThread = new Thread(webSocketServer::start);
+                serverThread.start();
+                Thread.sleep(50);
+                client = new TinyWeb.SocketClient("localhost", 8081, "http://example:8080");
+                client.performHandshake();
+            });
+
+            it("Conversation is vetoed", () -> {
+
+                // Example client usage
+                client.sendMessage("/foo/baz", "Hello WebSocket");
+
+                StringBuilder messages = new StringBuilder();
+
+                client.receiveMessages("stop", response -> {
+                    messages.append(response);
+                    return false;
+                });
+
+                assertThat(messages.toString(), equalTo("Error: Bad Origin"));
+
+            });
+
+            after(() -> {
+                client.close();
+                client = null;
+                webSocketServer.stop();
+                webSocketServer = null;
+            });
+        });
+
     }
 
 }

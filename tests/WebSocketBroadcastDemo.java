@@ -76,6 +76,7 @@ public class WebSocketBroadcastDemo {
 
                         boolean shouldStop = client.receiveMessages("stop", message -> {
                             clientMessageCounts.merge(clientId, 1, Integer::sum);
+                            return true;
                         });
 
                         client.close();
