@@ -1,10 +1,9 @@
 package tests;
 
-import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
-import static com.paulhammant.tnywb.TinyWeb.FilterAction.CONTINUE;
-import static com.paulhammant.tnywb.TinyWeb.Method.GET;
+import static com.paulhammant.tnywb.Tiny.FilterAction.CONTINUE;
+import static com.paulhammant.tnywb.Tiny.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -13,17 +12,17 @@ import static tests.Suite.httpGet;
 
 @Test
 public class AdvancedServerCompositionTests {
-    TinyWeb.WebServer webServer;
+    com.paulhammant.tnywb.Tiny.WebServer webServer;
 
     {
-        describe("When additional composition can happen on a previously instantiated TinyWeb.Server", () -> {
+        describe("When additional composition can happen on a previously instantiated Tiny.WebServer", () -> {
             before(() -> {
-                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     endPoint(GET, "/foo", (req, res, ctx) -> {
                         res.write("Hello1");
                     });
                 }};
-                new TinyWeb.ServerComposition(webServer) {{
+                new com.paulhammant.tnywb.Tiny.ServerComposition(webServer) {{
                     path("/bar2", () -> {
                         endPoint(GET, "/baz2", (req, res, ctx) -> {
                             res.write("Hello3");
@@ -35,7 +34,7 @@ public class AdvancedServerCompositionTests {
                         });
                     });
                 }};
-                new TinyWeb.ServerComposition(webServer) {{
+                new com.paulhammant.tnywb.Tiny.ServerComposition(webServer) {{
                     endPoint(GET, "/bar2/baz2", (req, res, ctx) -> {
                         res.write("Hello3");
                     });
@@ -57,7 +56,7 @@ public class AdvancedServerCompositionTests {
         });
         describe("Given a TinyWeb server with ConcreteExtensionToServerComposition", () -> {
             before(() -> {
-                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
+                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080)) {{
                     path("/a", () -> {
                         path("/b", () -> {
                             path("/c", () -> {
@@ -84,7 +83,7 @@ public class AdvancedServerCompositionTests {
         });
         describe("Given a started TinyWeb server", () -> {
             before(() -> {
-                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
+                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080)) {{
 
                 }};
                 webServer.start();
@@ -92,7 +91,7 @@ public class AdvancedServerCompositionTests {
             describe("When additional composition happens", () -> {
                 it("Then illegal state errors should happen for new paths()", () -> {
                     try {
-                        new TinyWeb.ServerComposition(webServer) {{
+                        new com.paulhammant.tnywb.Tiny.ServerComposition(webServer) {{
                             path("/a", () -> {});
                         }};
                         throw new AssertionError("should have barfed");
@@ -102,7 +101,7 @@ public class AdvancedServerCompositionTests {
                 });
                 it("Then illegal state errors should happen for new 'all' filters()", () -> {
                     try {
-                        new TinyWeb.ServerComposition(webServer) {{
+                        new com.paulhammant.tnywb.Tiny.ServerComposition(webServer) {{
                             filter("/a", (req, resp, ctx) -> {
                                 return CONTINUE;
                             });
@@ -114,7 +113,7 @@ public class AdvancedServerCompositionTests {
                 });
                 it("Then illegal state errors should happen for new filters()", () -> {
                     try {
-                        new TinyWeb.ServerComposition(webServer) {{
+                        new com.paulhammant.tnywb.Tiny.ServerComposition(webServer) {{
                             filter(GET,"/a", (req, resp, ctx) -> {
                                 return CONTINUE;
                             });
@@ -126,7 +125,7 @@ public class AdvancedServerCompositionTests {
                 });
                 it("Then illegal state errors should happen for new endPoints()", () -> {
                     try {
-                        new TinyWeb.ServerComposition(webServer) {{
+                        new com.paulhammant.tnywb.Tiny.ServerComposition(webServer) {{
                             endPoint(GET, "/a", (req, resp, ctx) -> {});
                         }};
                         throw new AssertionError("should have barfed");
@@ -136,7 +135,7 @@ public class AdvancedServerCompositionTests {
                 });
                 it("Then illegal state errors should happen for new endPoints()", () -> {
                     try {
-                        new TinyWeb.ServerComposition(webServer) {{
+                        new com.paulhammant.tnywb.Tiny.ServerComposition(webServer) {{
                             serveStaticFilesAsync("foo", "foo");
                         }};
                         throw new AssertionError("should have barfed");

@@ -68,7 +68,7 @@ java commands), then there was a shell script, then there was a makefile, which 
     - [Two End-points within a Path](#two-end-points-within-a-path)
     - [A filter and an end-point within a path](#a-filter-and-an-end-point-within-a-path)
     - [A webSocket and endPoint within a path](#a-websocket-and-endpoint-within-a-path)
-    - [Connecting to a WebSocket using TinyWeb.SocketClient](#connecting-to-a-websocket-using-tinywebsocketclient)
+    - [Connecting to a WebSocket using Tiny.WebSocketClient](#connecting-to-a-websocket-using-tinywebsocketclient)
     - [Connecting to a WebSocket using JavaScript source file endpoint](#connecting-to-a-websocket-using-javascript-source-file-endpoint)
     - [Two WebSockets with Different Paths](#two-websockets-with-different-paths)
   - [Static File Serving](#static-file-serving)
@@ -125,7 +125,7 @@ In this example, a GET endpoint is defined at the path `/hello`. When a request 
 Here's an example of using a filter with an endpoint in TinyWeb:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
 
     // Apply a filter to check for a custom header
     filter(TinyWeb.Method.GET, "/secure", (req, res, context) -> {
@@ -153,7 +153,7 @@ proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
 Here's an example of defining two endpoints within a single path using TinyWeb:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
     path("/api", () -> {
         // Define the first GET endpoint
         endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
@@ -174,7 +174,7 @@ Here's an example of using a filter to perform authentication and a logged-in us
 or not at all of there's no logged in user.
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(-1)) {{
+Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(-1)) {{
     path("/shopping", () -> {
         filter(TinyWeb.Method.GET, ".*", (req, res, context) -> {
             String allegedlyLoggedInCookie = req.getCookie("logged-in");
@@ -216,7 +216,7 @@ via an attribute if all is good.
 Here's an example of defining both a WebSocket and an HTTP endpoint within a single path using TinyWeb:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/messenger", () -> {
         // Define a GET endpoint
         endPoint(TinyWeb.Method.GET, "/inboxStatus", (req, res, context) -> {
@@ -236,14 +236,14 @@ In this example, a GET endpoint is defined at `/messenger/inboxStatus` that resp
 Additionally, a WebSocket endpoint is defined at `/messenger/chatback` that echoes back any message it
 receives, prefixed with "Echo: ", which we admit isn't a real world example.
 
-#### Connecting to a WebSocket using TinyWeb.WebSocketClient
+#### Connecting to a WebSocket using Tiny.WebSocketClient
 
-Here's an example of how a client connects to a server WebSocket using `TinyWeb.WebSocketClient`:
+Here's an example of how a client connects to a server WebSocket using `Tiny.WebSocketClient`:
 
 ```java
 public class WebSocketClientExample {
     public static void main(String[] args) {
-        try (TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081)) {
+        try (Tiny.WebSocketClient client = new Tiny.WebSocketClient("localhost", 8081)) {
             // Perform the WebSocket handshake
             client.performHandshake();
 
@@ -261,7 +261,7 @@ public class WebSocketClientExample {
 }
 ```
 
-In this example, a `TinyWeb.WebSocketClient` is created to connect to a WebSocket server running on `localhost` at
+In this example, a `Tiny.WebSocketClient` is created to connect to a WebSocket server running on `localhost` at
 port 8081. The client performs a WebSocket handshake, sends a message to the `/messenger/chatback` path, and prints the
 response received from the server. On the wire, the path and message are put in a specific structure for sending to
 the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not. This is to make the webSockets
@@ -271,7 +271,7 @@ server. So `SocketClient` does that custom adaption of client-to-server TinyWeb.
 
 #### Connecting to a WebSocket using JavaScript source file endpoint
 
-Here's an example of how to connect to a TinyWeb.Socket using the JavaScript version of `TinyWeb.SocketClient`:
+Here's an example of how to connect to a TinyWeb.Socket using the JavaScript version of `Tiny.WebSocketClient`:
 
 ```html
 <!DOCTYPE html>
@@ -285,7 +285,7 @@ Here's an example of how to connect to a TinyWeb.Socket using the JavaScript ver
     <h1>WebSocket Message Display</h1>
     <pre id="messageDisplay"></pre>
     <script>
-        const tinyWebSocketClient = new TinyWeb.SocketClient('localhost', 8081);
+        const tinyWebSocketClient = new Tiny.WebSocketClient('localhost', 8081);
 
         async function example() {
             try {
@@ -306,12 +306,12 @@ Here's an example of how to connect to a TinyWeb.Socket using the JavaScript ver
 </html>
 ```
 
-In this example, a JavaScript version of `TinyWeb.WebSocketClient` (via `TinyWeb.JavaScriptWebSocketClient` Java class) is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
+In this example, a JavaScript version of `Tiny.WebSocketClient` (via `TinyWeb.JavaScriptWebSocketClient` Java class) is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
 connection to open, sends a message to the `/messenger/chatback` path, and displays the response received from the server in the browser (html code not shown).
 
 **Making the JavaScript WebSocket Client available to webapps**
 
-In the example where we connect to a WebSocket using the JavaScript `TinyWeb.SocketClient`, the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint that responds with the JavaScript code when requested:
+In the example where we connect to a WebSocket using the JavaScript `Tiny.WebSocketClient`, the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint that responds with the JavaScript code when requested:
 
 ```java
 endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js",new TinyWeb.JavascriptSocketClient());
@@ -324,7 +324,7 @@ This is to honor the server-side need for path & message to be in a specific opi
 Here's an example of defining two WebSocket endpoints with different paths using TinyWeb:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/api", () -> {
         // Define the first WebSocket endpoint
         webSocket("/chat", (message, sender, context) -> {
@@ -356,7 +356,7 @@ To serve static files, use the `serveStaticFilesAsync` method in your server con
 
 Example:
 ```java
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
     serveStaticFilesAsync("/static", "/path/to/static/files");
 }}.start();
 ```
@@ -384,7 +384,7 @@ By following these guidelines, you can efficiently serve static files while main
 We've covered paths, filters, endPoints, webSockets, and static file serving the low-level building blocks of TinyWeb applications.
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/ads", () -> {
       path("/selling", () -> {
           //TODO
@@ -439,8 +439,8 @@ public static class MyApp {
             res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
         }
 
-        public static TinyWeb.Server composeApplication(String[] args, MyApp app) {
-            TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+        public static Tiny.WebServer composeApplication(String[] args, MyApp app) {
+            Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                 endPoint(GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
             }};
             return server;
@@ -497,7 +497,7 @@ logging or error handling strategies.
 Example:
 
 ```java
-svr = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {
+svr = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {
     {
       // paths, filters, endPoints setup as described before
     }
@@ -521,7 +521,7 @@ to, but they may do so, or a library they call does so. By default, this method 
 Example:
 
 ```java
-svr = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {
+svr = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {
     {
         // paths, filters, endPoints setup as described before
     }
@@ -548,7 +548,7 @@ dependencies in the `(req, resp, context)` functional interfaces, nor do those h
 For it to be true Dependency Injection capable - for say injecting a `ShoppingCart` into a endpoint or filter - you would something like:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
     endPoint(GET, "/users", /*ShoppingCart*/ cart, (req, res, context) -> {
         // do something with "cart" var
         res.write("some response");
@@ -603,7 +603,7 @@ endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
 });
 ```
 
-This one again is more questionable - something registered at the same level as new `TinyWeb.Server() { .. };`
+This one again is more questionable - something registered at the same level as new `Tiny.WebServer() { .. };`
 
 ```java
 endPoint(GET, "/howManyItemsInCart", (req, res, ctx) -> {
@@ -674,14 +674,14 @@ import org.jdbi.v3.core.transaction.TransactionIsolationLevel;
 
 public class MyDatabaseApp {
     private final Jdbi jdbi;
-    private TinyWeb.Server server;
+    private Tiny.WebServer server;
           
     public MyDatabaseApp() {
         // every endpoint/filter could directly do JDBC this way as ..
         final jdbi = Jdbi.create("jdbc:h2:mem:test");
         // .. `jdbi` would be in scope for all below
 
-        server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+        server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
             endPoint(GET, "/users", (req, res, context) -> {
                 List<String> users = jdbi.inTransaction(handle ->
                     handle.createQuery("SELECT name FROM users")
@@ -716,7 +716,7 @@ means that such code is not executed per request or per path hit, but rather whe
 Here's an example of what not to do:
 
 ```java
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
     path("/api", () -> {
         code().that().youThink("is per '/api/.*' invocation").but("it is not");
         // This code runs per request to /api
@@ -817,7 +817,7 @@ Given a TinyWeb server with a reusable composition
     ✓ Then it should not collect statistics filter that notionally match when the endPoint is a 404
   Given a TinyWeb server with composed paths
     ✓ Then it should respond correctly to requests at the composed endpoint
-  When additional composition can happen on a previously instantiated TinyWeb.Server
+  When additional composition can happen on a previously instantiated Tiny.WebServer
     ✓ Then both endpoints should be accessible via GET
   Given a TinyWeb server with ConcreteExtensionToServerComposition
     When that concrete class is mounted within another path
@@ -857,11 +857,11 @@ Given a TinyWeb server with a reusable composition
       ✓ Then it should return the user profile for Thelma
     When a server is started
       ✓ Then a endpoint can't be added anymore
-  When using standalone TinyWeb.SocketServer without TinyWeb.Server
+  When using standalone Tiny.WebSocketServer without Tiny.WebServer
     ✓ Then it should echo three messages plus -1 -2 -3 back to the client
-  When using TinyWeb.SocketServer with TinyWeb.Server and a contrived webSocket endpoint
+  When using Tiny.WebSocketServer with Tiny.WebServer and a contrived webSocket endpoint
     ✓ Then it should echo three modified messages back to the client (twice)
-  When using standalone TinyWeb.SocketServer without TinyWeb.Server
+  When using standalone Tiny.WebSocketServer without Tiny.WebServer
     ✓ Then it should echo three messages plus -1 -2 -3 back to the client
   Given a mocked ExampleApp
     When accessing the Greeting GET endpoint

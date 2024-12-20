@@ -1,7 +1,5 @@
 package tests;
 
-import com.paulhammant.tnywb.TinyWeb;
-
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -15,12 +13,12 @@ public class ExampleDotComDemo {
     private static final Map<String, AtomicInteger> sessionCounters = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
-        TinyWeb.WebServer server = new TinyWeb.WebServer(TinyWeb.Config.create().withInetSocketAddress(new InetSocketAddress("example.com", 8080)).withWebSocketPort(8081))
+        com.paulhammant.tnywb.Tiny.WebServer server = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withInetSocketAddress(new InetSocketAddress("example.com", 8080)).withWebSocketPort(8081))
 
         {
 
             @Override
-            protected void serverException(TinyWeb.ServerException e) {
+            protected void serverException(com.paulhammant.tnywb.Tiny.ServerException e) {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
                 System.exit(1);
@@ -28,10 +26,10 @@ public class ExampleDotComDemo {
 
             {
             // Serve the JavaScript WebSocket client library
-            endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js", new TinyWeb.JavascriptSocketClient());
+            endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/javascriptWebSocketClient.js", new com.paulhammant.tnywb.Tiny.JavascriptSocketClient());
 
             // Serve the static HTML/JS page
-            endPoint(TinyWeb.Method.GET, "/", (req, res, ctx) -> {
+            endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/", (req, res, ctx) -> {
                 String sessionId = req.getHeaders().getOrDefault("Session-ID", List.of(UUID.randomUUID().toString())).get(0);
                 res.setHeader("Session-ID", sessionId);
                 res.setHeader("Content-Type", "text/html");
@@ -124,7 +122,7 @@ public class ExampleDotComDemo {
             });
 
             // HTTP PUT endpoint to reset the counter
-            endPoint(TinyWeb.Method.PUT, "/resetCtr", (req, res, ctx) -> {
+            endPoint(com.paulhammant.tnywb.Tiny.Method.PUT, "/resetCtr", (req, res, ctx) -> {
                 String sessionId = req.getHeaders().get("Session-ID").getFirst();
                 if (sessionId != null && !sessionId.isEmpty()) {
                     AtomicInteger counter = sessionCounters.get(sessionId);

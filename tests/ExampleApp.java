@@ -1,27 +1,26 @@
 package tests;
 
-import com.paulhammant.tnywb.TinyWeb;
-import com.paulhammant.tnywb.TinyWeb.Request;
-import com.paulhammant.tnywb.TinyWeb.Response;
+import com.paulhammant.tnywb.Tiny.Request;
+import com.paulhammant.tnywb.Tiny.Response;
 
 import java.io.File;
 
-import static com.paulhammant.tnywb.TinyWeb.FilterAction.CONTINUE;
-import static com.paulhammant.tnywb.TinyWeb.FilterAction.STOP;
-import static com.paulhammant.tnywb.TinyWeb.Method.GET;
-import static com.paulhammant.tnywb.TinyWeb.Method.POST;
-import static com.paulhammant.tnywb.TinyWeb.Method.PUT;
+import static com.paulhammant.tnywb.Tiny.FilterAction.CONTINUE;
+import static com.paulhammant.tnywb.Tiny.FilterAction.STOP;
+import static com.paulhammant.tnywb.Tiny.Method.GET;
+import static com.paulhammant.tnywb.Tiny.Method.POST;
+import static com.paulhammant.tnywb.Tiny.Method.PUT;
 import static tests.Suite.bytesToString;
 import static tests.Suite.toBytes;
 
 public class ExampleApp {
 
-    public void foobar(Request req, Response res, TinyWeb.RequestContext ctx) {
+    public void foobar(Request req, Response res, com.paulhammant.tnywb.Tiny.RequestContext ctx) {
         res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
     }
 
-    public static TinyWeb.WebServer exampleComposition(String[] args, ExampleApp app) {
-        TinyWeb.WebServer server = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+    public static com.paulhammant.tnywb.Tiny.WebServer exampleComposition(String[] args, ExampleApp app) {
+        com.paulhammant.tnywb.Tiny.WebServer server = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
 
             path("/foo", () -> {
                 filter(GET, "/.*", (req, res, ctx) -> {
@@ -64,7 +63,7 @@ public class ExampleApp {
             });
 
             path("/api", () -> {
-                endPoint(TinyWeb.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
+                endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
                     res.write("Parameter: " + ctx.getParam("1"));
                 });
             });

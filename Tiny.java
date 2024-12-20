@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
 
 import static tests.Suite.toBytes;
 
-public class TinyWeb {
+public class Tiny {
 
     public static final String VERSION = "1.0-SNAPSHOT";
     public static final String SHA256_OF_SOURCE_LINES = "4db95effe627428070ba924fba5b6338d1cbcf7dcd78075dde59754719208a20"; // this line not included in SHA256 calc
@@ -101,7 +101,7 @@ public class TinyWeb {
 
     @FunctionalInterface
     public interface WebSocketMessageHandler {
-        void handleMessage(byte[] message, TinyWeb.MessageSender sender, RequestContext ctx);
+        void handleMessage(byte[] message, com.paulhammant.tnywb.Tiny.MessageSender sender, RequestContext ctx);
     }
 
     @FunctionalInterface
@@ -141,7 +141,7 @@ public class TinyWeb {
             // For example, using the cache to manage instances
             return requestCache.getOrCreate(clazz, () -> {
                 // Add instantiation logic here
-                throw new TinyWeb.DependencyException(clazz);
+                throw new com.paulhammant.tnywb.Tiny.DependencyException(clazz);
             });
         }
     }
@@ -250,7 +250,7 @@ public class TinyWeb {
                 new Response(exchange).write(message, code);
         }
 
-        public WebServerContext endPoint(TinyWeb.Method method, String path, EndPoint endPoint) {
+        public WebServerContext endPoint(com.paulhammant.tnywb.Tiny.Method method, String path, EndPoint endPoint) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add endpoints after the server has started.");
             }
@@ -267,7 +267,7 @@ public class TinyWeb {
             return this;
         }
 
-        public WebServerContext filter(TinyWeb.Method method, String path, Filter filter) {
+        public WebServerContext filter(com.paulhammant.tnywb.Tiny.Method method, String path, Filter filter) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add filters after the server has started.");
             }
@@ -385,7 +385,7 @@ public class TinyWeb {
     public static class WebServer extends AbstractWebServerContext {
 
         private final HttpServer httpServer;
-        private final SocketServer socketServer;
+        private final WebSocketServer socketServer;
         private Thread simpleWebSocketServerThread = null;
         private Config config;
         private final DependencyManager dependencyManager;
@@ -412,7 +412,7 @@ public class TinyWeb {
             }
 
             if (config.wsPort > 0) {
-                socketServer = new SocketServer(config, dependencyManager) {
+                socketServer = new WebSocketServer(config, dependencyManager) {
                     @Override
                     protected WebSocketMessageHandler getHandler(String path) {
                         for (Map.Entry<Pattern, WebSocketMessageHandler> patternWebSocketMessageHandlerEntry : wsEndPoints.entrySet()) {
@@ -943,7 +943,7 @@ public class TinyWeb {
      */
 
 
-    public static class SocketServer {
+    public static class WebSocketServer {
 
         public static final Pattern ORIGIN_MATCH = Pattern.compile("Origin: (.*)");
         public static final WebSocketMessageHandler BAD_ORIGIN = (message, sender, ctx) -> sender.sendBytesFrame(toBytes("Error: Bad Origin"));
@@ -955,10 +955,10 @@ public class TinyWeb {
         private Map<String, WebSocketMessageHandler> messageHandlers = new HashMap<>();
         private final DependencyManager dependencyManager;
 
-        public SocketServer(Config config) {
+        public WebSocketServer(Config config) {
             this(config, new DependencyManager(new DefaultComponentCache(null)));
         }
-        public SocketServer(Config config, DependencyManager dependencyManager) {
+        public WebSocketServer(Config config, DependencyManager dependencyManager) {
             this.config = config;
             this.dependencyManager = dependencyManager;
 
@@ -1063,7 +1063,7 @@ public class TinyWeb {
             //System.out.println("origin= " + origin);
             String expectedOrigin = config.inetSocketAddress != null ? (config.inetSocketAddress.getHostName() + ":" + config.inetSocketAddress.getPort()).replace("0.0.0.0", "").replace("::", "") : "";
 
-            TinyWeb.MessageSender sender = new TinyWeb.MessageSender(out);
+            com.paulhammant.tnywb.Tiny.MessageSender sender = new com.paulhammant.tnywb.Tiny.MessageSender(out);
             byte[] buffer = new byte[8192];
 
             while (!client.isClosed()) {
@@ -1285,11 +1285,11 @@ public class TinyWeb {
                 // Handle extended payload length
                 if (payloadLength == 126) {
                     byte[] extendedLength = new byte[2];
-                    SocketServer.readFully(in, extendedLength, 0, 2);
+                    WebSocketServer.readFully(in, extendedLength, 0, 2);
                     payloadLength = ((extendedLength[0] & 0xFF) << 8) | (extendedLength[1] & 0xFF);
                 } else if (payloadLength == 127) {
                     byte[] extendedLength = new byte[8];
-                    SocketServer.readFully(in, extendedLength, 0, 8);
+                    WebSocketServer.readFully(in, extendedLength, 0, 8);
                     payloadLength = 0;
                     for (int i = 0; i < 8; i++) {
                         payloadLength |= (extendedLength[i] & 0xFF) << ((7 - i) * 8);
@@ -1297,7 +1297,7 @@ public class TinyWeb {
                 }
 
                 byte[] payload = new byte[payloadLength];
-                int bytesRead = SocketServer.readFully(in, payload, 0, payloadLength);
+                int bytesRead = WebSocketServer.readFully(in, payload, 0, payloadLength);
                 if (bytesRead < payloadLength) break;
 
 
@@ -1350,7 +1350,7 @@ public class TinyWeb {
                 outputStream.write(payload);
                 outputStream.flush();
             } catch (IOException e) {
-                throw new TinyWeb.ServerException("IOE " + e.getMessage(), e);
+                throw new com.paulhammant.tnywb.Tiny.ServerException("IOE " + e.getMessage(), e);
             }
         }
     }

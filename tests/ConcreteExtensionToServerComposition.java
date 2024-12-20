@@ -16,14 +16,12 @@
 
 package tests;
 
-import com.paulhammant.tnywb.TinyWeb;
+public class ConcreteExtensionToServerComposition extends com.paulhammant.tnywb.Tiny.ServerComposition {
 
-public class ConcreteExtensionToServerComposition extends TinyWeb.ServerComposition {
-
-    public ConcreteExtensionToServerComposition(TinyWeb.WebServer server) {
+    public ConcreteExtensionToServerComposition(com.paulhammant.tnywb.Tiny.WebServer server) {
         super(server);
         path("/bar", () -> {
-            endPoint(TinyWeb.Method.GET, "/baz", (req, res, ctx) -> {
+            endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/baz", (req, res, ctx) -> {
                 res.write("Hello from (relative) /bar/baz (absolute path: " +req.getPath() + ")");
             });
         });

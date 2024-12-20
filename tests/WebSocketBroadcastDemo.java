@@ -1,20 +1,18 @@
 package tests;
 
-import com.paulhammant.tnywb.TinyWeb;
-
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.paulhammant.tnywb.TinyWeb.Method.POST;
+import static com.paulhammant.tnywb.Tiny.Method.POST;
 
 
 public class WebSocketBroadcastDemo {
 
-    public static class Broadcaster extends ConcurrentLinkedQueue<TinyWeb.MessageSender> {
+    public static class Broadcaster extends ConcurrentLinkedQueue<com.paulhammant.tnywb.Tiny.MessageSender> {
 
-        ConcurrentLinkedQueue<TinyWeb.MessageSender> closed;
+        ConcurrentLinkedQueue<com.paulhammant.tnywb.Tiny.MessageSender> closed;
 
         public void broadcast(String newVal) {
             if (closed != null) {
@@ -26,7 +24,7 @@ public class WebSocketBroadcastDemo {
                 executor.execute(() -> {
                     try {
                         handler.sendBytesFrame(newVal.getBytes());
-                    } catch (TinyWeb.ServerException e) {
+                    } catch (com.paulhammant.tnywb.Tiny.ServerException e) {
                         if (e.getCause() instanceof SocketException && e.getCause().getMessage().equals("Socket closed")) {
                             closed.add(handler);
                         } else {
@@ -48,7 +46,7 @@ public class WebSocketBroadcastDemo {
         AtomicInteger restartedClients = new AtomicInteger(0);
         AtomicInteger unexpectedClientExceptions = new AtomicInteger(0);
 
-        TinyWeb.WebServer server = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+        com.paulhammant.tnywb.Tiny.WebServer server = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
 
             webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
                 broadcaster.add(sender);
@@ -70,7 +68,7 @@ public class WebSocketBroadcastDemo {
             Thread.ofVirtual().start(() -> {
                 while (true) {
                     try {
-                        TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081, "http://localhost:8080");
+                        com.paulhammant.tnywb.Tiny.SocketClient client = new com.paulhammant.tnywb.Tiny.SocketClient("localhost", 8081, "http://localhost:8080");
                         client.performHandshake();
                         client.sendMessage("/keepMeUpdatedPlease", "Client " + clientId + " connecting");
 

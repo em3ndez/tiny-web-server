@@ -16,7 +16,6 @@
 
 package tests;
 
-import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 import org.hamcrest.Matchers;
 
@@ -24,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-import static com.paulhammant.tnywb.TinyWeb.Method.GET;
+import static com.paulhammant.tnywb.Tiny.Method.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static tests.Suite.bodyAndResponseCodeShouldBe;
@@ -32,26 +31,26 @@ import static tests.Suite.httpGet;
 
 @Test
 public class DependenciesTests {
-    TinyWeb.WebServer webServer;
+    com.paulhammant.tnywb.Tiny.WebServer webServer;
     boolean dependencyException = false;
 
     {
         describe("When endpoint and filters can depend on components", () -> {
             before(() -> {
-                final TinyWeb.ComponentCache cache = new TinyWeb.UseOnceComponentCache(new TinyWeb.DefaultComponentCache() {{
+                final com.paulhammant.tnywb.Tiny.ComponentCache cache = new com.paulhammant.tnywb.Tiny.UseOnceComponentCache(new com.paulhammant.tnywb.Tiny.DefaultComponentCache() {{
                     put(ProductInventory.class, new ProductInventory(/* would have secrets in real usage */));
                 }});
-                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081), new TinyWeb.DependencyManager(cache){
+                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081), new com.paulhammant.tnywb.Tiny.DependencyManager(cache){
 
                     // Note: this is not Dependency Injection
 
                     @Override
-                    public <T> T  instantiateDep(Class<T> clazz, TinyWeb.ComponentCache requestCache, Matcher matcher) {
+                    public <T> T  instantiateDep(Class<T> clazz, com.paulhammant.tnywb.Tiny.ComponentCache requestCache, Matcher matcher) {
                         // all your request scoped deps here in a if/else sequence
                         if (clazz == ShoppingCart.class) {
                             return (T) createOrGetShoppingCart(requestCache);
                         }
-                        throw new TinyWeb.DependencyException(clazz);
+                        throw new com.paulhammant.tnywb.Tiny.DependencyException(clazz);
                         // or ...
                         //    return super.instantiateDep(clazz, requestCache);
                     }
@@ -75,7 +74,7 @@ public class DependenciesTests {
                     });
                 }};
 
-                new TinyWeb.ServerComposition(webServer) {
+                new com.paulhammant.tnywb.Tiny.ServerComposition(webServer) {
 
                     {
                     path("/api", () -> {
@@ -100,7 +99,7 @@ public class DependenciesTests {
                             try {
                                 pi = ctx.dep(ProductInventory.class);
                                 res.write("blah blah never gets here: " + pi.stockItems.size());
-                            } catch (TinyWeb.DependencyException e) {
+                            } catch (com.paulhammant.tnywb.Tiny.DependencyException e) {
                                 // You don't have to try/catch DependencyException as an end-user
                                 // you'll discover such things during development, not at deploy-to-production time
                                 dependencyException = true;
@@ -192,13 +191,13 @@ public class DependenciesTests {
     }
 
 
-    public static ShoppingCart createOrGetShoppingCart(TinyWeb.ComponentCache cache) {
+    public static ShoppingCart createOrGetShoppingCart(com.paulhammant.tnywb.Tiny.ComponentCache cache) {
         return cache.getOrCreate(ShoppingCart.class, () ->
                 new ShoppingCart(getOrCreateProductInventory(cache))
         );
     }
 
-    public static ProductInventory getOrCreateProductInventory(TinyWeb.ComponentCache cache) {
+    public static ProductInventory getOrCreateProductInventory(com.paulhammant.tnywb.Tiny.ComponentCache cache) {
         return cache.getParent().getOrCreate(ProductInventory.class, ProductInventory::new);
     }
     

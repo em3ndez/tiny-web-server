@@ -1,6 +1,5 @@
 package tests;
 
-import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
 import java.net.InetAddress;
@@ -17,7 +16,7 @@ public class ConfigTests {
         describe("Config permutations", () -> {
 
             it("should create default config", () -> {
-                TinyWeb.Config config = TinyWeb.Config.create();
+                com.paulhammant.tnywb.Tiny.Config config = com.paulhammant.tnywb.Tiny.Config.create();
                 assertThat(config.inetSocketAddress, equalTo(null));
                 assertThat(config.wsPort, equalTo(0));
                 assertThat(config.wsBacklog, equalTo(50));
@@ -26,33 +25,33 @@ public class ConfigTests {
             });
 
             it("should set web port", () -> {
-                TinyWeb.Config config = TinyWeb.Config.create().withWebPort(8080);
+                com.paulhammant.tnywb.Tiny.Config config = com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080);
                 assertThat(config.inetSocketAddress.getPort(), equalTo(8080));
             });
 
             it("should set web socket port", () -> {
-                TinyWeb.Config config = TinyWeb.Config.create().withWebSocketPort(8081);
+                com.paulhammant.tnywb.Tiny.Config config = com.paulhammant.tnywb.Tiny.Config.create().withWebSocketPort(8081);
                 assertThat(config.wsPort, equalTo(8081));
             });
 
             it("should set web socket backlog", () -> {
-                TinyWeb.Config config = TinyWeb.Config.create().withWsBacklog(100);
+                com.paulhammant.tnywb.Tiny.Config config = com.paulhammant.tnywb.Tiny.Config.create().withWsBacklog(100);
                 assertThat(config.wsBacklog, equalTo(100));
             });
 
             it("should set host and web port", () -> {
-                TinyWeb.Config config = TinyWeb.Config.create().withHostAndWebPort("localhost", 8080);
+                com.paulhammant.tnywb.Tiny.Config config = com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080);
                 assertThat(config.inetSocketAddress, equalTo(new InetSocketAddress("localhost", 8080)));
             });
 
             it("should set web socket bind address", () -> {
                 InetAddress bindAddr = InetAddress.getLoopbackAddress();
-                TinyWeb.Config config = TinyWeb.Config.create().withWsBindAddr(bindAddr);
+                com.paulhammant.tnywb.Tiny.Config config = com.paulhammant.tnywb.Tiny.Config.create().withWsBindAddr(bindAddr);
                 assertThat(config.wsBindAddr, equalTo(bindAddr));
             });
 
             it("should set socket timeout", () -> {
-                TinyWeb.Config config = TinyWeb.Config.create().withSocketTimeoutMillis(60000);
+                com.paulhammant.tnywb.Tiny.Config config = com.paulhammant.tnywb.Tiny.Config.create().withSocketTimeoutMillis(60000);
                 assertThat(config.socketTimeoutMs, equalTo(60000));
             });
         });

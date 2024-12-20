@@ -16,7 +16,6 @@
 
 package tests;
 
-import com.paulhammant.tnywb.TinyWeb;
 import org.forgerock.cuppa.Test;
 
 import java.io.File;
@@ -30,12 +29,12 @@ import static tests.Suite.httpGet;
 
 @Test
 public class StaticFilesTests {
-    TinyWeb.WebServer webServer;
+    com.paulhammant.tnywb.Tiny.WebServer webServer;
 
     {
         describe("When serving static files", () -> {
             before(() -> {
-                webServer = new TinyWeb.WebServer(TinyWeb.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     serveStaticFilesAsync("/static", new File(".").getAbsolutePath());
                 }};
                 webServer.start();
@@ -54,7 +53,7 @@ public class StaticFilesTests {
             });
             it("Then it should return 200 and serve a file from a subdirectory", () -> {
                 // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                try (okhttp3.Response response = httpGet("/static/TinyWeb.java")) {
+                try (okhttp3.Response response = httpGet("/static/Tiny.java")) {
                     assertThat(response.code(), equalTo(200));
                     assertThat(response.body().contentType().toString(), equalTo("text/x-java"));
                     assertThat(response.body().string(), containsString("class"));
