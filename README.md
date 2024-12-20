@@ -356,7 +356,7 @@ The `WebSocketBroadcastDemo` class demonstrates the capability of the TinyWeb se
 - **Broadcasting**: The server can send messages to all connected clients, making it suitable for applications like chat rooms, live notifications, or real-time data feeds.
 - **Scalability**: The demo has been tested with up to 20,000 concurrently connected clients, showcasing the server's ability to handle high loads. Different hardware might be able to do more.
 - **Virtual Threads**: Utilizes Java's virtual threads to manage connections, which helps in reducing the overhead associated with traditional thread management.
-- TODO connections recover as much as they can.
+- **Connection Recovery**: The `WebSocketBroadcastDemo` is designed to handle connection interruptions gracefully. If a client disconnects unexpectedly, the server attempts to manage the situation by allowing the client to reconnect and resume receiving broadcast messages. This is achieved through the use of virtual threads, which help in managing resources efficiently and maintaining the state of each client connection. The demo showcases the server's ability to handle reconnections without significant performance degradation, ensuring a robust and resilient WebSocket communication environment.
 
 #### Testing Results:
 - The server was able to maintain stable connections with 20,000 clients, each receiving broadcast messages without significant latency.
