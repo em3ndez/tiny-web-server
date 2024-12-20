@@ -1216,7 +1216,9 @@ public class TinyWeb {
         }
 
         public void performHandshake() throws IOException {
-            String key = "dGhlIHNhbXBsZSBub25jZQ=="; // In practice, generate this randomly
+            byte[] keyBytes = new byte[16];
+            random.nextBytes(keyBytes);
+            String key = Base64.getEncoder().encodeToString(keyBytes);
             String handshakeRequest =
                     "GET / HTTP/1.1\r\n" +
                             "Host: " + this.host +":" +this.port+ "\r\n" +
