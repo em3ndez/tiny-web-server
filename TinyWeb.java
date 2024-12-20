@@ -295,7 +295,7 @@ public class TinyWeb {
         private final int wsPort;
         private final int wsBacklog;
         private final InetAddress wsBindAddr;
-        public int socketTimeoutMs = 30000; // 5 mins
+        public final int socketTimeoutMs = 30000; // 5 mins
 
         private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr) {
             this.inetSocketAddress = inetSocketAddress;
