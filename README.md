@@ -354,15 +354,16 @@ The `WebSocketBroadcastDemo` class demonstrates the capability of the TinyWeb se
 
 #### Key Features:
 - **Broadcasting**: The server can send messages to all connected clients, making it suitable for applications like chat rooms, live notifications, or real-time data feeds.
-- **Scalability**: The demo has been tested with up to 20,000 concurrently connected clients, showcasing the server's ability to handle high loads.
+- **Scalability**: The demo has been tested with up to 20,000 concurrently connected clients, showcasing the server's ability to handle high loads. Different hardware might be able to do more.
 - **Virtual Threads**: Utilizes Java's virtual threads to manage connections, which helps in reducing the overhead associated with traditional thread management.
+- TODO connections recover as much as they can.
 
 #### Testing Results:
 - The server was able to maintain stable connections with 20,000 clients, each receiving broadcast messages without significant latency.
 - The use of virtual threads allowed the server to efficiently manage resources, keeping CPU and memory usage within acceptable limits.
 - The demo serves as a benchmark for evaluating the performance of WebSocket implementations in TinyWeb and can be used as a reference for building scalable real-time applications.
 
-This demonstration highlights TinyWeb's potential for high-performance WebSocket applications, making it a viable choice for developers looking to implement real-time features in their projects.
+This demonstration highlights TinyWeb's potential for high-performance WebSocket applications, making it a viable choice for developers looking to implement real-time features in their projects.  Perhaps still, intranet solutions rather than web-scale.
 
 ## Static File Serving
 
