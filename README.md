@@ -110,7 +110,7 @@ java commands), then there was a shell script, then there was a makefile, which 
 Here is a basic example of defining a GET endpoint using TinyWeb:
 
 ```java 
-TinyWeb.Server server = new TinyWeb.Server(TinyWeb.Config.create().withWebPort(8080)) {{
+TinyWeb.WebServer server = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
     endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
         // req gives access to headers, etc
         res.write("Hello, World!");
