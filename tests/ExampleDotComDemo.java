@@ -1,6 +1,6 @@
 package tests;
 
-import com.paulhammant.tnywb.Tiny;
+import com.paulhammant.tiny.Tiny;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -15,12 +15,12 @@ public class ExampleDotComDemo {
     private static final Map<String, AtomicInteger> sessionCounters = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
-        com.paulhammant.tnywb.Tiny.WebServer server = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withInetSocketAddress(new InetSocketAddress("example.com", 8080)).withWebSocketPort(8081))
+        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withInetSocketAddress(new InetSocketAddress("example.com", 8080)).withWebSocketPort(8081))
 
         {
 
             @Override
-            protected void serverException(com.paulhammant.tnywb.Tiny.ServerException e) {
+            protected void serverException(com.paulhammant.tiny.Tiny.ServerException e) {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
                 System.exit(1);

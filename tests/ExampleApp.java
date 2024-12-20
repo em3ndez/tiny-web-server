@@ -1,27 +1,27 @@
 package tests;
 
-import com.paulhammant.tnywb.Tiny;
-import com.paulhammant.tnywb.Tiny.Request;
-import com.paulhammant.tnywb.Tiny.Response;
+import com.paulhammant.tiny.Tiny;
+import com.paulhammant.tiny.Tiny.Request;
+import com.paulhammant.tiny.Tiny.Response;
 
 import java.io.File;
 
-import static com.paulhammant.tnywb.Tiny.FilterAction.CONTINUE;
-import static com.paulhammant.tnywb.Tiny.FilterAction.STOP;
-import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
-import static com.paulhammant.tnywb.Tiny.HttpMethods.POST;
-import static com.paulhammant.tnywb.Tiny.HttpMethods.PUT;
+import static com.paulhammant.tiny.Tiny.FilterAction.CONTINUE;
+import static com.paulhammant.tiny.Tiny.FilterAction.STOP;
+import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
+import static com.paulhammant.tiny.Tiny.HttpMethods.POST;
+import static com.paulhammant.tiny.Tiny.HttpMethods.PUT;
 import static tests.Suite.bytesToString;
 import static tests.Suite.toBytes;
 
 public class ExampleApp {
 
-    public void foobar(Request req, Response res, com.paulhammant.tnywb.Tiny.RequestContext ctx) {
+    public void foobar(Request req, Response res, com.paulhammant.tiny.Tiny.RequestContext ctx) {
         res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
     }
 
-    public static com.paulhammant.tnywb.Tiny.WebServer exampleComposition(String[] args, ExampleApp app) {
-        com.paulhammant.tnywb.Tiny.WebServer server = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+    public static com.paulhammant.tiny.Tiny.WebServer exampleComposition(String[] args, ExampleApp app) {
+        com.paulhammant.tiny.Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
 
             path("/foo", () -> {
                 filter(GET, "/.*", (req, res, ctx) -> {

@@ -16,13 +16,14 @@
 
 package tests;
 
+import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
 
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import static com.paulhammant.tnywb.Tiny.FilterAction.CONTINUE;
-import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
+import static com.paulhammant.tiny.Tiny.FilterAction.CONTINUE;
+import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,7 +32,7 @@ import static tests.Suite.httpGet;
 
 @Test
 public class RequestStatsTests {
-    com.paulhammant.tnywb.Tiny.WebServer webServer;
+    Tiny.WebServer webServer;
     StringBuilder statsStr = new StringBuilder();
 
     public static final String TEST_SLASH_ALL = "/.*";
@@ -39,7 +40,7 @@ public class RequestStatsTests {
     {
         describe("Given a Tiny web server with filters and an endpoint", () -> {
             before(() -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {
+                webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {
                     @Override
                     protected void recordStatistics(String path, Map<String, Object> stats) {
                         String string = stats.toString()

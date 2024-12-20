@@ -1,8 +1,9 @@
 package tests;
 
+import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
 
-import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
+import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static tests.Suite.bodyAndResponseCodeShouldBe;
@@ -10,12 +11,12 @@ import static tests.Suite.httpGet;
 
 @Test
 public class CompositionReuseTests {
-    com.paulhammant.tnywb.Tiny.WebServer webServer;
+    Tiny.WebServer webServer;
 
     {
         describe("Given a Tiny web server with a reusable composition", () -> {
             before(() -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
+                webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     Runnable composition = () -> {
                         endPoint(GET, "/endpoint", (req, res, ctx) -> {
                             res.write("Hello from composed endpoint");

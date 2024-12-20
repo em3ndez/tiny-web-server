@@ -16,6 +16,7 @@
 
 package tests;
 
+import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
 
 import java.io.File;
@@ -29,12 +30,12 @@ import static tests.Suite.httpGet;
 
 @Test
 public class StaticFilesTests {
-    com.paulhammant.tnywb.Tiny.WebServer webServer;
+    Tiny.WebServer webServer;
 
     {
         describe("When serving static files", () -> {
             before(() -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     serveStaticFilesAsync("/static", new File(".").getAbsolutePath());
                 }};
                 webServer.start();

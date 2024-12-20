@@ -1,6 +1,6 @@
 package tests;
 
-import com.paulhammant.tnywb.Tiny;
+import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -20,13 +20,13 @@ import static tests.Suite.toBytes;
 
 @Test
 public class SeleniumTests {
-    com.paulhammant.tnywb.Tiny.WebServer webServer;
+    Tiny.WebServer webServer;
 
     {
         describe("When using Selenium to subscribe in a browser", () -> {
 
             before(() -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js", new Tiny.JavascriptWebSocketClient());
 
                     endPoint(Tiny.HttpMethods.GET, "/", (req, res, ctx) -> {

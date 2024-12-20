@@ -1,6 +1,9 @@
 /*
+ *
+ * Tiny WebServer and WebSocketServer
+ *
  * MIT License
- * 
+ *
  * Copyright (c) Paul Hammant, 2024
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,7 +25,7 @@
  * SOFTWARE.
  */
 
-package com.paulhammant.tnywb;
+package com.paulhammant.tiny;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -101,7 +104,7 @@ public class Tiny {
 
     @FunctionalInterface
     public interface WebSocketMessageHandler {
-        void handleMessage(byte[] message, com.paulhammant.tnywb.Tiny.MessageSender sender, RequestContext ctx);
+        void handleMessage(byte[] message, com.paulhammant.tiny.Tiny.MessageSender sender, RequestContext ctx);
     }
 
     @FunctionalInterface
@@ -141,7 +144,7 @@ public class Tiny {
             // For example, using the cache to manage instances
             return requestCache.getOrCreate(clazz, () -> {
                 // Add instantiation logic here
-                throw new com.paulhammant.tnywb.Tiny.DependencyException(clazz);
+                throw new com.paulhammant.tiny.Tiny.DependencyException(clazz);
             });
         }
     }
@@ -1063,7 +1066,7 @@ public class Tiny {
             //System.out.println("origin= " + origin);
             String expectedOrigin = config.inetSocketAddress != null ? (config.inetSocketAddress.getHostName() + ":" + config.inetSocketAddress.getPort()).replace("0.0.0.0", "").replace("::", "") : "";
 
-            com.paulhammant.tnywb.Tiny.MessageSender sender = new com.paulhammant.tnywb.Tiny.MessageSender(out);
+            com.paulhammant.tiny.Tiny.MessageSender sender = new com.paulhammant.tiny.Tiny.MessageSender(out);
             byte[] buffer = new byte[8192];
 
             while (!client.isClosed()) {
@@ -1350,7 +1353,7 @@ public class Tiny {
                 outputStream.write(payload);
                 outputStream.flush();
             } catch (IOException e) {
-                throw new com.paulhammant.tnywb.Tiny.ServerException("IOE " + e.getMessage(), e);
+                throw new com.paulhammant.tiny.Tiny.ServerException("IOE " + e.getMessage(), e);
             }
         }
     }

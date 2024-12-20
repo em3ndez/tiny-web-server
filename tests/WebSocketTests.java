@@ -1,6 +1,6 @@
 package tests;
 
-import com.paulhammant.tnywb.Tiny;
+import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
 
 import static java.lang.Thread.sleep;
@@ -11,7 +11,7 @@ import static tests.Suite.*;
 
 @Test
 public class WebSocketTests {
-    com.paulhammant.tnywb.Tiny.WebServer webServer;
+    Tiny.WebServer webServer;
     Tiny.WebSocketClient client;
     Tiny.WebSocketServer webSocketServer;
 
@@ -19,7 +19,7 @@ public class WebSocketTests {
         describe("When using standalone Tiny.WebSocketServer without Tiny.WebServer", () -> {
 
             before(() -> {
-                webSocketServer = new Tiny.WebSocketServer(com.paulhammant.tnywb.Tiny.Config.create().withWebSocketPort(8081)) {{
+                webSocketServer = new Tiny.WebSocketServer(Tiny.Config.create().withWebSocketPort(8081)) {{
                     registerMessageHandler("/foo/baz", (message, sender, context) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
@@ -69,7 +69,7 @@ public class WebSocketTests {
         describe("When using Tiny.WebSocketServer with Tiny.WebServer and a contrived webSocket endpoint", () -> {
 
             before(() -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     path("/foo", () -> {
                         endPoint(Tiny.HttpMethods.GET, "/bar", (req, res, ctx) -> {
                             res.write("OK");
@@ -141,7 +141,7 @@ public class WebSocketTests {
 
                 StringBuilder message = new StringBuilder();
 
-                client.receiveMessages("stop", new com.paulhammant.tnywb.Tiny.InterruptibleConsumer<String>() {
+                client.receiveMessages("stop", new Tiny.InterruptibleConsumer<String>() {
                     @Override
                     public boolean accept(String response) {
                         message.append(response);
@@ -163,7 +163,7 @@ public class WebSocketTests {
         describe("When using standalone Tiny.WebSocketServer without Tiny.WebServer", () -> {
 
             before(() -> {
-                webSocketServer = new Tiny.WebSocketServer(com.paulhammant.tnywb.Tiny.Config.create().withWebSocketPort(8081)) {{
+                webSocketServer = new Tiny.WebSocketServer(Tiny.Config.create().withWebSocketPort(8081)) {{
                     registerMessageHandler("/foo/baz", (message, sender, context) -> {
                         for (int i = 1; i <= 3; i++) {
                             String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
@@ -216,7 +216,7 @@ public class WebSocketTests {
         describe("When mismatching domains on SocketServer client lib", () -> {
 
             before(() -> {
-                webSocketServer = new Tiny.WebSocketServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                webSocketServer = new Tiny.WebSocketServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     registerMessageHandler("/foo/baz", (message, sender, context) -> {
                         sender.sendBytesFrame(toBytes("hi"));
                         sender.sendBytesFrame(toBytes("stop"));

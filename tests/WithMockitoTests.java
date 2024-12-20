@@ -1,6 +1,6 @@
 package tests;
 
-import com.paulhammant.tnywb.Tiny;
+import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
 import org.mockito.Mockito;
 
@@ -11,7 +11,7 @@ import static tests.Suite.httpGet;
 
 @Test
 public class WithMockitoTests {
-    com.paulhammant.tnywb.Tiny.WebServer webServer;
+    Tiny.WebServer webServer;
     ExampleApp exampleApp;
 
     {
@@ -19,14 +19,14 @@ public class WithMockitoTests {
             describe("When accessing the Greeting GET endpoint", () -> {
                 before(() -> {
                     exampleApp = Mockito.mock(ExampleApp.class);
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                         endPoint(Tiny.HttpMethods.GET, "/greeting/(\\w+)/(\\w+)", exampleApp::foobar);
                     }};
                     webServer.start();
                     Mockito.doAnswer(invocation -> {
-                        invocation.<com.paulhammant.tnywb.Tiny.Response>getArgument(1).write("invoked");
+                        invocation.<com.paulhammant.tiny.Tiny.Response>getArgument(1).write("invoked");
                         return null;
-                    }).when(exampleApp).foobar(Mockito.any(com.paulhammant.tnywb.Tiny.Request.class), Mockito.any(com.paulhammant.tnywb.Tiny.Response.class), Mockito.<com.paulhammant.tnywb.Tiny.RequestContext>any());
+                    }).when(exampleApp).foobar(Mockito.any(com.paulhammant.tiny.Tiny.Request.class), Mockito.any(com.paulhammant.tiny.Tiny.Response.class), Mockito.<com.paulhammant.tiny.Tiny.RequestContext>any());
                 });
 
                 it("Then it should invoke the ExampleApp foobar method", () -> {
@@ -36,9 +36,9 @@ public class WithMockitoTests {
 
                 after(() -> {
                     webServer.stop();
-                    Mockito.verify(exampleApp).foobar(Mockito.any(com.paulhammant.tnywb.Tiny.Request.class),
-                            Mockito.any(com.paulhammant.tnywb.Tiny.Response.class),
-                            Mockito.<com.paulhammant.tnywb.Tiny.RequestContext>any());
+                    Mockito.verify(exampleApp).foobar(Mockito.any(com.paulhammant.tiny.Tiny.Request.class),
+                            Mockito.any(com.paulhammant.tiny.Tiny.Response.class),
+                            Mockito.<com.paulhammant.tiny.Tiny.RequestContext>any());
                     webServer = null;
                 });
             });

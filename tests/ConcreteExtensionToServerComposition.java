@@ -16,11 +16,11 @@
 
 package tests;
 
-import com.paulhammant.tnywb.Tiny;
+import com.paulhammant.tiny.Tiny;
 
-public class ConcreteExtensionToServerComposition extends com.paulhammant.tnywb.Tiny.ServerComposition {
+public class ConcreteExtensionToServerComposition extends com.paulhammant.tiny.Tiny.ServerComposition {
 
-    public ConcreteExtensionToServerComposition(com.paulhammant.tnywb.Tiny.WebServer server) {
+    public ConcreteExtensionToServerComposition(com.paulhammant.tiny.Tiny.WebServer server) {
         super(server);
         path("/bar", () -> {
             endPoint(Tiny.HttpMethods.GET, "/baz", (req, res, ctx) -> {

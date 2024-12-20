@@ -1,20 +1,20 @@
 package tests;
 
-import com.paulhammant.tnywb.Tiny;
+import com.paulhammant.tiny.Tiny;
 
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.paulhammant.tnywb.Tiny.HttpMethods.POST;
+import static com.paulhammant.tiny.Tiny.HttpMethods.POST;
 
 
 public class WebSocketBroadcastDemo {
 
-    public static class Broadcaster extends ConcurrentLinkedQueue<com.paulhammant.tnywb.Tiny.MessageSender> {
+    public static class Broadcaster extends ConcurrentLinkedQueue<com.paulhammant.tiny.Tiny.MessageSender> {
 
-        ConcurrentLinkedQueue<com.paulhammant.tnywb.Tiny.MessageSender> closed;
+        ConcurrentLinkedQueue<com.paulhammant.tiny.Tiny.MessageSender> closed;
 
         public void broadcast(String newVal) {
             if (closed != null) {
@@ -26,7 +26,7 @@ public class WebSocketBroadcastDemo {
                 executor.execute(() -> {
                     try {
                         handler.sendBytesFrame(newVal.getBytes());
-                    } catch (com.paulhammant.tnywb.Tiny.ServerException e) {
+                    } catch (com.paulhammant.tiny.Tiny.ServerException e) {
                         if (e.getCause() instanceof SocketException && e.getCause().getMessage().equals("Socket closed")) {
                             closed.add(handler);
                         } else {
@@ -48,7 +48,7 @@ public class WebSocketBroadcastDemo {
         AtomicInteger restartedClients = new AtomicInteger(0);
         AtomicInteger unexpectedClientExceptions = new AtomicInteger(0);
 
-        com.paulhammant.tnywb.Tiny.WebServer server = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+        com.paulhammant.tiny.Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
 
             webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
                 broadcaster.add(sender);

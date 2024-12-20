@@ -16,11 +16,12 @@
 
 package tests;
 
+import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
 
-import static com.paulhammant.tnywb.Tiny.FilterAction.CONTINUE;
-import static com.paulhammant.tnywb.Tiny.FilterAction.STOP;
-import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
+import static com.paulhammant.tiny.Tiny.FilterAction.CONTINUE;
+import static com.paulhammant.tiny.Tiny.FilterAction.STOP;
+import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -29,12 +30,12 @@ import static tests.Suite.httpGet;
 
 @Test
 public class FilterTests {
-    com.paulhammant.tnywb.Tiny.WebServer webServer;
+    Tiny.WebServer webServer;
 
     {
         describe("When passing attributes from filter to endpoint", () -> {
             before(() -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
+                webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/api", () -> {
                         filter(".*", (req, res, ctx) -> {
                             String allegedlyLoggedInCookie = req.getCookie("logged-in");
@@ -72,7 +73,7 @@ public class FilterTests {
         });
         describe("When applying filters", () -> {
             before(() -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     path("/foo", () -> {
                         filter(GET, "/.*", (req, res, ctx) -> {
                             if (req.getHeaders().containsKey("sucks")) {
@@ -113,7 +114,7 @@ public class FilterTests {
         });
         describe("When a server is started", () -> {
             it("Then a method filter can't be added anymore", () -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     start();
                     try {
                         filter(GET, "/foo", (req, res, ctx) -> {
@@ -127,7 +128,7 @@ public class FilterTests {
                 }};
             });
             it("Then a 'all' filter can't be added anymore", () -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     start();
                     try {
                         filter("/foo", (req, res, ctx) -> {
@@ -147,7 +148,7 @@ public class FilterTests {
 
         describe("When a filter is already added", () -> {
             before(() -> {
-                webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     filter("/foo.*", (req, res, ctx) -> {
                         res.setHeader("x", "1");
                         return CONTINUE;
@@ -158,7 +159,7 @@ public class FilterTests {
                 }};
             });
             it("Then an identical filter path can't be added again", () -> {
-                new com.paulhammant.tnywb.Tiny.ServerComposition(webServer) {{
+                new Tiny.ServerComposition(webServer) {{
                     try {
                         filter("/foo.*", (req, res, ctx) -> {
                             res.setHeader("x", "2");

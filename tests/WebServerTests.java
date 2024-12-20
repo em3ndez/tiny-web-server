@@ -3,7 +3,8 @@ package tests;
 import com.sun.net.httpserver.HttpExchange;
 import org.forgerock.cuppa.Test;
 
-import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
+import com.paulhammant.tiny.Tiny;
+import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -13,16 +14,15 @@ import static tests.Suite.httpGet;
 
 @Test
 public class WebServerTests {
-    com.paulhammant.tnywb.Tiny.WebServer webServer;
+    Tiny.WebServer webServer;
     ExampleApp exampleApp;
 
     {
 
-
         describe("Given an inlined Cuppa application", () -> {
             describe("When the endpoint can extract parameters", () -> {
                 before(() -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                         path("/api", () -> {
                             path("/v1", () -> {
                                 endPoint(GET, "/test/(\\w+)", (req, res, ctx) -> {
@@ -45,7 +45,7 @@ public class WebServerTests {
             });
             describe("When the endpoint can extract query parameters", () -> {
                 before(() -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                         path("/api2", () -> {
                             endPoint(GET, "/test/(\\w+)", (req, res, ctx) -> {
                                 res.write("Parameter: " + ctx.getParam("1") + " " + req.getQueryParams());
@@ -64,7 +64,7 @@ public class WebServerTests {
             describe("When an application exception is thrown from an endpoint", () -> {
                 final StringBuilder appHandlingExceptions = new StringBuilder();
                 before(() -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                             path("/api", () -> {
                                 endPoint(GET, "/error", (req, res, ctx) -> {
                                     throw new RuntimeException("Deliberate exception");
@@ -93,7 +93,7 @@ public class WebServerTests {
             });
             describe("When the endpoint has query-string parameters", () -> {
                 before(() -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                         path("/api", () -> {
                             endPoint(GET, "/query", (req, res, ctx) -> {
                                 res.write("Query Params: " + req.getQueryParams());
@@ -115,7 +115,7 @@ public class WebServerTests {
 
             describe("When response headers are sent to the client", () -> {
                 before(() -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
                         path("/api", () -> {
                             endPoint(GET, "/header-test", (req, res, ctx) -> {
                                 res.setHeader("X-Custom-Header", "HeaderValue");
@@ -142,7 +142,7 @@ public class WebServerTests {
             describe("When an exception is thrown from a filter", () -> {
                 final StringBuilder appHandlingExceptions = new StringBuilder();
                 before(() -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                         path("/api", () -> {
                             filter(GET, "/error", (req, res, ctx) -> {
                                 throw new RuntimeException("Deliberate exception in filter");
@@ -177,7 +177,7 @@ public class WebServerTests {
 
             describe("When testing static file serving", () -> {
                 before(() -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                         serveStaticFilesAsync("/static", ".");
                     }}.start();
                 });
@@ -206,7 +206,7 @@ public class WebServerTests {
             });
             describe("When accessing a nested path with parameters", () -> {
                 before(() -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                         final StringBuilder sb = new StringBuilder();  // don't do this - one sv instance for all incoming connections
                         path("/api", () -> {
                             sb.append("/api->"); // called once only while composing webapp
@@ -242,7 +242,7 @@ public class WebServerTests {
             });
             describe("When accessing the Echoing GET endpoint", () -> {
                 before(() -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                         endPoint(GET, "/users/(\\w+)", (req, res, ctx) -> {
                             res.write("User profile: " + ctx.getParam("1"));
                         });
@@ -265,7 +265,7 @@ public class WebServerTests {
             });
             describe("When a server is started", () -> {
                 it("Then a endpoint can't be added anymore", () -> {
-                    webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                    webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                         start();
                         try {
                             endPoint(GET, "/foo", (req, res, ctx) -> {
