@@ -35,7 +35,7 @@ public class WebSocketTests {
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
                 Thread.sleep(50);
-                client = new TinyWeb.SocketClient("localhost", 8081);
+                client = new TinyWeb.SocketClient("localhost", 8081, "http://localhost:8080");
                 client.performHandshake();
             });
 
@@ -90,7 +90,7 @@ public class WebSocketTests {
                     });
                 }}.start();
                 Thread.sleep(50);
-                client = new TinyWeb.SocketClient("localhost", 8081);
+                client = new TinyWeb.SocketClient("localhost", 8081, "http://localhost:8080");
                 client.performHandshake();
 
             });
@@ -131,9 +131,9 @@ public class WebSocketTests {
 
             });
             after(() -> {
+                webServer.stop();
                 client.close();
                 client = null;
-                webServer.stop();
                 webServer = null;
             });
         });
@@ -156,7 +156,7 @@ public class WebSocketTests {
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
                 Thread.sleep(100);
-                client = new TinyWeb.SocketClient("localhost", 8081);
+                client = new TinyWeb.SocketClient("localhost", 8081, "https://localhost:8080");
                 client.performHandshake();
             });
 
@@ -180,9 +180,9 @@ public class WebSocketTests {
             });
 
             after(() -> {
+                webSocketServer.stop();
                 client.close();
                 client = null;
-                webSocketServer.stop();
                 webSocketServer = null;
             });
         });

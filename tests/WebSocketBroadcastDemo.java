@@ -70,7 +70,7 @@ public class WebSocketBroadcastDemo {
             Thread.ofVirtual().start(() -> {
                 while (true) {
                     try {
-                        TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081);
+                        TinyWeb.SocketClient client = new TinyWeb.SocketClient("localhost", 8081, "http://localhost:8080");
                         client.performHandshake();
                         client.sendMessage("/keepMeUpdatedPlease", "Client " + clientId + " connecting");
 

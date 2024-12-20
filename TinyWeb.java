@@ -46,6 +46,9 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static tests.Suite.bytesToString;
+import static tests.Suite.toBytes;
+
 public class TinyWeb {
 
     public static final String VERSION = "1.0-SNAPSHOT";
@@ -939,13 +942,15 @@ public class TinyWeb {
     public static class SocketServer {
 
         public static final Pattern ORIGIN_MATCH = Pattern.compile("Origin: (.*)");
+        public static final SocketMessageHandler BAD_ORIGIN = (message, sender, ctx) -> sender.sendBytesFrame(toBytes("Error: Bad Origin"));
+        public static final SocketMessageHandler FOUR_OH_FOUR = (message, sender, ctx) -> sender.sendBytesFrame(toBytes("Error: 404"));
         private final Config config;
         private ServerSocket server;
         private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
         private static final int SOCKET_TIMEOUT = 30000; // 5 minutes timeout
         private static final SecureRandom random = new SecureRandom();
         private Map<String, SocketMessageHandler> messageHandlers = new HashMap<>();
-        private DependencyManager dependencyManager;
+        private final DependencyManager dependencyManager;
 
         public SocketServer(Config config) {
             this(config, new DependencyManager(new DefaultComponentCache(null)));
@@ -1052,7 +1057,9 @@ public class TinyWeb {
         }
 
         private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out, String origin) throws IOException {
-            System.out.println("origin= " + origin);
+            //System.out.println("origin= " + origin);
+            String expectedOrigin = config.inetSocketAddress != null ? (config.inetSocketAddress.getHostName() + ":" + config.inetSocketAddress.getPort()).replace("0.0.0.0", "").replace("::", "") : "";
+
             TinyWeb.MessageSender sender = new TinyWeb.MessageSender(out);
             byte[] buffer = new byte[8192];
 
@@ -1132,13 +1139,20 @@ public class TinyWeb {
                         byte[] messagePayload = Arrays.copyOfRange(payload, pathLength + 1, payload.length);
 
                         CompletableFuture.runAsync(() -> {
-                            SocketMessageHandler handler = getHandler(path);
-                            if (handler != null) {
+
+                            if (!origin.endsWith(expectedOrigin)) {
+                                BAD_ORIGIN.handleMessage(null, sender, null);
+                            } else{
+
+                                SocketMessageHandler handler = getHandler(path);
+                                if (handler != null) {
                                     ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
                                     RequestContext ctx = new Server.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new HashMap<>());
                                     handler.handleMessage(messagePayload, sender, ctx);
-                            } else {
-                                System.err.println("No handler found for path: " + path + " keys:" + messageHandlers.keySet());
+                                } else {
+                                    FOUR_OH_FOUR.handleMessage(null, sender, null);
+                                    System.err.println("No handler found for path: " + path + " keys:" + messageHandlers.keySet());
+                                }
                             }
                         });
                     }
@@ -1183,12 +1197,18 @@ public class TinyWeb {
 
     public static class SocketClient implements AutoCloseable {
         private final Socket socket;
+        private final String host;
+        private final int port;
+        private final String originUrl;
         private Consumer<String> onMessageHandler;
         private final InputStream in;
         private final OutputStream out;
         private static final SecureRandom random = new SecureRandom();
 
-        public SocketClient(String host, int port) throws IOException {
+        public SocketClient(String host, int port, String originUrl) throws IOException {
+            this.host = host;
+            this.port = port;
+            this.originUrl = originUrl;
             this.socket = new Socket(host, port);
             this.socket.setSoTimeout(300000); // 5 minutes timeout
             this.in = socket.getInputStream();
@@ -1199,12 +1219,12 @@ public class TinyWeb {
             String key = "dGhlIHNhbXBsZSBub25jZQ=="; // In practice, generate this randomly
             String handshakeRequest =
                     "GET / HTTP/1.1\r\n" +
-                            "Host: localhost:8081\r\n" +
+                            "Host: " + this.host +":" +this.port+ "\r\n" +
                             "Upgrade: websocket\r\n" +
                             "Connection: Upgrade\r\n" +
                             "Sec-WebSocket-Key: " + key + "\r\n" +
                             "Sec-WebSocket-Version: 13\r\n" +
-                            "Origin: http://localhost\r\n\r\n";
+                            "Origin: " + this.originUrl + "\r\n\r\n";
 
             out.write(handshakeRequest.getBytes("UTF-8"));
             out.flush();
@@ -1213,6 +1233,13 @@ public class TinyWeb {
             byte[] responseBuffer = new byte[1024];
             int responseBytes = in.read(responseBuffer);
             String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
+            System.out.println(response);
+            if (!response.equals("HTTP/1.1 101 Switching Protocols\r\n" +
+                    "Connection: Upgrade\r\n" +
+                    "Upgrade: websocket\r\n" +
+                    "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n")) {
+                throw new IOException("websocket handshake failed, unexpected response: " + response);
+            }
         }
 
         public void sendMessage(String path, String message) throws IOException {
