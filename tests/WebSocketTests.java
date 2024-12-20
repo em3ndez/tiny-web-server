@@ -130,6 +130,22 @@ public class WebSocketTests {
                                 "Server sent: Hello WebSocket: 5 -8"));
 
             });
+
+            only().it("Then it should do a 404 equivalent for a missing path", () -> {
+
+                // Example client usage
+                client.sendMessage("/foo/doesNotExist", "Hello WebSocket: 0");
+
+                final StringBuilder messages = new StringBuilder();
+
+                client.receiveMessages("stop", response -> {
+                    messages.append(response);
+                });
+
+                assertThat(messages.toString(), equalTo("Error: 404"));
+
+            });
+
             after(() -> {
                 webServer.stop();
                 client.close();
@@ -137,6 +153,7 @@ public class WebSocketTests {
                 webServer = null;
             });
         });
+
         describe("When using standalone TinyWeb.SocketServer without TinyWeb.Server", () -> {
 
             before(() -> {

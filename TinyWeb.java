@@ -373,16 +373,7 @@ public class TinyWeb {
                                 return value;
                             }
                         }
-                        //TODO handle missing case
-                        System.out.println("No websocket handler for " + path);
-                        return (message, sender, context) -> {
-                            try {
-                                // TODO incorporate path in reply
-                                sender.sendBytesFrame("no matching path on the server side".getBytes("UTF-8"));
-                            } catch (IOException e) {
-                                throw new TinyWeb.ServerException("Nonsensical IOE");
-                            }
-                        };
+                        return FOUR_OH_FOUR;
                     }
                 };
             } else {
