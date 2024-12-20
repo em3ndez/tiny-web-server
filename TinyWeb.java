@@ -1235,10 +1235,9 @@ public class TinyWeb {
             byte[] responseBuffer = new byte[1024];
             int responseBytes = in.read(responseBuffer);
             String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
-            if (!response.equals("HTTP/1.1 101 Switching Protocols\r\n" +
-                    "Connection: Upgrade\r\n" +
-                    "Upgrade: websocket\r\n" +
-                    "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\r\n")) {
+            if (!response.contains("HTTP/1.1 101 Switching Protocols") ||
+                !response.contains("Connection: Upgrade") ||
+                !response.contains("Upgrade: websocket")) {
                 throw new IOException("websocket handshake failed, unexpected response: " + response);
             }
         }
