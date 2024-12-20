@@ -295,9 +295,9 @@ public class TinyWeb {
         private final int wsPort;
         private final int wsBacklog;
         private final InetAddress wsBindAddr;
-        public final int socketTimeoutMs = 30000; // 5 mins
+        public final int socketTimeoutMs;
 
-        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr) {
+        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs) {
             this.inetSocketAddress = inetSocketAddress;
             this.wsPort = wsPort;
             this.wsBacklog = wsBacklog;
@@ -305,27 +305,27 @@ public class TinyWeb {
         }
 
         public static Config create() {
-            return new Config(null, 0, 50, null);
+            return new Config(null, 0, 50, null, 30000);
         }
 
         public Config withInetSocketAddress(InetSocketAddress inetSocketAddress) {
-            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr);
+            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
         }
 
         public Config withWebSocketPort(int wsPort) {
-            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr);
+            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
         }
 
         public Config withWsBacklog(int wsBacklog) {
-            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr);
+            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
         }
 
         public Config withHostAndWebPort(String host, int webPort) {
-            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr);
+            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
         }
 
         public Config withWsBindAddr(InetAddress wsBindAddr) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs);
         }
 
         public Config withSocketTimeoutMs(int socketTimeoutMs) {
@@ -334,7 +334,7 @@ public class TinyWeb {
         }
 
         public Config withWebPort(int webPort) {
-            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr);
+            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
 
         }
     }
