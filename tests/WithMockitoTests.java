@@ -1,5 +1,6 @@
 package tests;
 
+import com.paulhammant.tnywb.Tiny;
 import org.forgerock.cuppa.Test;
 import org.mockito.Mockito;
 
@@ -19,7 +20,7 @@ public class WithMockitoTests {
                 before(() -> {
                     exampleApp = Mockito.mock(ExampleApp.class);
                     webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
-                        endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/greeting/(\\w+)/(\\w+)", exampleApp::foobar);
+                        endPoint(Tiny.HttpMethods.GET, "/greeting/(\\w+)/(\\w+)", exampleApp::foobar);
                     }};
                     webServer.start();
                     Mockito.doAnswer(invocation -> {

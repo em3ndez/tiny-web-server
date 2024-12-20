@@ -71,7 +71,7 @@ public class WebSocketTests {
             before(() -> {
                 webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                     path("/foo", () -> {
-                        endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/bar", (req, res, ctx) -> {
+                        endPoint(Tiny.HttpMethods.GET, "/bar", (req, res, ctx) -> {
                             res.write("OK");
                         });
 

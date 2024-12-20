@@ -2,7 +2,7 @@ package tests;
 
 import org.forgerock.cuppa.Test;
 
-import static com.paulhammant.tnywb.Tiny.Method.GET;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -14,7 +14,7 @@ public class PathRegistrationTests {
     private com.paulhammant.tnywb.Tiny.WebServer server;
 
     {
-        describe("Given a TinyWeb server with a path registered", () -> {
+        describe("Given a Tiny web server with a path registered", () -> {
 
             before(() -> {
                 server = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
@@ -43,7 +43,7 @@ public class PathRegistrationTests {
             });
         });
 
-        describe("Given a TinyWeb server with a path registered", () -> {
+        describe("Given a Tiny web server with a path registered", () -> {
 
             before(() -> {
                 server = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080)) {{

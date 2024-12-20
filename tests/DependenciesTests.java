@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-import static com.paulhammant.tnywb.Tiny.Method.GET;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static tests.Suite.bodyAndResponseCodeShouldBe;

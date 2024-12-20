@@ -1,20 +1,20 @@
 # TinyWeb 
 
-A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `TinyWeb.java`. 
+A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `Tiny.java`. 
 Just a fun pair-programmed project, really. Use for small web/medium applications - perhaps not on the public web.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-The TinyWeb single source file provides a lightweight and flexible server implementation that supports both HTTP and 
+The Tiny.java single source file provides a lightweight and flexible server implementation that supports both HTTP and 
 WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  
 It uses a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
 system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Netty or Jetty.
 
 ## Web Server 
 
-The `TinyWeb.WebServer` class allows you to create an HTTP server with minimal configuration. You can define filters and 
+The `Tiny.WebServer` class allows you to create an HTTP server with minimal configuration. You can define filters and 
 endpoints for different HTTP methods (GET, POST, PUT, DELETE and others), and process requests. 
 
 The server supports:
@@ -28,7 +28,7 @@ There are paths too, to which filters and endpoints can be attached, but don't t
 
 ## Web Sockets Server
 
-A coupled `TinyWeb.WebSocketServer` class provides WebSocket support, enabling communication back from the server to 
+A coupled `Tiny.WebSocketServer` class provides WebSocket support, enabling communication back from the server to 
 attached clients.  It can be used alone, but also integrated into the same path structure of the main server.
 Admittedly that's a trick as the path and the length of the path are tge leftmost part of the message up
 to the SocketServer.
@@ -110,8 +110,8 @@ java commands), then there was a shell script, then there was a makefile, which 
 Here is a basic example of defining a GET endpoint using TinyWeb:
 
 ```java 
-TinyWeb.WebServer server = new TinyWeb.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
-    endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
+    endPoint(Tiny.HttpMethod.GET, "/hello", (req, res, context) -> {
         // req gives access to headers, etc
         res.write("Hello, World!");
     });
@@ -122,13 +122,13 @@ In this example, a GET endpoint is defined at the path `/hello`. When a request 
 
 ### A Filter and an End-point
 
-Here's an example of using a filter with an endpoint in TinyWeb:
+Here's an example of using a filter with an endpoint in Tiny Web:
 
 ```java
-Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
 
     // Apply a filter to check for a custom header
-    filter(TinyWeb.Method.GET, "/secure", (req, res, context) -> {
+    filter(Tiny.Method.GET, "/secure", (req, res, context) -> {
         if (!req.getHeaders().containsKey("X-Auth-Token")) {
             res.write("Unauthorized", 401);
             return FilterResult.STOP; // Stop processing if unauthorized
@@ -137,7 +137,7 @@ Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8
     });
 
     // Define a GET endpoint
-    endPoint(TinyWeb.Method.GET, "/secure", (req, res, context) -> {
+    endPoint(Tiny.Method.GET, "/secure", (req, res, context) -> {
         res.write("Welcome to the secure endpoint!");
     });
         
@@ -150,18 +150,18 @@ proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
 
 ### Two End-points within a path
 
-Here's an example of defining two endpoints within a single path using TinyWeb:
+Here's an example of defining two endpoints within a single path using Tiny:
 
 ```java
-Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
     path("/api", () -> {
         // Define the first GET endpoint
-        endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
+        endPoint(Tiny.Method.GET, "/hello", (req, res, context) -> {
             res.write("{ message:`Hello from the first endpoint!` }");
         });
 
         // Define the second GET endpoint
-        endPoint(TinyWeb.Method.GET, "/goodbye", (req, res, context) -> {
+        endPoint(Tiny.HttpMethods.GET, "/goodbye", (req, res, context) -> {
           res.write("{ message:`Goodbye from the second endpoint!` }");
         });
     });
@@ -171,12 +171,12 @@ Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8
 ### A filter and an end-point within a path
 
 Here's an example of using a filter to perform authentication and a logged-in user attribute to an endpoint within a path 
-or not at all of there's no logged in user.
+or not at all of there's no logged-in user.
 
 ```java
-Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(-1)) {{
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(-1)) {{
     path("/shopping", () -> {
-        filter(TinyWeb.Method.GET, ".*", (req, res, context) -> {
+        filter(Tiny.HttpMethods.GET, ".*", (req, res, context) -> {
             String allegedlyLoggedInCookie = req.getCookie("logged-in");
             // This test class only performs rot47 on the cookie passed in.
             // That's not secure in the slightest. See https://rot47.net/
@@ -189,7 +189,7 @@ Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8
             }
             return FilterResult.CONTINUE; // Continue processing
         });
-        endPoint(TinyWeb.Method.GET, "/cart", (req, res, context) -> {
+        endPoint(Tiny.HttpMethods.GET, "/cart", (req, res, context) -> {
             Cart = carts.getCartFor(req.getAttribute("user"));
             // do something with cart
             // ignore the 'carts' class for the moment.
@@ -216,10 +216,10 @@ via an attribute if all is good.
 Here's an example of defining both a WebSocket and an HTTP endpoint within a single path using TinyWeb:
 
 ```java
-Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/messenger", () -> {
         // Define a GET endpoint
-        endPoint(TinyWeb.Method.GET, "/inboxStatus", (req, res, context) -> {
+        endPoint(Tiny.HttpMethods.GET, "/inboxStatus", (req, res, context) -> {
             res.write("API is running"); // not really what an api would do
         });
 
@@ -267,11 +267,11 @@ response received from the server. On the wire, the path and message are put in 
 the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not. This is to make the webSockets
 appear within the same nested path structure of the composed server grammar. They are not really - not even the
 same port on the server. The path association is places in the first bytes of the message from the client to the 
-server. So `SocketClient` does that custom adaption of client-to-server TinyWeb.Socket messages.
+server. So `SocketClient` does that custom adaption of client-to-server Tiny web-socket messages.
 
 #### Connecting to a WebSocket using JavaScript source file endpoint
 
-Here's an example of how to connect to a TinyWeb.Socket using the JavaScript version of `Tiny.WebSocketClient`:
+Here's an example of how to connect to a Tiny web-socket using the JavaScript version of `Tiny.WebSocketClient`:
 
 ```html
 <!DOCTYPE html>
@@ -306,7 +306,7 @@ Here's an example of how to connect to a TinyWeb.Socket using the JavaScript ver
 </html>
 ```
 
-In this example, a JavaScript version of `Tiny.WebSocketClient` (via `TinyWeb.JavaScriptWebSocketClient` Java class) is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
+In this example, a JavaScript version of `Tiny.WebSocketClient` (via `Tiny.JavaScriptWebSocketClient` Java class) is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
 connection to open, sends a message to the `/messenger/chatback` path, and displays the response received from the server in the browser (html code not shown).
 
 **Making the JavaScript WebSocket Client available to webapps**
@@ -314,17 +314,17 @@ connection to open, sends a message to the `/messenger/chatback` path, and displ
 In the example where we connect to a WebSocket using the JavaScript `Tiny.WebSocketClient`, the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint that responds with the JavaScript code when requested:
 
 ```java
-endPoint(TinyWeb.Method.GET, "/javascriptWebSocketClient.js",new TinyWeb.JavascriptSocketClient());
+endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js",new Tiny.JavascriptSocketClient());
 // or your preferred path
 ```
 This is to honor the server-side need for path & message to be in a specific opinionated structure.
 
 ### Two WebSockets with Different Paths
 
-Here's an example of defining two WebSocket endpoints with different paths using TinyWeb:
+Here's an example of defining two WebSocket endpoints with different paths using Tiny:
 
 ```java
-Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/api", () -> {
         // Define the first WebSocket endpoint
         webSocket("/chat", (message, sender, context) -> {
@@ -350,13 +350,13 @@ four concurrently connected channels.
 
 ## Static File Serving
 
-TinyWeb can serve static files from a specified directory. This is useful for serving assets like images, CSS, and JavaScript files directly from the server.
+Tiny.WebServer can serve static files from a specified directory. This is useful for serving assets like images, CSS, and JavaScript files directly from the server.
 
 To serve static files, use the `serveStaticFilesAsync` method in your server configuration. This method takes two parameters: the base path for the static files and the directory from which to serve them.
 
 Example:
 ```java
-Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
     serveStaticFilesAsync("/static", "/path/to/static/files");
 }}.start();
 ```
@@ -381,10 +381,10 @@ By following these guidelines, you can efficiently serve static files while main
 
 ## Composition
 
-We've covered paths, filters, endPoints, webSockets, and static file serving the low-level building blocks of TinyWeb applications.
+We've covered paths, filters, endPoints, webSockets, and static file serving the low-level building blocks of Tiny applications.
 
 ```java
-Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/ads", () -> {
       path("/selling", () -> {
           //TODO
@@ -399,13 +399,13 @@ Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8
 
 ## Testing your web app
 
-Testing is a critical part of developing reliable web applications. TinyWeb is just a library. You can write tests
-using it in JUnit, TestNG, JBehave. You can use Mockito as you would do normally.
+Testing is a critical part of developing reliable web applications. Tiny is just a library. You can write tests
+using it in JUnit, TestNG, JBehave. You can use Mockito as you would do normally. They can't share a signle port, but you could instantiate multiple WebServers if you wanted to as they don't share other than the JVM.
 
 ### Cuppa-Framework
 
-The Cuppa-Framework is what we are using for testing TinyWeb applications due to its idiomatic style, which closely aligns
-with TinyWeb's composition approach. It allows for expressive and readable test definitions. 
+The Cuppa-Framework is what we are using for testing Tiny web applications due to its idiomatic style, which closely aligns
+with Tiny's composition approach. It allows for expressive and readable test definitions. 
 
 Example:
 
@@ -435,12 +435,12 @@ Consider the following code:
 ```java
 public static class MyApp {
 
-        public void foobar(Request req, Response res, TinyWeb.RequestContext ctx) {
+        public void foobar(Request req, Response res, Tiny.RequestContext ctx) {
             res.write(String.format("Hello, %s %s!", ctx.getParam("1"), ctx.getParam("2")));
         }
 
         public static Tiny.WebServer composeApplication(String[] args, MyApp app) {
-            Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+            Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
                 endPoint(GET, "/greeting/(\\w+)/(\\w+)", app::foobar);
             }};
             return server;
@@ -462,17 +462,17 @@ to the "component under test." See later: TODO
 
 ### In EndPoints Themselves
 
-When handling requests in TinyWeb, it's important to understand how to set HTTP response codes and customize
+When handling requests in Tiny, it's important to understand how to set HTTP response codes and customize
 responses. HTTP response codes are crucial for indicating the result of a request to the client. Here's how you can
-manage responses in TinyWeb:
+manage responses in Tiny:
 
 #### Setting HTTP Response Codes
 
-In TinyWeb, you can set the HTTP response code by using the `write` method of the `TinyWeb.Response` object. The `write`
+In Tiny, you can set the HTTP response code by using the `write` method of the `Tiny.Response` object. The `write`
 method allows you to specify both the response content and the status code. Here's an example:
 
 ```java
-endPoint(TinyWeb.Method.GET, "/example", (req, res, context) -> {
+endPoint(Tiny.HttpMethods.GET, "/example", (req, res, context) -> {
     // Set a 200 OK response
     res.write("Request was successful", 200);
 });
@@ -482,9 +482,9 @@ In that example, the endpoint responds with a 200 OK status code, indicating tha
 
 TODO: example that sets a non-200 response code.
 
-### TinyWeb's Overridable Exception Methods
+### Tiny's Overridable Exception Methods
 
-In TinyWeb, exception handling is an important aspect of managing server and application errors. The framework
+In Tiny, exception handling is an important aspect of managing server and application errors. The framework
 provides two overridable methods to handle exceptions: `serverException(ServerException e)` and `appHandlingException(Exception e)`. These methods allow you to customize how exceptions are logged or processed.
 
 #### serverException(ServerException e)
@@ -497,7 +497,7 @@ logging or error handling strategies.
 Example:
 
 ```java
-svr = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {
+svr = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {
     {
       // paths, filters, endPoints setup as described before
     }
@@ -521,7 +521,7 @@ to, but they may do so, or a library they call does so. By default, this method 
 Example:
 
 ```java
-svr = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {
+svr = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {
     {
         // paths, filters, endPoints setup as described before
     }
@@ -535,20 +535,20 @@ svr = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {
 };
 ```
 
-By overriding these methods, you can tailor the exception handling behavior of your TinyWeb server to meet your
+By overriding these methods, you can tailor the exception handling behavior of your Tiny server to meet your
 application's specific needs, ensuring that errors are managed effectively and transparently.
 
 ## Integrating other frameworks
 
 ### Dependency Injection
 
-We can't integrate dependency injection with TinyWeb. The reason for that is handlers don't take strongly typed
+We can't integrate dependency injection with Tiny. The reason for that is handlers don't take strongly typed
 dependencies in the `(req, resp, context)` functional interfaces, nor do those have constructors associated.
 
 For it to be true Dependency Injection capable - for say injecting a `ShoppingCart` into a endpoint or filter - you would something like:
 
 ```java
-Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
     endPoint(GET, "/users", /*ShoppingCart*/ cart, (req, res, context) -> {
         // do something with "cart" var
         res.write("some response");
@@ -568,7 +568,7 @@ Injection.
 I think we are following the framing **Inversion of Control** (IoC) idioms with a lookup-style (interface
 injection) way of getting dependencies into a endpoint (or filter). I contrasted the differences 21 years
 ago - https://paulhammant.com/files/JDJ_2003_12_IoC_Rocks-final.pdf,
-and I've built something rudimentary into TinyWeb that fits "interface injection" style.
+and I've built something rudimentary into Tiny that fits "interface injection" style.
 The debate on Dependency Injection (DI) vs a possibly global-static Service Locator (that was popular before it) was put front and center by Martin Fowler
 in https://www.martinfowler.com/articles/injection.html (I get a mention in the footnotes, but people occasionally
 tell me to read it). "Interface Injection" is mentioned in that article, and predated the trend for D.I when Apache's defunct "Avalon Framework" promoted it.
@@ -618,16 +618,16 @@ want the `ProductInventory` instance directly used in any endPoint or filter. Yo
 
 If you were using Spring Framework, you would have `ProductInventory` as `@Singleton` scope (a Spring idiom, not the Gang-of-Four design pattern). You would also have `ShoppingCart` as `@Scope("request")`
 
-In the tests for TinyWeb, we have an example of use that features `endPoint(..)`, `ShoppingCart`
+In the tests for Tiny, we have an example of use that features `endPoint(..)`, `ShoppingCart`
 and `ProductInventory`
 
 #### Actual Resolution
 
-# TinyWeb usage statistics
+# Tiny usage statistics
 
-TinyWeb provides a built-in statistics capability that allows you to monitor and analyze the performance of your app. This feature is useful for understanding the behavior of your application and identifying potential bottlenecks.
+Tiny provides a built-in statistics capability that allows you to monitor and analyze the performance of your app. This feature is useful for understanding the behavior of your application and identifying potential bottlenecks.
 
-To access the collected statistics, you can override the `recordStatistics` method in your TinyWeb server implementation or instantiation. This method is called after each request is processed, and it receives a map of statistics that you can log, store, or analyze as needed.
+To access the collected statistics, you can override the `recordStatistics` method in your Tiny server implementation or instantiation. This method is called after each request is processed, and it receives a map of statistics that you can log, store, or analyze as needed.
 
 Example:
 ```java
@@ -681,7 +681,7 @@ public class MyDatabaseApp {
         final jdbi = Jdbi.create("jdbc:h2:mem:test");
         // .. `jdbi` would be in scope for all below
 
-        server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
+        server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
             endPoint(GET, "/users", (req, res, context) -> {
                 List<String> users = jdbi.inTransaction(handle ->
                     handle.createQuery("SELECT name FROM users")
@@ -709,18 +709,18 @@ public class MyDatabaseApp {
 
 ### Code in a 'path { }' block
 
-When using TinyWeb, it's important to understand that any code placed outside of lambda blocks (such
+When using Tiny, it's important to understand that any code placed outside of lambda blocks (such
 as `path()`, `endPoint()`, or `filter()`) is executed only once during the server's instantiation. This
 means that such code is not executed per request or per path hit, but rather when the server is being set up.
 
 Here's an example of what not to do:
 
 ```java
-Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8080)) {{
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
     path("/api", () -> {
         code().that().youThink("is per '/api/.*' invocation").but("it is not");
         // This code runs per request to /api
-        endPoint(TinyWeb.Method.GET, "/hello", (req, res, context) -> {
+        endPoint(Tiny.HttpMethods.GET, "/hello", (req, res, context) -> {
             res.write("Code must be in lambda blocks");
         });
     });
@@ -731,15 +731,15 @@ Tiny.WebServer server = new Tiny.WebServer(TinyWeb.Config.create().withWebPort(8
 
 We could have used the `ctx.getDep(..)` way of depending on JDBI, to aid mocking during test automation. But in the
 above example, we just have an  instance `jdbi` that is visible to all the filters and endpoints duly composed.
-It is up to you which way you develop with TinyWeb.
+It is up to you which way you develop with Tiny.
 
 ## Secure Channels
 
 ### Securing HTTP Channels
 
-Currently, TinyWeb supports HTTP, which is suitable for development and testing environments. 
+Currently, Tiny supports HTTP, which is suitable for development and testing environments. 
 However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by 
-fronting TinyWeb with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination.  There are also
+fronting Tiny with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination.  There are also
 reverse-reverse proxies (tunnels) that with code I have not done yet, could work.
 
 ### Securing WebSocket Channels
@@ -747,11 +747,11 @@ reverse-reverse proxies (tunnels) that with code I have not done yet, could work
 Same notes as above - the current implementation is `ws://` not `wss://` 
 
 
-# Build and Test of TinyWeb itself
+# Build and Test of Tiny itself
 
-## Compiling TinyWeb
+## Compiling Tiny
 
-To compile `TinyWeb.java`, simply run:
+To compile `Tiny.java`, simply run:
 
 ```bash
 make compile
@@ -780,12 +780,12 @@ make report
 
 These commands will instrument the code for coverage, run the tests, and generate an HTML report in the `jacoco-report` directory.
 
-## TinyWeb's own test results
+## Tiny's own test results
 
 As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so:
 
 ``` 
-Given a TinyWeb server with a reusable composition
+Given a Tiny web server with a reusable composition
     ✓ Then it should respond correctly to requests at the first composed endpoint
     ✓ Then it should respond correctly to requests at the second composed endpoint
     ✓ Then it should respond correctly to requests at the third composed endpoint
@@ -868,7 +868,7 @@ Given a TinyWeb server with a reusable composition
       ✓ Then it should invoke the ExampleApp foobar method
 ```
 
-ChatGPT estimates the path coverage for the TinyWeb class to be around 90-95%. 
+ChatGPT estimates the path coverage for the `Tiny` source to be around 90-95%. 
 It is difficult to say precisely as the test coverage with jacoco misses some of the Java-8 lambda paths. 
 
 It would be nice to use Cuppa to generate example code in markdown, too. 
@@ -879,8 +879,8 @@ An AI could copy tests into markdown documentation quickly, and repeatably, I gu
 
 The project is organized as follows:
 
-- **`TinyWeb.java`**: The main source file containing the implementation of the TinyWeb server and related classes. No deps outside the JDK.
-- **`tests/`**: Contains tests for the TinyWeb server using the Cuppa framework. Package is different to the TinyWeb class in order to not accidentally take advantage of public/package/private visibility mistakes which can't neatly be tested for otherwise.
+- **`Tiny.java`**: The main source file containing the implementation of the Tiny Webserver and related classes. No deps outside the JDK.
+- **`tests/`**: Contains tests for the Tiny web server using the Cuppa framework. Package is different to the Tiny production class in order to not accidentally take advantage of public/package/private visibility mistakes which can't neatly be tested for otherwise.
 - **`README.md`**: This file, providing an overview and documentation of the project.
 - **`test_libs/`**: Directory containing dependencies required for running tests - built by curl scripts in this README
 - **`target/classes/`**: Directory where compiled classes are stored. 
@@ -891,14 +891,14 @@ Notes:
 1. `target/` is what Maven would use, but we're not using Maven for this repo (we did to discover the dependency tree - a python3 script)
 2. Both Java sources have packages. While it is conventional to have sources in a dir tree that represents the package, you don't have to
 
-Stats about TinyWeb:
+Stats about Tiny:
 
-Source file `TinyWeb.java` has Approximately 771 lines of consequential code, via:
+Source file `Tiny.java` has Approximately 771 lines of consequential code, via:
 
 ``` 
 # `cloc` counts lines of code
 # don't count } on their own on a line, or }); or }};  See https://github.com/AlDanial/cloc/issues/865
-cat TinyWeb.java | sed '/\w*}\w*/d' | sed '/\w*}];\w*/d' | sed '/\w*});\w*/d' > tmpfile.java
+cat Tiny.java | sed '/\w*}\w*/d' | sed '/\w*}];\w*/d' | sed '/\w*});\w*/d' > tmpfile.java
 cloc tmpfile.java
 rm tmpfile.java
 ```
@@ -937,11 +937,11 @@ Pull requests accepted. If you don't want to grant me copyright, I'll add "Porti
 **Before committing to main for an impending release, I will do the following, if I remember**
 
 ``` 
-cat TinyWeb.java | sed '/SHA256_OF_SOURCE_LINES/d' > tmpfile.java
+cat Tiny.java | sed '/SHA256_OF_SOURCE_LINES/d' > tmpfile.java
 SHA=$(sha256sum tmpfile.java | cut -d ' ' -f1)
 rm tmpfile.java
 echo $SHA
-sed "s/.*SHA256_OF_SOURCE_LINES.*/    public static final String SHA256_OF_SOURCE_LINES = \"$SHA\"; \/\/ this line not included in SHA256 calc/" -i TinyWeb.java
+sed "s/.*SHA256_OF_SOURCE_LINES.*/    public static final String SHA256_OF_SOURCE_LINES = \"$SHA\"; \/\/ this line not included in SHA256 calc/" -i Tiny.java
 ```
 
 **Curl statements for you to copy, per release:**
@@ -950,4 +950,4 @@ TODO
 
 Ask me to do a release if you wish to depend on something unreleased in `main` - paul@hammant.org
 
-TinyWeb.java adds 2-3 seconds to your compile step depending on your CPU. I have a VERSION const in the TinyWeb source for you to check if you want.
+Tiny.java adds 2-3 seconds to your compile step depending on your CPU. I have a VERSION const in the Tiny source for you to check if you want.

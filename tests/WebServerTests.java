@@ -3,7 +3,7 @@ package tests;
 import com.sun.net.httpserver.HttpExchange;
 import org.forgerock.cuppa.Test;
 
-import static com.paulhammant.tnywb.Tiny.Method.GET;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;

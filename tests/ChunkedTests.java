@@ -16,6 +16,7 @@
 
 package tests;
 
+import com.paulhammant.tnywb.Tiny;
 import org.forgerock.cuppa.Test;
 
 import java.io.IOException;
@@ -34,11 +35,11 @@ public class ChunkedTests {
     com.paulhammant.tnywb.Tiny.WebServer webServer;
 
     {
-        describe("Given a TinyWeb server with a chunked response endpoint", () -> {
+        describe("Given a Tiny web server with a chunked response endpoint", () -> {
             BigDecimal[] totalSum = { BigDecimal.ZERO };
             before(() -> {
                 webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
-                    endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/chunked", (req, res, ctx) -> {
+                    endPoint(Tiny.HttpMethods.GET, "/chunked", (req, res, ctx) -> {
                         Random random = new Random();
                         OutputStream out = res.getResponseBody();
                         res.setHeader("Transfer-Encoding", "chunked");

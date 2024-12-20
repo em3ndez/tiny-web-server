@@ -16,6 +16,7 @@
 
 package tests;
 
+import com.paulhammant.tnywb.Tiny;
 import org.forgerock.cuppa.Test;
 
 import java.io.BufferedReader;
@@ -35,11 +36,11 @@ public class ServerSideEventsTests {
     com.paulhammant.tnywb.Tiny.WebServer webServer;
 
     {
-        describe("Given a TinyWeb server with an SSE endpoint", () -> {
+        describe("Given a Tiny web server with an SSE endpoint", () -> {
             before(() -> {
                 webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/sse", () -> {
-                        endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/events", (req, res, ctx) -> {
+                        endPoint(Tiny.HttpMethods.GET, "/events", (req, res, ctx) -> {
                             res.setHeader("Content-Type", "text/event-stream");
                             res.setHeader("Cache-Control", "no-cache");
                             res.setHeader("Connection", "keep-alive");

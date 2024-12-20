@@ -57,7 +57,7 @@ public class Tiny {
      * Enums
      * ==========================
      */
-    public enum Method { ALL, GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE, LINK, UNLINK, LOCK,
+    public enum HttpMethods { ALL, GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, CONNECT, TRACE, LINK, UNLINK, LOCK,
         UNLOCK, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, REPORT, SEARCH, PURGE, REBIND, UNBIND, ACL}
 
     public enum FilterAction {
@@ -71,9 +71,9 @@ public class Tiny {
 
     public interface WebServerContext {
         PathContext path(String basePath, Runnable runnable);
-        WebServerContext endPoint(Method method, String path, EndPoint endPoint);
+        WebServerContext endPoint(HttpMethods method, String path, EndPoint endPoint);
         WebServerContext webSocket(String path, WebSocketMessageHandler wsHandler);
-        WebServerContext filter(Method method, String path, Filter filter);
+        WebServerContext filter(HttpMethods method, String path, Filter filter);
         WebServerContext filter(String path, Filter filter);
         WebServerContext serveStaticFilesAsync(String basePath, String directory);
         void sendErrorResponse(HttpExchange exchange, int code, String message);
@@ -148,9 +148,9 @@ public class Tiny {
 
     public static abstract class AbstractWebServerContext implements WebServerContext {
 
-        protected Map<Method, Map<Pattern, EndPoint>> endPoints = new HashMap<>();
+        protected Map<HttpMethods, Map<Pattern, EndPoint>> endPoints = new HashMap<>();
         protected Map<Pattern, WebSocketMessageHandler> wsEndPoints = new HashMap<>();
-        protected Map<Method, List<FilterEntry>> filters = new HashMap<>() {{ put(Method.ALL, new ArrayList<>()); }};
+        protected Map<HttpMethods, List<FilterEntry>> filters = new HashMap<>() {{ put(HttpMethods.ALL, new ArrayList<>()); }};
         protected final ServerState serverState;
 
         public AbstractWebServerContext(ServerState serverState) {
@@ -163,7 +163,7 @@ public class Tiny {
                 throw new IllegalStateException("Cannot add paths after the server has started.");
             }
             // Check if the path is already registered
-            for (Method method : Method.values()) {
+            for (HttpMethods method : HttpMethods.values()) {
                 Map<Pattern, EndPoint> methodEndPoints = this.endPoints.get(method);
                 if (methodEndPoints != null) {
                     for (Pattern pattern : methodEndPoints.keySet()) {
@@ -174,9 +174,9 @@ public class Tiny {
                 }
             }
 
-            Map<Method, Map<Pattern, EndPoint>> previousEndPoints = this.endPoints;
+            Map<HttpMethods, Map<Pattern, EndPoint>> previousEndPoints = this.endPoints;
             Map<Pattern, WebSocketMessageHandler> previousWsEndPoints = this.wsEndPoints;
-            Map<Method, List<FilterEntry>> previousFilters = this.filters;
+            Map<HttpMethods, List<FilterEntry>> previousFilters = this.filters;
 
             // Create new maps to collect endpoints and filters within this path
             this.endPoints = new HashMap<>();
@@ -184,7 +184,7 @@ public class Tiny {
             this.filters = new HashMap<>();
 
             // Initialize empty maps for all methods
-            for (Method method : Method.values()) {
+            for (HttpMethods method : HttpMethods.values()) {
                 this.endPoints.put(method, new HashMap<>());
                 this.filters.put(method, new ArrayList<>());
             }
@@ -194,7 +194,7 @@ public class Tiny {
             runnable.run();
 
             // Prefix basePath to endpoints
-            for (Method method : Method.values()) {
+            for (HttpMethods method : HttpMethods.values()) {
                 Map<Pattern, EndPoint> methodEndPoints = this.endPoints.get(method);
                 if (methodEndPoints != null && !methodEndPoints.isEmpty()) {
                     Map<Pattern, EndPoint> prefixedEndPoints = new HashMap<>();
@@ -218,7 +218,7 @@ public class Tiny {
             }
 
             // Prefix basePath to filters
-            for (Method method : Method.values()) {
+            for (HttpMethods method : HttpMethods.values()) {
                 List<FilterEntry> methodFilters = this.filters.get(method);
                 if (methodFilters != null && !methodFilters.isEmpty()) {
                     List<FilterEntry> prefixedFilters = new ArrayList<>();
@@ -250,7 +250,7 @@ public class Tiny {
                 new Response(exchange).write(message, code);
         }
 
-        public WebServerContext endPoint(com.paulhammant.tnywb.Tiny.Method method, String path, EndPoint endPoint) {
+        public WebServerContext endPoint(HttpMethods method, String path, EndPoint endPoint) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add endpoints after the server has started.");
             }
@@ -267,7 +267,7 @@ public class Tiny {
             return this;
         }
 
-        public WebServerContext filter(com.paulhammant.tnywb.Tiny.Method method, String path, Filter filter) {
+        public WebServerContext filter(HttpMethods method, String path, Filter filter) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add filters after the server has started.");
             }
@@ -284,14 +284,14 @@ public class Tiny {
         }
 
         public WebServerContext filter(String path, Filter filter) {
-            return filter(Method.ALL, path, filter);
+            return filter(HttpMethods.ALL, path, filter);
         }
 
         public WebServerContext serveStaticFilesAsync(String basePath, String directory) {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add static serving after the server has started.");
             }
-            endPoint(Method.GET, basePath + "/(.*)", (req, res, ctx) -> {
+            endPoint(HttpMethods.GET, basePath + "/(.*)", (req, res, ctx) -> {
                 String filePath = ctx.getParam("1");
                 Path path = Paths.get(directory, filePath);
                 if (Files.exists(path) && !Files.isDirectory(path)) {
@@ -406,7 +406,7 @@ public class Tiny {
                 throw new ServerException("Could not create HttpServer", e);
             }
 
-            for (Method method : Method.values()) {
+            for (HttpMethods method : HttpMethods.values()) {
                 endPoints.put(method, new HashMap<>());
                 filters.put(method, new ArrayList<>());
             }
@@ -436,7 +436,7 @@ public class Tiny {
 
         private void handleHttpRequest(DependencyManager dependencyManager, HttpExchange exchange) {
             String path = exchange.getRequestURI().getPath();
-            Method method = Method.valueOf(exchange.getRequestMethod());
+            HttpMethods method = HttpMethods.valueOf(exchange.getRequestMethod());
 
             Map<Pattern, EndPoint> methodEndPoints = endPoints.get(method);
             if (methodEndPoints == null) {
@@ -473,7 +473,7 @@ public class Tiny {
                         if (methodFilters == null) {
                             methodFilters = new ArrayList<FilterEntry>();
                         }
-                        methodFilters.addAll(filters.get(Method.ALL));
+                        methodFilters.addAll(filters.get(HttpMethods.ALL));
 
                         for (FilterEntry filterEntry : methodFilters) {
                             Matcher filterMatcher = filterEntry.pattern.matcher(path);
@@ -683,7 +683,7 @@ public class Tiny {
         }
 
         @Override
-        public WebServerContext endPoint(Method method, String path, EndPoint endPoint) {
+        public WebServerContext endPoint(HttpMethods method, String path, EndPoint endPoint) {
             return server.endPoint(method, path, endPoint);
         }
 
@@ -693,7 +693,7 @@ public class Tiny {
         }
 
         @Override
-        public WebServerContext filter(Method method, String path, Filter filter) {
+        public WebServerContext filter(HttpMethods method, String path, Filter filter) {
             return server.filter(method, path, filter);
         }
 

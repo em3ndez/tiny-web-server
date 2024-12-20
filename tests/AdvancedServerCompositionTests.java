@@ -3,7 +3,7 @@ package tests;
 import org.forgerock.cuppa.Test;
 
 import static com.paulhammant.tnywb.Tiny.FilterAction.CONTINUE;
-import static com.paulhammant.tnywb.Tiny.Method.GET;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -54,7 +54,7 @@ public class AdvancedServerCompositionTests {
                 webServer = null;
             });
         });
-        describe("Given a TinyWeb server with ConcreteExtensionToServerComposition", () -> {
+        describe("Given a Tiny web server with ConcreteExtensionToServerComposition", () -> {
             before(() -> {
                 webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080)) {{
                     path("/a", () -> {
@@ -81,7 +81,7 @@ public class AdvancedServerCompositionTests {
                 webServer = null;
             });
         });
-        describe("Given a started TinyWeb server", () -> {
+        describe("Given a started Tiny web server", () -> {
             before(() -> {
                 webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withWebPort(8080)) {{
 

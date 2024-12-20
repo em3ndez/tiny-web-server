@@ -1,5 +1,6 @@
 package tests;
 
+import com.paulhammant.tnywb.Tiny;
 import com.paulhammant.tnywb.Tiny.Request;
 import com.paulhammant.tnywb.Tiny.Response;
 
@@ -7,9 +8,9 @@ import java.io.File;
 
 import static com.paulhammant.tnywb.Tiny.FilterAction.CONTINUE;
 import static com.paulhammant.tnywb.Tiny.FilterAction.STOP;
-import static com.paulhammant.tnywb.Tiny.Method.GET;
-import static com.paulhammant.tnywb.Tiny.Method.POST;
-import static com.paulhammant.tnywb.Tiny.Method.PUT;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.POST;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.PUT;
 import static tests.Suite.bytesToString;
 import static tests.Suite.toBytes;
 
@@ -63,7 +64,7 @@ public class ExampleApp {
             });
 
             path("/api", () -> {
-                endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/test/(\\w+)", (req, res, ctx) -> {
+                endPoint(Tiny.HttpMethods.GET, "/test/(\\w+)", (req, res, ctx) -> {
                     res.write("Parameter: " + ctx.getParam("1"));
                 });
             });

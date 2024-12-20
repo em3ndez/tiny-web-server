@@ -1,5 +1,7 @@
 package tests;
 
+import com.paulhammant.tnywb.Tiny;
+
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -26,10 +28,10 @@ public class ExampleDotComDemo {
 
             {
             // Serve the JavaScript WebSocket client library
-            endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/javascriptWebSocketClient.js", new com.paulhammant.tnywb.Tiny.JavascriptSocketClient());
+            endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js", new com.paulhammant.tnywb.Tiny.JavascriptSocketClient());
 
             // Serve the static HTML/JS page
-            endPoint(com.paulhammant.tnywb.Tiny.Method.GET, "/", (req, res, ctx) -> {
+            endPoint(Tiny.HttpMethods.GET, "/", (req, res, ctx) -> {
                 String sessionId = req.getHeaders().getOrDefault("Session-ID", List.of(UUID.randomUUID().toString())).get(0);
                 res.setHeader("Session-ID", sessionId);
                 res.setHeader("Content-Type", "text/html");
@@ -122,7 +124,7 @@ public class ExampleDotComDemo {
             });
 
             // HTTP PUT endpoint to reset the counter
-            endPoint(com.paulhammant.tnywb.Tiny.Method.PUT, "/resetCtr", (req, res, ctx) -> {
+            endPoint(Tiny.HttpMethods.PUT, "/resetCtr", (req, res, ctx) -> {
                 String sessionId = req.getHeaders().get("Session-ID").getFirst();
                 if (sessionId != null && !sessionId.isEmpty()) {
                     AtomicInteger counter = sessionCounters.get(sessionId);

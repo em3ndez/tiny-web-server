@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import static com.paulhammant.tnywb.Tiny.FilterAction.CONTINUE;
-import static com.paulhammant.tnywb.Tiny.Method.GET;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,7 +37,7 @@ public class RequestStatsTests {
     public static final String TEST_SLASH_ALL = "/.*";
 
     {
-        describe("Given a TinyWeb server with filters and an endpoint", () -> {
+        describe("Given a Tiny web server with filters and an endpoint", () -> {
             before(() -> {
                 webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {
                     @Override

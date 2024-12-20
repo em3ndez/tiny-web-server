@@ -5,7 +5,7 @@ import java.net.SocketException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.paulhammant.tnywb.Tiny.Method.POST;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.POST;
 
 
 public class WebSocketBroadcastDemo {

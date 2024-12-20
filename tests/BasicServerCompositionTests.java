@@ -2,7 +2,7 @@ package tests;
 
 import org.forgerock.cuppa.Test;
 
-import static com.paulhammant.tnywb.Tiny.Method.GET;
+import static com.paulhammant.tnywb.Tiny.HttpMethods.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -13,7 +13,7 @@ public class BasicServerCompositionTests {
     com.paulhammant.tnywb.Tiny.WebServer webServer;
 
     {
-        describe("Given a TinyWeb server with composed paths", () -> {
+        describe("Given a Tiny web server with composed paths", () -> {
             before(() -> {
                 webServer = new com.paulhammant.tnywb.Tiny.WebServer(com.paulhammant.tnywb.Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/composed", () -> {
