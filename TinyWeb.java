@@ -46,7 +46,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static tests.Suite.bytesToString;
 import static tests.Suite.toBytes;
 
 public class TinyWeb {
@@ -291,10 +290,10 @@ public class TinyWeb {
     public static record FilterStat (String path, String result, long duration) {}
 
     public static class Config {
-        private final InetSocketAddress inetSocketAddress;
-        private final int wsPort;
-        private final int wsBacklog;
-        private final InetAddress wsBindAddr;
+        public final InetSocketAddress inetSocketAddress;
+        public final int wsPort;
+        public final int wsBacklog;
+        public final InetAddress wsBindAddr;
         public final int socketTimeoutMs;
 
         private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs) {
@@ -329,9 +328,7 @@ public class TinyWeb {
             return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs);
         }
 
-
-
-        public Config withSocketTimeoutMs(int socketTimeoutMs) {
+        public Config withSocketTimeoutMillis(int socketTimeoutMs) {
             return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, socketTimeoutMs);
         }
 

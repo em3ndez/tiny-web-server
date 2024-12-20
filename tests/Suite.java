@@ -53,21 +53,22 @@ public class Suite {
     public static void main(String[] args) {
         Runner runner = new Runner();
         runner.run(runner.defineTests(Arrays.asList(
+                AdvancedServerCompositionTests.class,
+                BasicServerCompositionTests.class,
                 CompositionReuseTests.class,
                 ConfigTests.class,
+                ChunkedTests.class,
                 DependenciesTests.class,
                 FilterTests.class,
-                IntegrationTests.class,
+                SeleniumTests.class,
                 PathRegistrationTests.class,
                 RequestStatsTests.class,
-                BasicServerCompositionTests.class,
                 AdvancedServerCompositionTests.class,
                 ServerSideEventsTests.class,
+                StaticFilesTests.class,
                 WebServerTests.class,
                 WebSocketTests.class,
-                WithMockitoTests.class,
-                ChunkedTests.class,
-                StaticFilesTests.class
+                WithMockitoTests.class
         )), new DefaultReporter());
     }
 }

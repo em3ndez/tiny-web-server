@@ -52,7 +52,7 @@ public class ConfigTests {
             });
 
             it("should set socket timeout", () -> {
-                TinyWeb.Config config = TinyWeb.Config.create().withSocketTimeoutMs(60000);
+                TinyWeb.Config config = TinyWeb.Config.create().withSocketTimeoutMillis(60000);
                 assertThat(config.socketTimeoutMs, equalTo(60000));
             });
         });

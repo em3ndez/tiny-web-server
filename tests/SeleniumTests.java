@@ -19,7 +19,7 @@ import static tests.Suite.bytesToString;
 import static tests.Suite.toBytes;
 
 @Test
-public class IntegrationTests {
+public class SeleniumTests {
     TinyWeb.Server webServer;
 
     {
