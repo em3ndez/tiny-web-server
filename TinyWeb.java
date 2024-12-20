@@ -302,6 +302,7 @@ public class TinyWeb {
             this.wsPort = wsPort;
             this.wsBacklog = wsBacklog;
             this.wsBindAddr = wsBindAddr;
+            this.socketTimeoutMs = socketTimeoutMs;
         }
 
         public static Config create() {
@@ -328,10 +329,7 @@ public class TinyWeb {
             return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs);
         }
 
-        public Config withSocketTimeoutMs(int socketTimeoutMs) {
-            this.socketTimeoutMs = socketTimeoutMs;
-            return this;
-        }
+
 
         public Config withWebPort(int webPort) {
             return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs);
