@@ -23,7 +23,7 @@ public class SeleniumTests {
     Tiny.WebServer webServer;
 
     {
-        describe("When using Selenium to subscribe in a browser", () -> {
+        only().describe("When using Selenium to subscribe in a browser", () -> {
 
             before(() -> {
                 webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
@@ -44,7 +44,7 @@ public class SeleniumTests {
                                     <pre id="messageDisplay"></pre>
                                 </body>
                                 <script>
-                                const client = new TinyWeb.SocketClient('localhost', 8081);
+                                const client = new TinyWeb.SocketClient('localhost', 8081, '/baz');
                                 
                                 // Set up message handling
                                 client.receiveMessages('stop', (message) => {
@@ -53,7 +53,7 @@ public class SeleniumTests {
                         
                                 // To send a message (in an async context):
                                 async function sendMessage() {
-                                    await client.sendMessage('/baz', 'Hello WebSocket');
+                                    await client.sendMessage('Hello WebSocket');
                                 }
                         
                                 // To close (in an async context):

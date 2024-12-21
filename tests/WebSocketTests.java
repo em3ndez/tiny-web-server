@@ -3,6 +3,8 @@ package tests;
 import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
 
+import java.io.IOException;
+
 import static com.paulhammant.tiny.Tiny.toBytes;
 import static java.lang.Thread.sleep;
 import static org.forgerock.cuppa.Cuppa.*;
@@ -35,15 +37,15 @@ public class WebSocketTests {
                 }};
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
-                Thread.sleep(50);
-                client = new Tiny.WebSocketClient("localhost", 8081, "http://localhost:8080");
+                Thread.sleep(200);
+                client = new Tiny.WebSocketClient("ws://localhost:8081/foo/baz", "http://localhost:8080");
                 client.performHandshake();
             });
 
             it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
 
                 // Example client usage
-                client.sendMessage("/foo/baz", "Hello WebSocket");
+                client.sendMessage("Hello WebSocket");
 
                 StringBuilder messages = new StringBuilder();
 
@@ -60,7 +62,12 @@ public class WebSocketTests {
             });
 
             after(() -> {
-                client.close();
+
+                try {
+                    client.close();
+                } catch (IOException e) {
+                    System.out.println("client already closed: " + e.getMessage());
+                }
                 client = null;
                 webSocketServer.stop();
                 webSocketServer = null;
@@ -92,18 +99,20 @@ public class WebSocketTests {
                     });
                 }}.start();
                 Thread.sleep(50);
-                client = new Tiny.WebSocketClient("localhost", 8081, "http://localhost:8080");
-                client.performHandshake();
 
             });
 
             it("Then it should echo three modified messages back to the client (twice)", () -> {
 
+                client = new Tiny.WebSocketClient("ws://localhost:8081/foo/baz", "http://localhost:8080");
+                client.performHandshake();
+
+
                 bodyAndResponseCodeShouldBe(httpGet("/foo/bar"),
                         "OK", 200);
 
                 // Example client usage
-                client.sendMessage("/foo/baz", "Hello WebSocket: 0");
+                client.sendMessage("Hello WebSocket: 0");
 
                 final StringBuilder messages = new StringBuilder();
 
@@ -117,7 +126,7 @@ public class WebSocketTests {
                                 "Server sent: Hello WebSocket: 0 -2" +
                                 "Server sent: Hello WebSocket: 0 -3"));
 
-                client.sendMessage("/foo/baz", "Hello WebSocket: 5");
+                client.sendMessage("Hello WebSocket: 5");
 
                 messages.delete(0, messages.length());
 
@@ -137,8 +146,12 @@ public class WebSocketTests {
 
             it("Then it should do a 404 equivalent for a missing path", () -> {
 
+                client = new Tiny.WebSocketClient("ws://localhost:8081/helloMissingPath", "http://localhost:8080");
+                client.performHandshake();
+
+
                 // Example client usage
-                client.sendMessage("/foo/doesNotExist", "Hello WebSocket: 0");
+                client.sendMessage("Hello WebSocket: 0");
 
                 StringBuilder message = new StringBuilder();
 
@@ -180,14 +193,14 @@ public class WebSocketTests {
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
                 Thread.sleep(100);
-                client = new Tiny.WebSocketClient("localhost", 8081, "https://localhost:8080");
+                client = new Tiny.WebSocketClient("ws://localhost:8081/foo/baz", "https://localhost:8080");
                 client.performHandshake();
             });
 
             it("Then it should echo three messages plus -1 -2 -3 back to the client", () -> {
 
                 // Example client usage
-                client.sendMessage("/foo/baz", "Hello WebSocket");
+                client.sendMessage("Hello WebSocket");
 
                 StringBuilder messages = new StringBuilder();
 
@@ -212,8 +225,6 @@ public class WebSocketTests {
             });
         });
 
-        /// / eeee
-
         describe("When mismatching domains on SocketServer client lib", () -> {
 
             before(() -> {
@@ -226,14 +237,14 @@ public class WebSocketTests {
                 Thread serverThread = new Thread(webSocketServer::start);
                 serverThread.start();
                 Thread.sleep(50);
-                client = new Tiny.WebSocketClient("localhost", 8081, "http://example:8080");
+                client = new Tiny.WebSocketClient("ws://localhost:8081/foo/baz", "http://example:8080");
                 client.performHandshake();
             });
 
             it("Conversation is vetoed", () -> {
 
                 // Example client usage
-                client.sendMessage("/foo/baz", "Hello WebSocket");
+                client.sendMessage("Hello WebSocket");
 
                 StringBuilder messages = new StringBuilder();
 

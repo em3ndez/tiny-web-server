@@ -70,9 +70,9 @@ public class WebSocketBroadcastDemo {
             Thread.ofVirtual().start(() -> {
                 while (true) {
                     try {
-                        Tiny.WebSocketClient client = new Tiny.WebSocketClient("localhost", 8081, "http://localhost:8080");
+                        Tiny.WebSocketClient client = new Tiny.WebSocketClient("ws://localhost:8081/keepMeUpdatedPlease", "http://localhost:8080");
                         client.performHandshake();
-                        client.sendMessage("/keepMeUpdatedPlease", "Client " + clientId + " connecting");
+                        client.sendMessage("Client " + clientId + " connecting");
 
                         boolean shouldStop = client.receiveMessages("stop", message -> {
                             clientMessageCounts.merge(clientId, 1, Integer::sum);

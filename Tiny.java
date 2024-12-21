@@ -1000,6 +1000,7 @@ public class Tiny {
         }
 
         private void handleClient(Socket client) {
+            System.out.println("Handling new client connection...");
             Scanner s = null;
             try {
                 InputStream in = client.getInputStream();
@@ -1007,9 +1008,12 @@ public class Tiny {
                 s = new Scanner(in, "UTF-8");
 
                 String data = s.useDelimiter("\\r\\n\\r\\n").next();
-                Matcher get = Pattern.compile("^GET").matcher(data);
+                Matcher get = Pattern.compile("^GET (.+?) HTTP/1.1").matcher(data);
 
+                String path = null;
                 if (get.find()) {
+                    path = get.group(1);
+                    System.out.println("Ws Path: " + path);
                     Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
                     if (!match.find()) {
                         client.close();
@@ -1023,23 +1027,27 @@ public class Tiny {
                     // Handle handshake
                     String acceptKey = generateAcceptKey(match.group(1));
                     sendHandshakeResponse(out, acceptKey);
+                    System.out.println("Handshake completed with client.");
 
                     // Handle WebSocket communication
-                    handleWebSocketCommunication(client, in, out, origin);
+                    handleWebSocketCommunication(client, in, out, origin, path);
                 }
             } catch (SocketTimeoutException e) {
-                // TODO handle read timed out
+                System.err.println("Socket timeout: " + e.getMessage());
             } catch (IOException e) {
                 System.err.println("Error handling client: " + e.getMessage());
                 e.printStackTrace();
             } finally {
-                s.close();
+                if (s != null) {
+                    s.close();
+                }
                 try {
                     client.close();
                 } catch (IOException e) {
+                    System.err.println("Error closing client socket: " + e.getMessage());
                 }
             }
-
+            System.out.println("Client connection closed.");
         }
 
         private String generateAcceptKey(String webSocketKey) throws UnsupportedEncodingException {
@@ -1063,42 +1071,59 @@ public class Tiny {
             out.flush();
         }
 
-        private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out, String origin) throws IOException {
-            //System.out.println("origin= " + origin);
+        private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out, String origin, String path) throws IOException {
+            System.out.println("HwsC: Handling WebSocket communication with origin: " + origin);
+            System.out.println("HwsC: WebSocket path: " + path);
             String expectedOrigin = config.inetSocketAddress != null ? (config.inetSocketAddress.getHostName() + ":" + config.inetSocketAddress.getPort()).replace("0.0.0.0", "").replace("::", "") : "";
+            System.out.println("HwsC: Expected origin: " + expectedOrigin);
 
             com.paulhammant.tiny.Tiny.MessageSender sender = new com.paulhammant.tiny.Tiny.MessageSender(out);
             byte[] buffer = new byte[8192];
 
             while (!client.isClosed()) {
+                System.out.println("HwsC: Waiting for connection...");
+                System.out.println("HwsC: Reading frame header...");
                 // Read frame header
-                int headerLength = readFully(in, buffer, 0, 2);
-                if (headerLength < 2) break;
+                int headerBytesRead = 0;
+                while (headerBytesRead < 2) {
+                    int bytesRead = in.read(buffer, headerBytesRead, 2 - headerBytesRead);
+                    if (bytesRead == -1) {
+                        System.out.println("HwsC: End of stream reached unexpectedly.");
+                        return;
+                    }
+                    headerBytesRead += bytesRead;
+                    System.out.println("HwsC: Reading frame header, total bytes read: " + headerBytesRead);
+                }
+                System.out.println("HwsC: Frame header bytes: " + Arrays.toString(Arrays.copyOf(buffer, 2)));
 
+                System.out.println("HwsC: Received data.");
+                System.out.println("HwsC: Frame header read successfully.");
                 boolean fin = (buffer[0] & 0x80) != 0;
                 int opcode = buffer[0] & 0x0F;
                 boolean masked = (buffer[1] & 0x80) != 0;
                 int payloadLength = buffer[1] & 0x7F;
                 int offset = 2;
-                
+
+                System.out.println("HwsC: Opcode: " + opcode + ", Masked: " + masked + ", Payload length: " + payloadLength);
                 // Handle extended payload length cases
                 if (payloadLength == 126) {
-                    headerLength = readFully(in, buffer, offset, 2);
-                    if (headerLength < 2) break;
+                    System.out.println("HwsC: Payload length is 126");
+                    if (in.read(buffer, offset, 2) < 2) return;
                     payloadLength = ((buffer[offset] & 0xFF) << 8) | (buffer[offset + 1] & 0xFF);
                     offset += 2;
                 } else if (payloadLength == 127) {
-                    headerLength = readFully(in, buffer, offset, 8);
-                    if (headerLength < 8) break;
+                    System.out.println("HwsC: Payload length is 127");
+                    if (in.read(buffer, offset, 8) < 8) return;
                     payloadLength = 0;
                     for (int i = 0; i < 8; i++) {
                         payloadLength |= (buffer[offset + i] & 0xFF) << ((7 - i) * 8);
                     }
                     offset += 8;
                 }
-                
+            
                 // Handle close frame immediately
                 if (opcode == 8) { // Close frame
+                    System.out.println("HwsC: Received close frame, closing connection.");
                     sendCloseFrame(out);
                     break;
                 }
@@ -1108,7 +1133,7 @@ public class Tiny {
                     // Read masking key
                     byte[] maskingKey = null;
                     if (masked) {
-                        headerLength = readFully(in, buffer, offset, 4);
+                        int headerLength = readFully(in, buffer, offset, 4);
                         if (headerLength < 4) break;
                         maskingKey = Arrays.copyOfRange(buffer, offset, offset + 4);
                         offset += 4;
@@ -1121,7 +1146,7 @@ public class Tiny {
                     byte[] payload = new byte[payloadLength];
                     int bytesRead = readFully(in, payload, 0, payloadLength);
                     if (bytesRead < payloadLength) break;
-                    
+                
                     // Unmask the entire payload
                     if (masked) {
                         for (int i = 0; i < payload.length; i++) {
@@ -1131,28 +1156,17 @@ public class Tiny {
 
                     // Now work with the unmasked payload
                     if (payload.length > 0) {
-                        int pathLength = payload[0] & 0xFF;
-
-                        if (pathLength > payload.length - 1) {
-                            invalidPathLength(pathLength, payload);
-                            break;
-                        }
-
-                        // Extract path
-                        byte[] pathBytes = Arrays.copyOfRange(payload, 1, pathLength + 1);
-                        String path = new String(pathBytes, StandardCharsets.US_ASCII);
-
-                        // Extract message
-                        byte[] messagePayload = Arrays.copyOfRange(payload, pathLength + 1, payload.length);
-
+                        System.out.println("HwsC: Received payload: " + new String(payload, StandardCharsets.UTF_8) + " from client: " + client.getRemoteSocketAddress() + " for path: " + path);
+                        System.out.println("HwsC: Payload length: " + payload.length);
                         CompletableFuture.runAsync(() -> {
 
                             if (!origin.endsWith(expectedOrigin)) {
                                 BAD_ORIGIN.handleMessage(null, sender, null);
-                            } else{
+                            } else {
+                                System.out.println("HwsC: Origin matches expected origin. Processing message.");
                                 ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
                                 RequestContext ctx = new WebServer.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new HashMap<>());
-                                getHandler(path).handleMessage(messagePayload, sender, ctx); // could be 404 handler
+                                getHandler(path).handleMessage(payload, sender, ctx); // could be 404 handler
 
                             }
                         });
@@ -1160,6 +1174,7 @@ public class Tiny {
                 }
                 // Other control frames (ping/pong) could be handled here
             }
+            System.out.println("WebSocket communication ended.");
         }
 
         protected static void invalidPathLength(int pathLength, byte[] payload) {
@@ -1167,6 +1182,7 @@ public class Tiny {
         }
 
         protected WebSocketMessageHandler getHandler(String path) {
+            System.out.println("Retrieving handler for path: " + path);
             return messageHandlers.get(path);
         }
 
@@ -1200,16 +1216,19 @@ public class Tiny {
         private final Socket socket;
         private final String host;
         private final int port;
+        private final String path;
         private final String originUrl;
         private Consumer<String> onMessageHandler;
         private final InputStream in;
         private final OutputStream out;
         private static final SecureRandom random = new SecureRandom();
 
-        public WebSocketClient(String host, int port, String originUrl) throws IOException {
-            this.host = host;
-            this.port = port;
+        public WebSocketClient(String url, String originUrl) throws IOException {
+            URI uri = URI.create(url);
+            this.host = uri.getHost();
+            this.port = uri.getPort();
             this.originUrl = originUrl;
+            this.path = uri.getPath();
             this.socket = new Socket(host, port);
             this.socket.setSoTimeout(300000); // 5 minutes timeout
             this.in = socket.getInputStream();
@@ -1217,11 +1236,12 @@ public class Tiny {
         }
 
         public void performHandshake() throws IOException {
+            System.out.println("Performing WebSocket handshake...");
             byte[] keyBytes = new byte[16];
             random.nextBytes(keyBytes);
             String key = Base64.getEncoder().encodeToString(keyBytes);
             String handshakeRequest =
-                    "GET / HTTP/1.1\r\n" +
+                    "GET " + this.path + " HTTP/1.1\r\n" +
                             "Host: " + this.host +":" +this.port+ "\r\n" +
                             "Upgrade: websocket\r\n" +
                             "Connection: Upgrade\r\n" +
@@ -1235,22 +1255,27 @@ public class Tiny {
             // Read handshake response
             byte[] responseBuffer = new byte[1024];
             int responseBytes = in.read(responseBuffer);
+            if (responseBytes == -1) {
+                throw new IOException("Failed to read handshake response");
+            }
             String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
+            System.out.println("Handshake response: " + response);
             if (!response.contains("HTTP/1.1 101 Switching Protocols") ||
                 !response.contains("Connection: Upgrade") ||
                 !response.contains("Upgrade: websocket")) {
                 throw new IOException("websocket handshake failed, unexpected response: " + response);
             }
+            System.out.println("Handshake successful.");
         }
 
-        public void sendMessage(String path, String message) throws IOException {
-            byte[] pathBytes = path.getBytes(StandardCharsets.US_ASCII);
+        public void sendMessage(String message) throws IOException {
+            System.out.println("Sending message: " + message);
             byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
             byte[] mask = new byte[4];
             random.nextBytes(mask);
 
-            // Calculate total payload length (1 byte for path length + path + message)
-            int totalLength = 1 + pathBytes.length + messageBytes.length;
+            // Calculate total payload length (message only)
+            int totalLength = messageBytes.length;
 
             // Write frame header
             out.write(0x81); // FIN bit set, text frame
@@ -1261,9 +1286,7 @@ public class Tiny {
 
             // Create complete payload first
             byte[] fullPayload = new byte[totalLength];
-            fullPayload[0] = (byte) pathBytes.length;
-            System.arraycopy(pathBytes, 0, fullPayload, 1, pathBytes.length);
-            System.arraycopy(messageBytes, 0, fullPayload, 1 + pathBytes.length, messageBytes.length);
+            System.arraycopy(messageBytes, 0, fullPayload, 0, messageBytes.length);
 
             // Mask the entire payload
             for (int i = 0; i < fullPayload.length; i++) {
@@ -1271,10 +1294,12 @@ public class Tiny {
             }
 
             out.flush();
+            System.out.println("Message sent.");
         }
 
         //  returns true if stop required, otherwise clients should reconnect
         public boolean receiveMessages(String stopPhrase, InterruptibleConsumer<String> handle) throws IOException {
+            System.out.println("Receiving messages from server... waiting for stop phrase: " + stopPhrase);
             boolean keepGoing = true;
             while (keepGoing) {
                 // Read frame header
@@ -1304,14 +1329,16 @@ public class Tiny {
                 int bytesRead = WebSocketServer.readFully(in, payload, 0, payloadLength);
                 if (bytesRead < payloadLength) break;
 
-
                 String message = new String(payload, 0, bytesRead, "UTF-8");
+                System.out.println("Received message: " + message + " from server, checking against stop phrase: " + stopPhrase);
                 if (message.equals(stopPhrase)) {
+                    System.out.println("Stop phrase received, closing connection.");
                     return true;
                 } else {
                     keepGoing = handle.accept(message);
                 }
             }
+            System.out.println("Connection closed.");
             return false;
         }
 
@@ -1375,8 +1402,8 @@ public class Tiny {
                             messageCallback;
                             stopPhrase;
                     
-                            constructor(host, port) {
-                                this.socket = new WebSocket(`ws://${host}:${port}`);
+                            constructor(host, port, path) {
+                                this.socket = new WebSocket(`ws://${host}:${port}${path}`);
                                 this.socket.binaryType = 'arraybuffer';
                                
                                 this.socket.onopen = () => {
@@ -1413,21 +1440,13 @@ public class Tiny {
                                 };
                             }
                     
-                            async sendMessage(path, message) {
+                            async sendMessage(message) {
                                 await this.waitForOpen();
-                               
+
                                 return new Promise((resolve, reject) => {
                                     try {
-                                        const pathBytes = new TextEncoder().encode(path);
                                         const messageBytes = new TextEncoder().encode(message);
-                                        const totalLength = 1 + pathBytes.length + messageBytes.length;
-                                        const payload = new Uint8Array(totalLength);
-                                       
-                                        payload[0] = pathBytes.length;
-                                        payload.set(pathBytes, 1);
-                                        payload.set(messageBytes, 1 + pathBytes.length);
-                                       
-                                        this.socket.send(payload);
+                                        this.socket.send(messageBytes);
                                         resolve();
                                     } catch (error) {
                                         reject(error);
