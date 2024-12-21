@@ -1,4 +1,4 @@
-# TinyWeb 
+# Tiny WebServer and WebSocketServer
 
 A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `Tiny.java`. 
 Just a fun pair-programmed project, really. Imperfectly pair programmed with AIs. It is for use for to make small web/medium applications - perhaps not on the public web.
@@ -107,7 +107,7 @@ java commands), then there was a shell script, then there was a makefile, which 
 
 ### End-points
 
-Here is a basic example of defining a GET endpoint using TinyWeb:
+Here is a basic example of defining a GET endpoint using Tiny WebServer:
 
 ```java 
 Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
@@ -213,7 +213,7 @@ via an attribute if all is good.
 
 ### A webSocket and endPoint within a path
 
-Here's an example of defining both a WebSocket and an HTTP endpoint within a single path using TinyWeb:
+Here's an example of defining both a WebSocket and an HTTP endpoint within a single path using Tiny WebServer:
 
 ```java
 Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
@@ -264,7 +264,7 @@ public class WebSocketClientExample {
 In this example, a `Tiny.WebSocketClient` is created to connect to a WebSocket server running on `localhost` at
 port 8081. The client performs a WebSocket handshake, sends a message to the `/messenger/chatback` path, and prints the
 response received from the server. On the wire, the path and message are put in a specific structure for sending to
-the server. That's opinionated, whereas the regular HTTP side of TinyWeb is not. This is to make the webSockets
+the server. That's opinionated, whereas the regular HTTP side of Tiny is not. This is to make the webSockets
 appear within the same nested path structure of the composed server grammar. They are not really - not even the
 same port on the server. The path association is places in the first bytes of the message from the client to the 
 server. So `SocketClient` does that custom adaption of client-to-server Tiny web-socket messages.
@@ -350,7 +350,7 @@ four concurrently connected channels.
 
 ### WebSockets Performance
 
-The `WebSocketBroadcastDemo` class demonstrates the capability of the TinyWeb server to handle a large number of concurrent WebSocket connections efficiently. This demo sets up a WebSocket server that can broadcast messages to multiple clients simultaneously.
+The `WebSocketBroadcastDemo` class demonstrates the capability of the Tiny WebSocketServer to handle a large number of concurrent WebSocket connections efficiently. This demo sets up a WebSocket server that can broadcast messages to multiple clients simultaneously.
 
 #### Key Features:
 - **Broadcasting**: The server can send messages to all connected clients, making it suitable for applications like chat rooms, live notifications, or real-time data feeds.
@@ -940,7 +940,7 @@ Mostly "Batteries not included" ...
 
 ## Wiki
 
-See [https://github.com/paul-hammant/tinyweb/wiki]
+See [https://github.com/paul-hammant/tiny/wiki]
 
 # Contributions & Published versions
 
