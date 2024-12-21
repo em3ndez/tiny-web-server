@@ -428,6 +428,19 @@ public class Tiny {
                         }
                         return FOUR_OH_FOUR;
                     }
+
+                    @Override
+                    protected void webSocketTimeout(String path, InetAddress inetAddress, SocketTimeoutException e) {
+                        super.webSocketTimeout(path, inetAddress, e);
+                    }
+
+                    @Override
+                    protected void webSocketIoException(String path, InetAddress inetAddress, IOException e) {
+                        super.webSocketIoException(path, inetAddress, e);
+                    }
+
+
+
                 };
             } else {
                 socketServer = null;
@@ -587,6 +600,14 @@ public class Tiny {
         protected void serverException(ServerException e) {
             System.err.println(e.getMessage() + "\nStack Trace:");
             e.printStackTrace(System.err);
+        }
+
+        protected void webSocketTimeout(String pathLength, InetAddress inetAddress, SocketTimeoutException payload) {
+
+        }
+
+        protected void webSocketIoException(String pathLength, InetAddress inetAddress, IOException payload) {
+
         }
 
         /**
@@ -962,6 +983,7 @@ public class Tiny {
         public WebSocketServer(Config config) {
             this(config, new DependencyManager(new DefaultComponentCache(null)));
         }
+
         public WebSocketServer(Config config, DependencyManager dependencyManager) {
             this.config = config;
             this.dependencyManager = dependencyManager;
@@ -1001,6 +1023,7 @@ public class Tiny {
 
         private void handleClient(Socket client) {
             Scanner s = null;
+            String path = null;
             try {
                 InputStream in = client.getInputStream();
                 OutputStream out = client.getOutputStream();
@@ -1009,7 +1032,6 @@ public class Tiny {
                 String data = s.useDelimiter("\\r\\n\\r\\n").next();
                 Matcher get = Pattern.compile("^GET (.+?) HTTP/1.1").matcher(data);
 
-                String path = null;
                 if (get.find()) {
                     path = get.group(1);
                     Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
@@ -1030,10 +1052,9 @@ public class Tiny {
                     handleWebSocketCommunication(client, in, out, origin, path);
                 }
             } catch (SocketTimeoutException e) {
-                System.err.println("Socket timeout: " + e.getMessage());
+                webSocketTimeout(path, client.getInetAddress(), e);
             } catch (IOException e) {
-                System.err.println("Error handling client: " + e.getMessage());
-                e.printStackTrace();
+                webSocketIoException(path, client.getInetAddress(), e);
             } finally {
                 if (s != null) {
                     s.close();
@@ -1041,7 +1062,6 @@ public class Tiny {
                 try {
                     client.close();
                 } catch (IOException e) {
-                    System.err.println("Error closing client socket: " + e.getMessage());
                 }
             }
         }
@@ -1154,8 +1174,10 @@ public class Tiny {
             }
         }
 
-        protected static void invalidPathLength(int pathLength, byte[] payload) {
-            System.err.println("Invalid path length: " + pathLength + " (payload length: " + payload.length + ")");
+        protected void webSocketTimeout(String pathLength, InetAddress inetAddress, SocketTimeoutException payload) {
+        }
+
+        protected void webSocketIoException(String pathLength, InetAddress inetAddress, IOException payload) {
         }
 
         protected WebSocketMessageHandler getHandler(String path) {
