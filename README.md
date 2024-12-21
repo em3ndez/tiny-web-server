@@ -251,9 +251,10 @@ public class WebSocketClientExample {
             client.sendMessage("Hello WebSocket");
 
             // Receive a response from the WebSocket server
-          //TODO receiveMessages plural
-            String response = client.receiveMessages();
-            System.out.println("Received: " + response);
+            client.receiveMessages("stop", response -> {
+                System.out.println("Received: " + response);
+                return true;
+            });
 
         } catch (IOException e) {
             e.printStackTrace();
