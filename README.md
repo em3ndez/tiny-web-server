@@ -300,8 +300,6 @@ big map of paths and websockets open to clients, and if this were a single web-a
 websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
 four concurrently connected channels.
 
-
-
 ### WebSockets Performance
 
 The `WebSocketBroadcastDemo` class demonstrates the capability of the Tiny WebSocketServer to handle a large number of concurrent WebSocket connections efficiently. This demo sets up a WebSocket server that can broadcast messages to multiple clients simultaneously.

@@ -87,10 +87,7 @@ public class WebSocketBroadcastDemo {
                     } catch (IOException e) {
                         unexpectedClientExceptions.incrementAndGet();
                     }
-                    // Introduce a random delay between 0 and 20 seconds
-                    int delay = ThreadLocalRandom.current().nextInt(0, 20001);
-                    sleepMillis(delay);
-                    
+
                     restartedClients.incrementAndGet();                    
                 }
             });
