@@ -55,8 +55,7 @@ public class WebSocketBroadcastDemo {
         Tiny.Config config = Tiny.Config.create()
                 .withHostAndWebPort("localhost", 8080)
                 .withWebSocketPort(8081)
-                .withSocketTimeoutMillis(100000)
-                .withWebKeepAlive(false);
+                .withSocketTimeoutMillis(100000); // try changing this number
 
         Tiny.WebServer server = new Tiny.WebServer(config) {
             @Override

@@ -334,54 +334,60 @@ public class Tiny {
     public static class Config {
         public final InetSocketAddress inetSocketAddress;
         public final int wsPort;
+        public final int webBacklog;
         public final int wsBacklog;
         public final InetAddress wsBindAddr;
         public final int socketTimeoutMs;
         public final boolean webKeepAlive;
 
-        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs, boolean webKeepAlive) {
+        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs, boolean webKeepAlive, int webBacklog) {
             this.inetSocketAddress = inetSocketAddress;
             this.wsPort = wsPort;
             this.wsBacklog = wsBacklog;
             this.wsBindAddr = wsBindAddr;
             this.socketTimeoutMs = socketTimeoutMs;
             this.webKeepAlive = webKeepAlive;
+            this.webBacklog = webBacklog;
         }
 
         public static Config create() {
-            return new Config(null, 0, 50, null, 30000, true);
+            return new Config(null, 0, 50, null, 30000, true, 50);
         }
 
         public Config withInetSocketAddress(InetSocketAddress inetSocketAddress) {
-            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
+            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive, this.webBacklog);
         }
 
         public Config withWebSocketPort(int wsPort) {
-            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
+            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive, this.webBacklog);
         }
 
         public Config withWsBacklog(int wsBacklog) {
-            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
+            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive, this.webBacklog);
+        }
+
+        public Config withWebBacklog(int webBacklog) {
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive, webBacklog);
         }
 
         public Config withHostAndWebPort(String host, int webPort) {
-            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
+            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive, this.webBacklog);
         }
 
         public Config withWsBindAddr(InetAddress wsBindAddr) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs, this.webKeepAlive, this.webBacklog);
         }
 
         public Config withSocketTimeoutMillis(int socketTimeoutMs) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, socketTimeoutMs, this.webKeepAlive);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, socketTimeoutMs, this.webKeepAlive, this.webBacklog);
         }
 
         public Config withWebPort(int webPort) {
-            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
+            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive, this.webBacklog);
         }
 
         public Config withWebKeepAlive(boolean webKeepAlive) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, webKeepAlive);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, webKeepAlive, this.webBacklog);
         }
 
     }
@@ -624,7 +630,7 @@ public class Tiny {
                 throw new IllegalStateException("Server has already been started.");
             }
             try {
-                httpServer.bind(config.inetSocketAddress, 0);
+                httpServer.bind(config.inetSocketAddress, config.webBacklog);
             } catch (IOException e) {
                 throw new ServerException("Can't listen on port " + config.inetSocketAddress.getPort(), e);
             }
