@@ -269,55 +269,6 @@ appear within the same nested path structure of the composed server grammar. The
 same port on the server. The path association is places in the first bytes of the message from the client to the 
 server. So `SocketClient` does that custom adaption of client-to-server Tiny web-socket messages.
 
-#### Connecting to a WebSocket using JavaScript source file endpoint
-
-Here's an example of how to connect to a Tiny web-socket using the JavaScript version of `Tiny.WebSocketClient`:
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>WebSocket Test</title>
-    <script src="/javascriptWebSocketClient.js"></script>
-</head>
-<body>
-    <h1>WebSocket Message Display</h1>
-    <pre id="messageDisplay"></pre>
-    <script>
-        const tinyWebSocketClient = new Tiny.WebSocketClient('localhost', 8081);
-
-        async function example() {
-            try {
-                await tinyWebSocketClient.waitForOpen();
-                await tinyWebSocketClient.sendMessage('/messenger/chatback', 'Hello WebSocket');
-
-                const response = await tinyWebSocketClient.receiveMessage();
-                document.getElementById('messageDisplay').textContent = 'Received: ' + response;
-
-                await tinyWebSocketClient.close();
-            } catch (error) {
-                console.error('WebSocket error:', error);
-            }
-        }
-        example();
-    </script>
-</body>
-</html>
-```
-
-In this example, a JavaScript version of `Tiny.WebSocketClient` (via `Tiny.JavaScriptWebSocketClient` Java class) is created in JavaScript to connect to a WebSocket server running on `localhost` at port 8081. The client waits for the 
-connection to open, sends a message to the `/messenger/chatback` path, and displays the response received from the server in the browser (html code not shown).
-
-**Making the JavaScript WebSocket Client available to webapps**
-
-In the example where we connect to a WebSocket using the JavaScript `Tiny.WebSocketClient`, the server needs to serve the JavaScript client code to the browser. This is done by defining one more endpoint that responds with the JavaScript code when requested:
-
-```java
-endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js", new Tiny.JavascriptWebSocketClient());
-// or your preferred path
-```
-This is to honor the server-side need for path & message to be in a specific opinionated structure.
 
 ### Two WebSockets with Different Paths
 
