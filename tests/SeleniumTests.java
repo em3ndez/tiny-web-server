@@ -23,46 +23,36 @@ public class SeleniumTests {
     Tiny.WebServer webServer;
 
     {
-        only().describe("When using Selenium to subscribe in a browser", () -> {
+        describe("When using Selenium to subscribe in a browser", () -> {
 
             before(() -> {
                 webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
-                    endPoint(Tiny.HttpMethods.GET, "/javascriptWebSocketClient.js", new Tiny.JavascriptWebSocketClient());
 
                     endPoint(Tiny.HttpMethods.GET, "/", (req, res, ctx) -> {
                         res.setHeader("Content-Type", "text/html");
                         res.sendResponse("""
                                 <!DOCTYPE html>
                                 <html lang="en">
-                                <head>
-                                    <meta charset="UTF-8">
-                                    <title>WebSocket Test</title>
-                                    <script src="/javascriptWebSocketClient.js"></script>
-                                </head>
+                                <head><meta charset="UTF-8"><title>WebSocket Test</title></head>
                                 <body>
-                                    <h1>WebSocket Message Display</h1>
+                                    <h1>WebSocket Message Display (Selenium test)</h1>
                                     <pre id="messageDisplay"></pre>
                                 </body>
                                 <script>
-                                const client = new TinyWeb.SocketClient('localhost', 8081, '/baz');
-                                
-                                // Set up message handling
-                                client.receiveMessages('stop', (message) => {
-                                    document.getElementById('messageDisplay').textContent += (message + "\\n");
+                                const socket = new WebSocket('ws://localhost:8081/baz');
+                                const messageDisplay = document.getElementById('messageDisplay');
+    
+                                socket.addEventListener('open', () => {
+                                    socket.send('Hello WebSocket');
                                 });
-                        
-                                // To send a message (in an async context):
-                                async function sendMessage() {
-                                    await client.sendMessage('Hello WebSocket');
-                                }
-                        
-                                // To close (in an async context):
-                                async function closeConnection() {
-                                    await client.close();
-                                }
-                                
-                                sendMessage();
-                                                          
+    
+                                socket.addEventListener('message', (event) => {
+                                    messageDisplay.textContent += event.data + '\\n';
+                                    if (event.data.equals('stop')) {
+                                        socket.close();
+                                    }
+                                });
+    
                                 </script>
                                 </html>
                             """, 200);
@@ -98,7 +88,8 @@ public class SeleniumTests {
                     sleep(500);
                     String expectedMessages = "Server sent: Hello WebSocket-1\n" +
                             "Server sent: Hello WebSocket-2\n" +
-                            "Server sent: Hello WebSocket-3";
+                            "Server sent: Hello WebSocket-3\n" +
+                            "stop";
                     assertThat(messageElement.getText(), equalTo(expectedMessages));
                 } finally {
                     driver.quit();

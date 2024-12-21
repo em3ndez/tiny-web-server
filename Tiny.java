@@ -1000,7 +1000,6 @@ public class Tiny {
         }
 
         private void handleClient(Socket client) {
-            System.out.println("Handling new client connection...");
             Scanner s = null;
             try {
                 InputStream in = client.getInputStream();
@@ -1013,7 +1012,6 @@ public class Tiny {
                 String path = null;
                 if (get.find()) {
                     path = get.group(1);
-                    System.out.println("Ws Path: " + path);
                     Matcher match = Pattern.compile("Sec-WebSocket-Key: (.*)").matcher(data);
                     if (!match.find()) {
                         client.close();
@@ -1027,7 +1025,6 @@ public class Tiny {
                     // Handle handshake
                     String acceptKey = generateAcceptKey(match.group(1));
                     sendHandshakeResponse(out, acceptKey);
-                    System.out.println("Handshake completed with client.");
 
                     // Handle WebSocket communication
                     handleWebSocketCommunication(client, in, out, origin, path);
@@ -1047,7 +1044,6 @@ public class Tiny {
                     System.err.println("Error closing client socket: " + e.getMessage());
                 }
             }
-            System.out.println("Client connection closed.");
         }
 
         private String generateAcceptKey(String webSocketKey) throws UnsupportedEncodingException {
@@ -1072,47 +1068,33 @@ public class Tiny {
         }
 
         private void handleWebSocketCommunication(Socket client, InputStream in, OutputStream out, String origin, String path) throws IOException {
-            System.out.println("HwsC: Handling WebSocket communication with origin: " + origin);
-            System.out.println("HwsC: WebSocket path: " + path);
             String expectedOrigin = config.inetSocketAddress != null ? (config.inetSocketAddress.getHostName() + ":" + config.inetSocketAddress.getPort()).replace("0.0.0.0", "").replace("::", "") : "";
-            System.out.println("HwsC: Expected origin: " + expectedOrigin);
 
             com.paulhammant.tiny.Tiny.MessageSender sender = new com.paulhammant.tiny.Tiny.MessageSender(out);
             byte[] buffer = new byte[8192];
 
             while (!client.isClosed()) {
-                System.out.println("HwsC: Waiting for connection...");
-                System.out.println("HwsC: Reading frame header...");
                 // Read frame header
                 int headerBytesRead = 0;
                 while (headerBytesRead < 2) {
                     int bytesRead = in.read(buffer, headerBytesRead, 2 - headerBytesRead);
                     if (bytesRead == -1) {
-                        System.out.println("HwsC: End of stream reached unexpectedly.");
                         return;
                     }
                     headerBytesRead += bytesRead;
-                    System.out.println("HwsC: Reading frame header, total bytes read: " + headerBytesRead);
                 }
-                System.out.println("HwsC: Frame header bytes: " + Arrays.toString(Arrays.copyOf(buffer, 2)));
-
-                System.out.println("HwsC: Received data.");
-                System.out.println("HwsC: Frame header read successfully.");
                 boolean fin = (buffer[0] & 0x80) != 0;
                 int opcode = buffer[0] & 0x0F;
                 boolean masked = (buffer[1] & 0x80) != 0;
                 int payloadLength = buffer[1] & 0x7F;
                 int offset = 2;
 
-                System.out.println("HwsC: Opcode: " + opcode + ", Masked: " + masked + ", Payload length: " + payloadLength);
                 // Handle extended payload length cases
                 if (payloadLength == 126) {
-                    System.out.println("HwsC: Payload length is 126");
                     if (in.read(buffer, offset, 2) < 2) return;
                     payloadLength = ((buffer[offset] & 0xFF) << 8) | (buffer[offset + 1] & 0xFF);
                     offset += 2;
                 } else if (payloadLength == 127) {
-                    System.out.println("HwsC: Payload length is 127");
                     if (in.read(buffer, offset, 8) < 8) return;
                     payloadLength = 0;
                     for (int i = 0; i < 8; i++) {
@@ -1123,7 +1105,6 @@ public class Tiny {
             
                 // Handle close frame immediately
                 if (opcode == 8) { // Close frame
-                    System.out.println("HwsC: Received close frame, closing connection.");
                     sendCloseFrame(out);
                     break;
                 }
@@ -1156,14 +1137,11 @@ public class Tiny {
 
                     // Now work with the unmasked payload
                     if (payload.length > 0) {
-                        System.out.println("HwsC: Received payload: " + new String(payload, StandardCharsets.UTF_8) + " from client: " + client.getRemoteSocketAddress() + " for path: " + path);
-                        System.out.println("HwsC: Payload length: " + payload.length);
                         CompletableFuture.runAsync(() -> {
 
                             if (!origin.endsWith(expectedOrigin)) {
                                 BAD_ORIGIN.handleMessage(null, sender, null);
                             } else {
-                                System.out.println("HwsC: Origin matches expected origin. Processing message.");
                                 ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
                                 RequestContext ctx = new WebServer.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new HashMap<>());
                                 getHandler(path).handleMessage(payload, sender, ctx); // could be 404 handler
@@ -1174,7 +1152,6 @@ public class Tiny {
                 }
                 // Other control frames (ping/pong) could be handled here
             }
-            System.out.println("WebSocket communication ended.");
         }
 
         protected static void invalidPathLength(int pathLength, byte[] payload) {
@@ -1182,7 +1159,6 @@ public class Tiny {
         }
 
         protected WebSocketMessageHandler getHandler(String path) {
-            System.out.println("Retrieving handler for path: " + path);
             return messageHandlers.get(path);
         }
 
@@ -1236,7 +1212,6 @@ public class Tiny {
         }
 
         public void performHandshake() throws IOException {
-            System.out.println("Performing WebSocket handshake...");
             byte[] keyBytes = new byte[16];
             random.nextBytes(keyBytes);
             String key = Base64.getEncoder().encodeToString(keyBytes);
@@ -1259,17 +1234,14 @@ public class Tiny {
                 throw new IOException("Failed to read handshake response");
             }
             String response = new String(responseBuffer, 0, responseBytes, "UTF-8");
-            System.out.println("Handshake response: " + response);
             if (!response.contains("HTTP/1.1 101 Switching Protocols") ||
                 !response.contains("Connection: Upgrade") ||
                 !response.contains("Upgrade: websocket")) {
                 throw new IOException("websocket handshake failed, unexpected response: " + response);
             }
-            System.out.println("Handshake successful.");
         }
 
         public void sendMessage(String message) throws IOException {
-            System.out.println("Sending message: " + message);
             byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
             byte[] mask = new byte[4];
             random.nextBytes(mask);
@@ -1294,12 +1266,10 @@ public class Tiny {
             }
 
             out.flush();
-            System.out.println("Message sent.");
         }
 
         //  returns true if stop required, otherwise clients should reconnect
         public boolean receiveMessages(String stopPhrase, InterruptibleConsumer<String> handle) throws IOException {
-            System.out.println("Receiving messages from server... waiting for stop phrase: " + stopPhrase);
             boolean keepGoing = true;
             while (keepGoing) {
                 // Read frame header
@@ -1330,15 +1300,12 @@ public class Tiny {
                 if (bytesRead < payloadLength) break;
 
                 String message = new String(payload, 0, bytesRead, "UTF-8");
-                System.out.println("Received message: " + message + " from server, checking against stop phrase: " + stopPhrase);
                 if (message.equals(stopPhrase)) {
-                    System.out.println("Stop phrase received, closing connection.");
                     return true;
                 } else {
                     keepGoing = handle.accept(message);
                 }
             }
-            System.out.println("Connection closed.");
             return false;
         }
 
@@ -1390,108 +1357,6 @@ public class Tiny {
      * Miscellaneous
      * ==========================
      */
-    public static class JavascriptWebSocketClient implements EndPoint {
-        @Override
-        public void handle(Request request, Response response, RequestContext context) {
-            response.setHeader("Content-Type", "javascript");
-            response.sendResponse("""
-                    // Define TinyWeb in the global scope
-                    window.TinyWeb = {
-                        SocketClient: class SocketClient {
-                            socket;
-                            messageCallback;
-                            stopPhrase;
-                    
-                            constructor(host, port, path) {
-                                this.socket = new WebSocket(`ws://${host}:${port}${path}`);
-                                this.socket.binaryType = 'arraybuffer';
-                               
-                                this.socket.onopen = () => {
-                                    console.log("WebSocket connection opened");
-                                };
-                    
-                                this.socket.onmessage = (event) => {
-                                    if (this.messageCallback) {
-                                        try {
-                                            let data;
-                                            if (event.data instanceof ArrayBuffer) {
-                                                data = new Uint8Array(event.data);
-                                            } else if (typeof event.data === 'string') {
-                                                data = new TextEncoder().encode(event.data);
-                                            } else {
-                                                console.error('Unsupported data type received');
-                                                return;
-                                            }
-                                           
-                                            const message = new TextDecoder('utf-8').decode(data);
-                                            if (message === this.stopPhrase) {
-                                                this.socket.close();
-                                            } else {
-                                                this.messageCallback(message);
-                                            }
-                                        } catch (error) {
-                                            console.error('Error processing message:', error);
-                                        }
-                                    }
-                                };
-                    
-                                this.socket.onerror = (error) => {
-                                    console.error('WebSocket error:', error);
-                                };
-                            }
-                    
-                            async sendMessage(message) {
-                                await this.waitForOpen();
-
-                                return new Promise((resolve, reject) => {
-                                    try {
-                                        const messageBytes = new TextEncoder().encode(message);
-                                        this.socket.send(messageBytes);
-                                        resolve();
-                                    } catch (error) {
-                                        reject(error);
-                                    }
-                                });
-                            }
-                    
-                            receiveMessages(stopPhrase, callback) {
-                                this.stopPhrase = stopPhrase;
-                                this.messageCallback = callback;
-                            }
-                    
-                            async close() {
-                                return new Promise((resolve) => {
-                                    if (this.socket.readyState === WebSocket.OPEN) {
-                                        this.socket.close(1000);
-                                    }
-                                    resolve();
-                                });
-                            }
-                    
-                            async waitForOpen() {
-                                if (this.socket.readyState === WebSocket.OPEN) {
-                                    return Promise.resolve();
-                                }
-                    
-                                return new Promise((resolve, reject) => {
-                                    const checkOpen = () => {
-                                        if (this.socket.readyState === WebSocket.OPEN) {
-                                            resolve();
-                                        } else if (this.socket.readyState === WebSocket.CLOSED ||
-                                                 this.socket.readyState === WebSocket.CLOSING) {
-                                            reject(new Error('WebSocket closed before connection could be established'));
-                                        } else {
-                                            setTimeout(checkOpen, 100);
-                                        }
-                                    };
-                                    checkOpen();
-                                });
-                            }
-                        }
-                    };
-                """, 200);
-        }
-    }
 
     public static class DependencyException extends RuntimeException {
         public final Class clazz;
