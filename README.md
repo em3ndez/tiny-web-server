@@ -797,10 +797,34 @@ These commands will instrument the code for coverage, run the tests, and generat
 As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so:
 
 ``` 
-Given a Tiny web server with a reusable composition
+ When additional composition can happen on a previously instantiated Tiny.WebServer
+    ✓ Then both endpoints should be accessible via GET
+  Given a Tiny web server with ConcreteExtensionToServerComposition
+    When that concrete class is mounted within another path
+      ✓ Then endPoints should be able to work relatively
+  Given a started Tiny web server
+    When additional composition happens
+      ✓ Then illegal state errors should happen for new paths()
+      ✓ Then illegal state errors should happen for new 'all' filters()
+      ✓ Then illegal state errors should happen for new filters()
+      ✓ Then illegal state errors should happen for new endPoints()
+      ✓ Then illegal state errors should happen for new endPoints()
+  Given a Tiny web server with composed paths
+    ✓ Then it should respond correctly to requests at the composed endpoint
+  Given a Tiny web server with a reusable composition
     ✓ Then it should respond correctly to requests at the first composed endpoint
     ✓ Then it should respond correctly to requests at the second composed endpoint
     ✓ Then it should respond correctly to requests at the third composed endpoint
+  Config permutations
+    ✓ should create default config
+    ✓ should set web port
+    ✓ should set web socket port
+    ✓ should set web socket backlog
+    ✓ should set host and web port
+    ✓ should set web socket bind address
+    ✓ should set socket timeout
+  Given a Tiny web server with a chunked response endpoint
+    ✓ Then it should return the response in chunks
   When endpoint and filters can depend on components
     ✓ Then it should not be able to bypass IoC
     ✓ Then it should be able to get dep to function
@@ -818,31 +842,36 @@ Given a Tiny web server with a reusable composition
   When a filter is already added
     ✓ Then an identical filter path can't be added again
   When using Selenium to subscribe in a browser
+Dec 21, 2024 3:28:48 PM org.openqa.selenium.devtools.CdpVersionFinder findNearestMatch
+WARNING: Unable to find an exact match for CDP version 131, returning the closest version; found: 130; Please update to a Selenium version that supports CDP version 131
     ✓ Then it should echo three messages plus -1 -2 -3 back to the client
-  Given a TinyWeb server with a path registered
+  Given a Tiny web server with a path registered
     ✓ Then it should not be able to register the same path again
-  Given a TinyWeb server with a path registered
+  Given a Tiny web server with a path registered
     ✓ Then it should not be able to register the same path again
-  Given a TinyWeb server with filters and an endpoint
+  Given a Tiny web server with filters and an endpoint
     ✓ Then it should collect statistics for filters and endpoint
     ✓ Then it should collect statistics for missing endpoints
     ✓ Then it should not collect statistics filter that notionally match when the endPoint is a 404
-  Given a TinyWeb server with composed paths
-    ✓ Then it should respond correctly to requests at the composed endpoint
   When additional composition can happen on a previously instantiated Tiny.WebServer
     ✓ Then both endpoints should be accessible via GET
-  Given a TinyWeb server with ConcreteExtensionToServerComposition
+  Given a Tiny web server with ConcreteExtensionToServerComposition
     When that concrete class is mounted within another path
       ✓ Then endPoints should be able to work relatively
-  Given a started TinyWeb server
+  Given a started Tiny web server
     When additional composition happens
       ✓ Then illegal state errors should happen for new paths()
       ✓ Then illegal state errors should happen for new 'all' filters()
       ✓ Then illegal state errors should happen for new filters()
       ✓ Then illegal state errors should happen for new endPoints()
       ✓ Then illegal state errors should happen for new endPoints()
-  Given a TinyWeb server with an SSE endpoint
+  Given a Tiny web server with an SSE endpoint
     ✓ Then it should receive server-sent events
+  When serving static files
+    ✓ Then it should return 200 and serve a text file
+    ✓ Then it should return 404 for non-existent files
+    ✓ Then it should return 200 and serve a file from a subdirectory
+    ✓ Then it should return 200 and serve a non-text file
   Given an inlined Cuppa application
     When the endpoint can extract parameters
       ✓ Then it should extract parameters correctly from the path
@@ -873,11 +902,15 @@ Given a Tiny web server with a reusable composition
     ✓ Then it should echo three messages plus -1 -2 -3 back to the client
   When using Tiny.WebSocketServer with Tiny.WebServer and a contrived webSocket endpoint
     ✓ Then it should echo three modified messages back to the client (twice)
+    ✓ Then it should do a 404 equivalent for a missing path
   When using standalone Tiny.WebSocketServer without Tiny.WebServer
     ✓ Then it should echo three messages plus -1 -2 -3 back to the client
+  When mismatching domains on SocketServer client lib
+    ✓ Conversation is vetoed
   Given a mocked ExampleApp
     When accessing the Greeting GET endpoint
       ✓ Then it should invoke the ExampleApp foobar method
+
 ```
 
 ChatGPT estimates the path coverage for the `Tiny` source to be around 90-95%. 
