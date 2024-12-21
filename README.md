@@ -243,15 +243,16 @@ Here's an example of how a client connects to a server WebSocket using `Tiny.Web
 ```java
 public class WebSocketClientExample {
     public static void main(String[] args) {
-        try (Tiny.WebSocketClient client = new Tiny.WebSocketClient("localhost", 8081)) {
+        try (Tiny.WebSocketClient client = new Tiny.WebSocketClient("ws://localhost:8081/messenger/chatback", "http://localhost:8080") {
             // Perform the WebSocket handshake
             client.performHandshake();
 
             // Send a message to the WebSocket server
-            client.sendMessage("/messenger/chatback", "Hello WebSocket");
+            client.sendMessage("Hello WebSocket");
 
             // Receive a response from the WebSocket server
-            String response = client.receiveMessage();
+          //TODO receiveMessages plural
+            String response = client.receiveMessages();
             System.out.println("Received: " + response);
 
         } catch (IOException e) {
@@ -266,9 +267,8 @@ port 8081. The client performs a WebSocket handshake, sends a message to the `/m
 response received from the server. On the wire, the path and message are put in a specific structure for sending to
 the server. That's opinionated, whereas the regular HTTP side of Tiny is not. This is to make the webSockets
 appear within the same nested path structure of the composed server grammar. They are not really - not even the
-same port on the server. The path association is places in the first bytes of the message from the client to the 
-server. So `SocketClient` does that custom adaption of client-to-server Tiny web-socket messages.
-
+same port on the server. At least not as of JDK 21. The path association is places in the first bytes of the message 
+from the client to the server. So `SocketClient` does that custom adaption of client-to-server Tiny web-socket messages.
 
 ### Two WebSockets with Different Paths
 
@@ -298,6 +298,8 @@ WebSocket endpoint at `/api/notifications` echoes back messages prefixed with "N
 big map of paths and websockets open to clients, and if this were a single web-app for one person, it'd be two
 websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
 four concurrently connected channels.
+
+
 
 ### WebSockets Performance
 
