@@ -39,7 +39,6 @@ public class ExampleDotComDemo {
                     <head>
                         <meta charset="UTF-8">
                         <title>Counter</title>
-                        <script src="/javascriptWebSocketClient.js"></script>
                         <script>
                             const tinyWebSocketClient = new TinyWeb.SocketClient('example.com', 8081);
 
