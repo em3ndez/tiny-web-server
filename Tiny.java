@@ -337,15 +337,15 @@ public class Tiny {
         public final int wsBacklog;
         public final InetAddress wsBindAddr;
         public final int socketTimeoutMs;
-        public final boolean clientKeepAlive;
+        public final boolean webKeepAlive;
 
-        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs, boolean clientKeepAlive) {
+        private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs, boolean webKeepAlive) {
             this.inetSocketAddress = inetSocketAddress;
             this.wsPort = wsPort;
             this.wsBacklog = wsBacklog;
             this.wsBindAddr = wsBindAddr;
             this.socketTimeoutMs = socketTimeoutMs;
-            this.clientKeepAlive = clientKeepAlive;
+            this.webKeepAlive = webKeepAlive;
         }
 
         public static Config create() {
@@ -353,35 +353,35 @@ public class Tiny {
         }
 
         public Config withInetSocketAddress(InetSocketAddress inetSocketAddress) {
-            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
+            return new Config(inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
         }
 
         public Config withWebSocketPort(int wsPort) {
-            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
+            return new Config(this.inetSocketAddress, wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
         }
 
         public Config withWsBacklog(int wsBacklog) {
-            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
+            return new Config(this.inetSocketAddress, this.wsPort, wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
         }
 
         public Config withHostAndWebPort(String host, int webPort) {
-            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
+            return new Config(new InetSocketAddress(host, webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
         }
 
         public Config withWsBindAddr(InetAddress wsBindAddr) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
         }
 
         public Config withSocketTimeoutMillis(int socketTimeoutMs) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, socketTimeoutMs, this.clientKeepAlive);
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, socketTimeoutMs, this.webKeepAlive);
         }
 
         public Config withWebPort(int webPort) {
-            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.clientKeepAlive);
+            return new Config(new InetSocketAddress(webPort), this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, this.webKeepAlive);
         }
 
-        public Config withClientKeepAlive(boolean clientKeepAlive) {
-            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, clientKeepAlive);
+        public Config withWebKeepAlive(boolean webKeepAlive) {
+            return new Config(this.inetSocketAddress, this.wsPort, this.wsBacklog, this.wsBindAddr, this.socketTimeoutMs, webKeepAlive);
         }
 
     }
@@ -1001,7 +1001,7 @@ public class Tiny {
                     try {
                         Socket client = server.accept();
                         client.setSoTimeout(config.socketTimeoutMs);
-                        client.setKeepAlive(config.clientKeepAlive);
+                        client.setKeepAlive(config.webKeepAlive);
                         clientConnected(client);
 
                         executor.execute(() -> handleClient(client));

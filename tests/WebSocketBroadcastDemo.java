@@ -1,9 +1,12 @@
 package tests;
 
 import com.paulhammant.tiny.Tiny;
+import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -47,8 +50,31 @@ public class WebSocketBroadcastDemo {
 
         AtomicInteger restartedClients = new AtomicInteger(0);
         AtomicInteger unexpectedClientExceptions = new AtomicInteger(0);
+        AtomicInteger unexpectedServerExceptions = new AtomicInteger(0);
 
-        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+        Tiny.Config config = Tiny.Config.create()
+                .withHostAndWebPort("localhost", 8080)
+                .withWebSocketPort(8081)
+                .withSocketTimeoutMillis(100000)
+                .withWebKeepAlive(false);
+
+        Tiny.WebServer server = new Tiny.WebServer(config) {
+            @Override
+            protected void webSocketTimeout(String pathLength, InetAddress inetAddress, SocketTimeoutException payload) {
+                unexpectedServerExceptions.incrementAndGet();
+            }
+
+            @Override
+            protected void webSocketIoException(String pathLength, InetAddress inetAddress, IOException payload) {
+                unexpectedServerExceptions.incrementAndGet();
+            }
+
+            @Override
+            protected void exceptionDuringHandling(Throwable e, HttpExchange exchange) {
+                unexpectedServerExceptions.incrementAndGet();
+            }
+
+            {
 
             webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
                 broadcaster.add(sender);
@@ -57,6 +83,8 @@ public class WebSocketBroadcastDemo {
             endPoint(POST, "/update", (req, rsp, ctx) -> {
                 broadcaster.broadcast(ctx.getParam("newValue"));
             });
+
+
 
         }};
         server.start();
@@ -107,11 +135,13 @@ public class WebSocketBroadcastDemo {
                 .average()
                 .orElse(0.0);
             long elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
-            System.out.printf("Elapsed time %d secs: ave message count per ws client: %.2f (Clients: %d initial, %d reconnects, %d excpts)%n", elapsedTime, average, clientCount, restartedClients.get(), unexpectedClientExceptions.get());
+            System.out.printf("%d secs: ave message count per ws client: %.2f (Clients: %d initial, %d reconnects, %d clt excpts, %d svr excpts)%n", elapsedTime, average, clientCount, restartedClients.get(), unexpectedClientExceptions.get(), unexpectedServerExceptions.get());
         }, 0, 10, TimeUnit.SECONDS);
 
         System.out.println("WebSocket server started on ws://localhost:8081/broadcast");
-        System.out.println("Press Ctrl+C to stop the server.");
+        System.out.println("Press Ctrl+C to stop the server.\n" +
+                "Client get broadcast updates every second and overall stats are printed every 10 seconds\n" +
+                "Client and server code and virtuaL threads all in the same JVM");
     }
 
     private static void sleepMillis(int millis) {
