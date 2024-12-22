@@ -24,8 +24,8 @@ public class SSEPerformanceTest {
                     OutputStream outputStream = res.getResponseBody();
                     for (int i = 0; i < 10; i++) {
                         outputStream.write(("data: Message " + i + "\n\n").getBytes());
-                        //outputStream.flush();
-                        Thread.sleep(1000);
+                        outputStream.flush();
+                        Thread.sleep(new java.util.Random().nextInt(2001));
                     }
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
@@ -44,7 +44,7 @@ public class SSEPerformanceTest {
                     URL url = new URL("http://localhost:8080/sse");
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("GET");
-                    connection.setReadTimeout(10000);
+                    connection.setReadTimeout(20000);
                     connection.setConnectTimeout(10000);
 
                     try {
