@@ -46,8 +46,12 @@ public class SSEPerformanceTest {
                     connection.setConnectTimeout(10000);
 
                     if (connection.getResponseCode() == 200) {
-                        // print input stream to carriage return
-                        System.out.println(connection.getInputStream().readAllBytes().toString());
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                System.out.println(line);
+                            }
+                        }
                         successfulConnections.incrementAndGet();
                     } else {
                         failedConnections.incrementAndGet();
