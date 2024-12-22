@@ -264,41 +264,12 @@ public class WebSocketClientExample {
 ```
 
 In this example, a `Tiny.WebSocketClient` is created to connect to a WebSocket server running on `localhost` at
-port 8081. The client performs a WebSocket handshake, sends a message to the `/messenger/chatback` path, and prints the
-response received from the server. On the wire, the path and message are put in a specific structure for sending to
-the server. That's opinionated, whereas the regular HTTP side of Tiny is not. This is to make the webSockets
-appear within the same nested path structure of the composed server grammar. They are not really - not even the
-same port on the server. At least not as of JDK 21. The path association is places in the first bytes of the message 
-from the client to the server. So `SocketClient` does that custom adaption of client-to-server Tiny web-socket messages.
+port 8081. The client performs a WebSocket handshake, connects to the `/messenger/chatback` path, and prints the
+response received from the server. 
 
-### Two WebSockets with Different Paths
-
-Here's an example of defining two WebSocket endpoints with different paths using Tiny:
-
-```java
-Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
-    path("/api", () -> {
-        // Define the first WebSocket endpoint
-        webSocket("/chat", (message, sender, context) -> {
-            String responseMessage = "Chat Echo: " + new String(message, "UTF-8");
-            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
-        });
-
-        // Define the second WebSocket endpoint
-        webSocket("/notifications", (message, sender, context) -> {
-            String responseMessage = "Notification: " + new String(message, "UTF-8");
-            sender.sendTextFrame(responseMessage.getBytes("UTF-8"));
-        });
-    });
-}}.start();
-```
-
-In this example, two WebSocket endpoints are defined within the `/api` path. The first WebSocket
-endpoint at `/api/chat` echoes back any message it receives, prefixed with "Chat Echo: ". The second
-WebSocket endpoint at `/api/notifications` echoes back messages prefixed with "Notification: ". The server keeps a
-big map of paths and websockets open to clients, and if this were a single web-app for one person, it'd be two
-websocket channels back to the same server. Two concurrently connected people in the same webapp would be mean
-four concurrently connected channels.
+The webSockets
+appear within the same nested path structure of the composed webserver grammar. They are not really. They are not even the
+same port on the server. At least, not in the current version of Tiny.
 
 ### WebSockets Performance
 
@@ -306,11 +277,11 @@ The `WebSocketBroadcastDemo` class demonstrates the capability of the Tiny WebSo
 
 #### Key Features:
 - **Broadcasting**: The server can send messages to all connected clients, making it suitable for applications like chat rooms, live notifications, or real-time data feeds.
-- **Scalability**: The demo has been tested with up to 20,000 concurrently connected clients, showcasing the server's ability to handle high loads. Different hardware might be able to do more.
+- **Scalability**: The demo has been tested with up to 20,000 concurrently connected clients, showcasing the server's ability to handle high loads. Different hardware might be able to do more. 
 - **Virtual Threads**: Utilizes Java's virtual threads to manage connections, which helps in reducing the overhead associated with traditional thread management.
 - **Connection Recovery**: The techniques shown `WebSocketBroadcastDemo` are designed to handle connection interruptions gracefully. If a client disconnects unexpectedly (including timeouts), the server attempts to manage the situation by allowing the client to reconnect and resume receiving broadcast messages. The demo showcases the server's ability to handle reconnections without significant performance degradation, ensuring a robust and resilient WebSocket communication environment.
 
-This demo code highlights Tiny's potential for high-performance WebSocket applications, making it a viable choice for developers looking to implement real-time features in their projects.  Perhaps still, intranet solutions rather than web-scale.
+This demo code highlights Tiny's potential for high-performance WebSocket applications, making it a viable choice for developers looking to implement real-time features in their projects.  Perhaps still, intranet solutions rather than web-scale. Note: An Erlang solution (client and server pieces in the same BEAM machine) could go much higher for unloaded server responses.  
 
 ## Static File Serving
 
@@ -343,13 +314,18 @@ TODO: make an optional RAM cache.
 
 By following these guidelines, you can efficiently serve static files while maintaining security and performance.
 
+### Still to do:  
+
+1. A directory index capability, pretty or basic.
+2. A way of overriding mime types per user-agent.
+
 ## Composition
 
 We've covered paths, filters, endPoints, webSockets, and static file serving the low-level building blocks of Tiny applications.
 
 ```java
 Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
-    path("/ads", () -> {
+    path("/advertisingCommissions", () -> {
       path("/selling", () -> {
           //TODO
       });
@@ -364,12 +340,11 @@ Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080
 ## Testing your web app
 
 Testing is a critical part of developing reliable web applications. Tiny is just a library. You can write tests
-using it in JUnit, TestNG, JBehave. You can use Mockito as you would do normally. They can't share a signle port, but you could instantiate multiple WebServers if you wanted to as they don't share other than the JVM.
+using it in JUnit, TestNG, JBehave. You can use Mockito as you would do normally. They can't share a single port, but you could instantiate multiple WebServers on mny ports if you wanted to, as they don't share other than the JVM.
 
 ### Cuppa-Framework
 
-The Cuppa-Framework is what we are using for testing Tiny web applications due to its idiomatic style, which closely aligns
-with Tiny's composition approach. It allows for expressive and readable test definitions. 
+The [Cuppa-Framework](https://github.com/cuppa-framework/cuppa) is what we are using for testing Tiny web applications due to its idiomatic style, which closely aligns  with Tiny's composition approach. It allows for expressive and readable test definitions. 
 
 Example:
 
@@ -379,8 +354,11 @@ import static org.forgerock.cuppa.Cuppa.*;
 public class MyWebAppTest {
     {
         describe("GET /hello", () -> {
+            before(() -> {
+               // get logic here 
+            });
             it("should return a greeting message", () -> {
-                // Test logic here
+                // Test of result of get here this probably uses a member var
             });
         });
     }
@@ -388,6 +366,8 @@ public class MyWebAppTest {
 ```
 
 See the tests that use Cuppa linked to from the main [suite](tests/Suite.java).
+
+There's no re
 
 ### Mockito and similar
 

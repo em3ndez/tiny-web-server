@@ -43,14 +43,13 @@ public class WebSocketBroadcastDemo {
 
     public static void main(String[] args) {
 
-        // note: single instance
-        Broadcaster broadcaster = new Broadcaster();
-
         long startTime = System.currentTimeMillis();
-
         AtomicInteger restartedClients = new AtomicInteger(0);
         AtomicInteger unexpectedClientExceptions = new AtomicInteger(0);
         AtomicInteger unexpectedServerExceptions = new AtomicInteger(0);
+
+        // note: single instance
+        Broadcaster broadcaster = new Broadcaster();
 
         Tiny.Config config = Tiny.Config.create()
                 .withHostAndWebPort("localhost", 8080)
@@ -74,25 +73,25 @@ public class WebSocketBroadcastDemo {
             }
 
             {
+            // Server composition
 
             webSocket("/keepMeUpdatedPlease", (message, sender, ctx) -> {
                 broadcaster.add(sender);
             });
 
             endPoint(POST, "/update", (req, rsp, ctx) -> {
-                broadcaster.broadcast(ctx.getParam("newValue"));
+                // broadcaster.broadcast(ctx.getParam("newValue"));
+                // TODO something meangful re broadcasting
             });
-
-
-
         }};
         server.start();
 
         // Concurrent map to store message counts for each client
         ConcurrentHashMap<Integer, Integer> clientMessageCounts = new ConcurrentHashMap<>();
 
-        // Launch 10 clients
-        for (int i = 0; i < 20000; i++) {
+        // Launch 25K clients on my AMD Ryzen 7 5800U with 32GB RAM
+        // You might be OK with higher, or need to have fewer
+        for (int i = 0; i < 25000; i++) {
             int clientId = i;
             Thread.ofVirtual().start(() -> {
                 while (true) {
