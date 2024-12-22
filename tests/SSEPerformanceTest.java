@@ -47,16 +47,21 @@ public class SSEPerformanceTest {
                     connection.setReadTimeout(10000);
                     connection.setConnectTimeout(10000);
 
-                    if (connection.getResponseCode() == 200) {
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                            String line;
-                            System.out.println("connected");
-                            while ((line = reader.readLine()) != null) {
-                                System.out.println(line);
+                    try {
+                        if (connection.getResponseCode() == 200) {
+                            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                                String line;
+                                System.out.println("connected");
+                                while ((line = reader.readLine()) != null) {
+                                    System.out.println(line);
+                                }
                             }
+                            successfulConnections.incrementAndGet();
+                        } else {
+                            failedConnections.incrementAndGet();
                         }
-                        successfulConnections.incrementAndGet();
-                    } else {
+                    } catch (IOException e) {
+                        System.err.println("Error during connection: " + e.getMessage());
                         failedConnections.incrementAndGet();
                     }
                 } catch (IOException e) {
