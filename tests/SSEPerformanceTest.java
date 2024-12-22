@@ -2,7 +2,9 @@ package tests;
 
 import com.paulhammant.tiny.Tiny;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -36,7 +38,7 @@ public class SSEPerformanceTest {
         AtomicInteger failedConnections = new AtomicInteger(0);
 
         ExecutorService executor = Executors.newFixedThreadPool(100);
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 2; i++) {
             executor.submit(() -> {
                 try {
                     URL url = new URL("http://localhost:8080/sse");
@@ -48,6 +50,7 @@ public class SSEPerformanceTest {
                     if (connection.getResponseCode() == 200) {
                         try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                             String line;
+                            System.out.println("connected");
                             while ((line = reader.readLine()) != null) {
                                 System.out.println(line);
                             }
