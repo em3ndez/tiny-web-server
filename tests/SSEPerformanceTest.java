@@ -22,7 +22,7 @@ public class SSEPerformanceTest {
                     OutputStream outputStream = res.getResponseBody();
                     for (int i = 0; i < 10; i++) {
                         outputStream.write(("data: Message " + i + "\n\n").getBytes());
-                        outputStream.flush();
+                        //outputStream.flush();
                         Thread.sleep(1000);
                     }
                 } catch (IOException | InterruptedException e) {
@@ -46,6 +46,8 @@ public class SSEPerformanceTest {
                     connection.setConnectTimeout(10000);
 
                     if (connection.getResponseCode() == 200) {
+                        // print input stream to carriage return
+                        System.out.println(connection.getInputStream().readAllBytes().toString());
                         successfulConnections.incrementAndGet();
                     } else {
                         failedConnections.incrementAndGet();
