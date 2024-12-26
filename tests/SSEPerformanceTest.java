@@ -18,7 +18,7 @@ import static tests.Suite.httpGet;
 public class SSEPerformanceTest {
 
     public static void main(String[] args) {
-        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
+        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
             endPoint(Tiny.HttpMethods.GET, "/sse", (req, res, ctx) -> {
                 res.setHeader("Content-Type", "text/event-stream");
                 res.setHeader("Cache-Control", "no-cache");
