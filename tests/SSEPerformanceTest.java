@@ -11,6 +11,10 @@ import java.net.URL;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static tests.Suite.httpGet;
+
 public class SSEPerformanceTest {
 
     public static void main(String[] args) {
@@ -34,47 +38,32 @@ public class SSEPerformanceTest {
         }};
         server.start();
 
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
+
         AtomicInteger successfulConnections = new AtomicInteger(0);
         AtomicInteger failedConnections = new AtomicInteger(0);
 
         ExecutorService executor = Executors.newFixedThreadPool(100);
         for (int i = 0; i < 2; i++) {
             executor.submit(() -> {
-                try {
-                    URL url = new URL("http://localhost:8080/sse");
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setReadTimeout(20000);
-                    connection.setConnectTimeout(10000);
-
-                    try {
-                        if (connection.getResponseCode() == 200) {
-                            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                                String line;
-                                System.out.println("connected");
-                                while ((line = reader.readLine()) != null) {
-                                    System.out.println(line);
-                                }
-                            }
-                            successfulConnections.incrementAndGet();
-                        } else {
-                            failedConnections.incrementAndGet();
+                try (okhttp3.Response response = httpGet("/sse")) {
+                    successfulConnections.incrementAndGet();
+                    assertThat(response.code(), equalTo(200));
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
+                        for (int j = 0; j < 10; j++) {
+                            assertThat(reader.readLine(), equalTo("data: Message " + j));
+                            assertThat(reader.readLine(), equalTo(""));
                         }
-                    } catch (IOException e) {
-                        System.err.println("Error during connection: " + e.getMessage());
-                        failedConnections.incrementAndGet();
                     }
                 } catch (IOException e) {
                     failedConnections.incrementAndGet();
+                    e.printStackTrace();
                 }
-            });
-        }
 
-        executor.shutdown();
-        try {
-            executor.awaitTermination(1, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            });
         }
 
         System.out.println("Successful connections: " + successfulConnections.get());
