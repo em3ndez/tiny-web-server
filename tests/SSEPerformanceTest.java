@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.*;
@@ -18,6 +19,12 @@ import static tests.Suite.httpGet;
 public class SSEPerformanceTest {
 
     public static void main(String[] args) {
+
+
+        AtomicInteger interruptedExceptions = new AtomicInteger(0);
+        AtomicInteger connectExceptions = new AtomicInteger(0);
+        AtomicInteger otherIOExceptions = new AtomicInteger(0);
+
         Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
             endPoint(Tiny.HttpMethods.GET, "/sse", (req, res, ctx) -> {
                 res.setHeader("Content-Type", "text/event-stream");
@@ -31,9 +38,14 @@ public class SSEPerformanceTest {
                         outputStream.flush();
                         Thread.sleep(new java.util.Random().nextInt(2001));
                     }
-                } catch (IOException | InterruptedException e) {
-                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    interruptedExceptions.incrementAndGet();
+                } catch (ConnectException e) {
+                    connectExceptions.incrementAndGet();
+                } catch (IOException e) {
+                    otherIOExceptions.incrementAndGet();
                 }
+
             });
         }};
         server.start();
@@ -43,7 +55,7 @@ public class SSEPerformanceTest {
         AtomicInteger messagesReceived = new AtomicInteger(0);
 
         ExecutorService executor = Executors.newFixedThreadPool(100);
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             executor.submit(() -> {
                 try (okhttp3.Response response = httpGet("/sse")) {
                     successfulConnections.incrementAndGet();
@@ -61,17 +73,17 @@ public class SSEPerformanceTest {
                 }
             });
         }
-        executor.shutdown();
-        try {
-            executor.awaitTermination(1, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
-        System.out.println("Successful connections: " + successfulConnections.get());
-        System.out.println("Failed connections: " + failedConnections.get());
-        System.out.println("Messages received " + messagesReceived.get());
 
-        server.stop();
+        // do this in repeating 10-sec loop
+
+        System.out.println("Server 2-sec wait interrupted exceptions: " + interruptedExceptions.get());
+        System.out.println("Server connect exceptions: " + connectExceptions.get());
+        System.out.println("Server other IO exceptions: " + otherIOExceptions.get());
+
+        System.out.println("Successful client connections: " + successfulConnections.get());
+        System.out.println("Failed client connections: " + failedConnections.get());
+        System.out.println("Client Messages received:" + messagesReceived.get());
+
     }
 }
