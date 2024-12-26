@@ -38,36 +38,28 @@ public class SSEPerformanceTest {
         }};
         server.start();
 
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-        }
-
         AtomicInteger successfulConnections = new AtomicInteger(0);
         AtomicInteger failedConnections = new AtomicInteger(0);
+        AtomicInteger messagesReceived = new AtomicInteger(0);
 
-        ExecutorService executor = Executors.newFixedThreadPool(100);
-        for (int i = 0; i < 2; i++) {
-            executor.submit(() -> {
-                try (okhttp3.Response response = httpGet("/sse")) {
-                    successfulConnections.incrementAndGet();
-                    assertThat(response.code(), equalTo(200));
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
-                        for (int j = 0; j < 10; j++) {
-                            assertThat(reader.readLine(), equalTo("data: Message " + j));
-                            assertThat(reader.readLine(), equalTo(""));
-                        }
-                    }
-                } catch (IOException e) {
-                    failedConnections.incrementAndGet();
-                    e.printStackTrace();
+        try (okhttp3.Response response = httpGet("/sse")) {
+            successfulConnections.incrementAndGet();
+            assertThat(response.code(), equalTo(200));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
+                for (int j = 0; j < 10; j++) {
+                    assertThat(reader.readLine(), equalTo("data: Message " + j));
+                    messagesReceived.incrementAndGet();
+                    assertThat(reader.readLine(), equalTo(""));
                 }
-
-            });
+            }
+        } catch (IOException e) {
+            failedConnections.incrementAndGet();
+            e.printStackTrace();
         }
 
         System.out.println("Successful connections: " + successfulConnections.get());
         System.out.println("Failed connections: " + failedConnections.get());
+        System.out.println("Messages received " + messagesReceived.get());
 
         server.stop();
     }
