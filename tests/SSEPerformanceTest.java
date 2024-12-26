@@ -21,7 +21,6 @@ public class SSEPerformanceTest {
     public static void main(String[] args) {
 
 
-        AtomicInteger interruptedExceptions = new AtomicInteger(0);
         AtomicInteger connectExceptions = new AtomicInteger(0);
         AtomicInteger otherIOExceptions = new AtomicInteger(0);
 
@@ -39,7 +38,6 @@ public class SSEPerformanceTest {
                         Thread.sleep(new java.util.Random().nextInt(2001));
                     }
                 } catch (InterruptedException e) {
-                    interruptedExceptions.incrementAndGet();
                 } catch (ConnectException e) {
                     connectExceptions.incrementAndGet();
                 } catch (IOException e) {
@@ -54,8 +52,9 @@ public class SSEPerformanceTest {
         AtomicInteger failedConnections = new AtomicInteger(0);
         AtomicInteger messagesReceived = new AtomicInteger(0);
 
-        ExecutorService executor = Executors.newFixedThreadPool(100);
-        for (int i = 0; i < 1000; i++) {
+        int clients = 10000;
+        ExecutorService executor = Executors.newFixedThreadPool(clients);
+        for (int i = 0; i < clients; i++) {
             executor.submit(() -> {
                 try (okhttp3.Response response = httpGet("/sse")) {
                     successfulConnections.incrementAndGet();
@@ -75,9 +74,8 @@ public class SSEPerformanceTest {
         }
 
 
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(() -> {
-            System.out.println("Server 2-sec wait interrupted exceptions: " + interruptedExceptions.get());
+        ScheduledExecutorService statsScheduler = Executors.newScheduledThreadPool(1);
+        statsScheduler.scheduleAtFixedRate(() -> {
             System.out.println("Server connect exceptions: " + connectExceptions.get());
             System.out.println("Server other IO exceptions: " + otherIOExceptions.get());
 
@@ -88,13 +86,14 @@ public class SSEPerformanceTest {
 
         // Ensure the scheduler is properly shut down
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            scheduler.shutdown();
+            statsScheduler.shutdown();
+            server.stop();
             try {
-                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    scheduler.shutdownNow();
+                if (!statsScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    statsScheduler.shutdownNow();
                 }
             } catch (InterruptedException e) {
-                scheduler.shutdownNow();
+                statsScheduler.shutdownNow();
             }
         }));
 
