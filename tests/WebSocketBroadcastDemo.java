@@ -125,8 +125,9 @@ public class WebSocketBroadcastDemo {
         }, 0, 1, TimeUnit.SECONDS);
 
         sleepMillis(150);
-        // Schedule a task to print the message counts every 10 seconds
+        long startTime = System.currentTimeMillis();
         scheduler.scheduleAtFixedRate(() -> {
+            long elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
             int clientCount = clientMessageCounts.size();
             double average = clientMessageCounts.values().stream()
                 .mapToInt(Integer::intValue)
