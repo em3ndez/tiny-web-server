@@ -54,9 +54,8 @@ public class SSEPerformanceTest {
         AtomicInteger messagesReceived = new AtomicInteger(0);
 
         int clients = 10000;
-        ExecutorService executor = Executors.newFixedThreadPool(clients);
         for (int i = 0; i < clients; i++) {
-            executor.submit(() -> {
+            Thread.ofVirtual().start(() -> {
                 try (okhttp3.Response response = httpGet("/sse")) {
                     successfulConnections.incrementAndGet();
                     assertThat(response.code(), equalTo(200));
