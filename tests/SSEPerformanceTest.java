@@ -21,6 +21,7 @@ public class SSEPerformanceTest {
     public static void main(String[] args) {
 
 
+        long startTime = System.currentTimeMillis();
         AtomicInteger connectExceptions = new AtomicInteger(0);
         AtomicInteger otherIOExceptions = new AtomicInteger(0);
 
@@ -76,8 +77,8 @@ public class SSEPerformanceTest {
 
         ScheduledExecutorService statsScheduler = Executors.newScheduledThreadPool(1);
         statsScheduler.scheduleAtFixedRate(() -> {
-            // elapsed time as well pls
-            System.out.println("Server connect exceptions: " + connectExceptions.get());
+            long elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
+            System.out.println(elapsedTime + " secs: Server connect exceptions: " + connectExceptions.get());
             System.out.println("Server other IO exceptions: " + otherIOExceptions.get());
 
             System.out.println("Successful client connections: " + successfulConnections.get());
