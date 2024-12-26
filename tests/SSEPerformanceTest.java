@@ -75,15 +75,28 @@ public class SSEPerformanceTest {
         }
 
 
-        // do this in repeating 10-sec loop
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.scheduleAtFixedRate(() -> {
+            System.out.println("Server 2-sec wait interrupted exceptions: " + interruptedExceptions.get());
+            System.out.println("Server connect exceptions: " + connectExceptions.get());
+            System.out.println("Server other IO exceptions: " + otherIOExceptions.get());
 
-        System.out.println("Server 2-sec wait interrupted exceptions: " + interruptedExceptions.get());
-        System.out.println("Server connect exceptions: " + connectExceptions.get());
-        System.out.println("Server other IO exceptions: " + otherIOExceptions.get());
+            System.out.println("Successful client connections: " + successfulConnections.get());
+            System.out.println("Failed client connections: " + failedConnections.get());
+            System.out.println("Client Messages received: " + messagesReceived.get());
+        }, 0, 10, TimeUnit.SECONDS);
 
-        System.out.println("Successful client connections: " + successfulConnections.get());
-        System.out.println("Failed client connections: " + failedConnections.get());
-        System.out.println("Client Messages received:" + messagesReceived.get());
+        // Ensure the scheduler is properly shut down
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                scheduler.shutdownNow();
+            }
+        }));
 
     }
 }
