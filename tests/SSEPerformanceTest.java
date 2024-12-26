@@ -36,9 +36,9 @@ public class SSEPerformanceTest {
                     for (int i = 0; i < 10; i++) {
                         outputStream.write(("data: Message " + i + "\n\n").getBytes());
                         outputStream.flush();
-                        Thread.sleep(new java.util.Random().nextInt(2001));
+//                        Thread.sleep(new java.util.Random().nextInt(2001));
                     }
-                } catch (InterruptedException e) {
+//                } catch (InterruptedException e) {
                 } catch (ConnectException e) {
                     connectExceptions.incrementAndGet();
                 } catch (IOException e) {
