@@ -76,6 +76,7 @@ public class SSEPerformanceTest {
 
         ScheduledExecutorService statsScheduler = Executors.newScheduledThreadPool(1);
         statsScheduler.scheduleAtFixedRate(() -> {
+            // elapsed time as well pls
             System.out.println("Server connect exceptions: " + connectExceptions.get());
             System.out.println("Server other IO exceptions: " + otherIOExceptions.get());
 
