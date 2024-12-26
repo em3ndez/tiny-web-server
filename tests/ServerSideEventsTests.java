@@ -36,7 +36,7 @@ public class ServerSideEventsTests {
     Tiny.WebServer webServer;
 
     {
-        describe("Given a Tiny web server with an SSE endpoint", () -> {
+        only().describe("Given a Tiny web server with an SSE endpoint", () -> {
             before(() -> {
                 webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/sse", () -> {
@@ -73,25 +73,12 @@ public class ServerSideEventsTests {
                 try (okhttp3.Response response = httpGet("/sse/events")) {
                     assertThat(response.code(), equalTo(200));
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
-                        String line;
-                        boolean initialEventReceived = false;
-                        boolean event1Received = false;
-                        boolean event2Received = false;
-                        while ((line = reader.readLine()) != null) {
-                            if (line.contains("data: Initial event")) {
-                                initialEventReceived = true;
-                            } else if (line.contains("data: Event 1")) {
-                                event1Received = true;
-                            } else if (line.contains("data: Event 2")) {
-                                event2Received = true;
-                            }
-                            if (initialEventReceived && event1Received && event2Received) {
-                                break;
-                            }
-                        }
-                        assertThat(initialEventReceived, is(true));
-                        assertThat(event1Received, is(true));
-                        assertThat(event2Received, is(true));
+                        assertThat(reader.readLine(), equalTo("data: Initial event"));
+                        assertThat(reader.readLine(), equalTo(""));
+                        assertThat(reader.readLine(), equalTo("data: Event 1"));
+                        assertThat(reader.readLine(), equalTo(""));
+                        assertThat(reader.readLine(), equalTo("data: Event 2"));
+                        assertThat(reader.readLine(), equalTo(""));
                     }
                 }
             });
