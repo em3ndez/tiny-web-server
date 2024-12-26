@@ -42,18 +42,29 @@ public class SSEPerformanceTest {
         AtomicInteger failedConnections = new AtomicInteger(0);
         AtomicInteger messagesReceived = new AtomicInteger(0);
 
-        try (okhttp3.Response response = httpGet("/sse")) {
-            successfulConnections.incrementAndGet();
-            assertThat(response.code(), equalTo(200));
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
-                for (int j = 0; j < 10; j++) {
-                    assertThat(reader.readLine(), equalTo("data: Message " + j));
-                    messagesReceived.incrementAndGet();
-                    assertThat(reader.readLine(), equalTo(""));
+        ExecutorService executor = Executors.newFixedThreadPool(100);
+        for (int i = 0; i < 100; i++) {
+            executor.submit(() -> {
+                try (okhttp3.Response response = httpGet("/sse")) {
+                    successfulConnections.incrementAndGet();
+                    assertThat(response.code(), equalTo(200));
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
+                        for (int j = 0; j < 10; j++) {
+                            assertThat(reader.readLine(), equalTo("data: Message " + j));
+                            messagesReceived.incrementAndGet();
+                            assertThat(reader.readLine(), equalTo(""));
+                        }
+                    }
+                } catch (IOException e) {
+                    failedConnections.incrementAndGet();
+                    e.printStackTrace();
                 }
-            }
-        } catch (IOException e) {
-            failedConnections.incrementAndGet();
+            });
+        }
+        executor.shutdown();
+        try {
+            executor.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
