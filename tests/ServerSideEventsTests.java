@@ -30,13 +30,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static tests.Suite.httpGet;
+import static tests.WebSocketBroadcastDemo.sleepMillis;
 
 @Test
 public class ServerSideEventsTests {
     Tiny.WebServer webServer;
 
     {
-        only().describe("Given a Tiny web server with an SSE endpoint", () -> {
+        describe("Given a Tiny web server with an SSE endpoint", () -> {
             before(() -> {
                 webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {{
                     path("/sse", () -> {
@@ -48,14 +49,19 @@ public class ServerSideEventsTests {
                                 res.sendResponseHeaders(200, 0); // Send headers once
                                 OutputStream outputStream = res.getResponseBody();
                                 outputStream.write("data: Initial event\n\n".getBytes(StandardCharsets.UTF_8));
-                                outputStream.flush();
+                                try {
+                                    outputStream.flush();
+                                } catch (IOException e) {
+                                    System.err.println("Client disconnected: " + e.getMessage());
+                                    return; // Exit the loop if the client disconnects
+                                }
                                 // Simulate sending events over time
                                 new Thread(() -> {
                                     try {
-                                        Thread.sleep(1000);
+                                        Thread.sleep(new java.util.Random().nextInt(2001));
                                         outputStream.write("data: Event 1\n\n".getBytes(StandardCharsets.UTF_8));
                                         outputStream.flush();
-                                        Thread.sleep(1000);
+                                        Thread.sleep(new java.util.Random().nextInt(2001));
                                         outputStream.write("data: Event 2\n\n".getBytes(StandardCharsets.UTF_8));
                                         outputStream.flush();
                                     } catch (InterruptedException | IOException e) {
@@ -69,7 +75,7 @@ public class ServerSideEventsTests {
                 webServer.start();
             });
 
-            it("Then it should receive server-sent events", () -> {
+            it("Then a client should receive server-sent events", () -> {
                 try (okhttp3.Response response = httpGet("/sse/events")) {
                     assertThat(response.code(), equalTo(200));
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {

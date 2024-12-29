@@ -126,12 +126,12 @@ public class WebSocketBroadcastDemo {
 
         sleepMillis(150);
         scheduler.scheduleAtFixedRate(() -> {
-            long elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
             int clientCount = clientMessageCounts.size();
             double average = clientMessageCounts.values().stream()
                 .mapToInt(Integer::intValue)
                 .average()
                 .orElse(0.0);
+            long elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
             System.out.printf("%d secs: ave message count per ws client: %.2f (Clients: %d initial, %d reconnects, %d clt excpts, %d svr excpts)%n", elapsedTime, average, clientCount, restartedClients.get(), unexpectedClientExceptions.get(), unexpectedServerExceptions.get());
         }, 0, 10, TimeUnit.SECONDS);
 
@@ -141,7 +141,7 @@ public class WebSocketBroadcastDemo {
                 "Client and server code and virtuaL threads all in the same JVM");
     }
 
-    private static void sleepMillis(int millis) {
+    public static void sleepMillis(int millis) {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {

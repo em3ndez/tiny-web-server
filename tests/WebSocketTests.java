@@ -28,7 +28,7 @@ public class WebSocketTests {
                             String responseMessage = "Server sent: " + bytesToString(message) + "-" + i;
                             sender.sendBytesFrame(toBytes(responseMessage));
                             try {
-                                sleep(100);
+                                sleep(new java.util.Random().nextInt(201));
                             } catch (InterruptedException e) {
                             }
                         }

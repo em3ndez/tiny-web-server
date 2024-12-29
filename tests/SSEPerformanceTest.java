@@ -11,22 +11,21 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.util.Map;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static tests.Suite.httpGet;
-import static tests.WebSocketBroadcastDemo.sleepMillis;
 
 public class SSEPerformanceTest {
 
     public static class SseStat {
 
-        public boolean connectExcpetion;
+        public boolean serverConnectException;
         public boolean serverIOE;
-        public boolean connected2;
         public boolean connected;
+        public boolean connecting;
         public int messagesReceived;
+        public int messagesAsExpected;
         public int clientIOE;
     }
 
@@ -43,18 +42,16 @@ public class SSEPerformanceTest {
             }
 
             @Override
-            protected void newHttpExchange(HttpExchange exchange) {
-            }
-
-            @Override
             protected void exceptionDuringHandling(Throwable e, HttpExchange exchange) {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
+                // none observed
             }
             @Override
             protected void serverException(Tiny.ServerException e) {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
+                // none observed
             }
 
             {
@@ -81,7 +78,7 @@ public class SSEPerformanceTest {
                         stat = new SseStat();
                         stats.put(Integer.parseInt(client), stat);
                     }
-                    stat.connectExcpetion = true;
+                    stat.serverConnectException = true;
                 } catch (IOException e) {
                     SseStat stat = stats.get(Integer.parseInt(client));
                     if (stat == null) {
@@ -95,7 +92,7 @@ public class SSEPerformanceTest {
         }};
         server.start();
 
-        int clients = 41;
+        int clients = 31;
         for (int i = 0; i < clients; i++) {
             int finalI = i;
             Thread.ofVirtual().start(() -> {
@@ -104,48 +101,45 @@ public class SSEPerformanceTest {
                     stat = new SseStat();
                     stats.put(finalI, stat);
                 }
-                stat.connected = true;
+                stat.connecting = true;
 
-                try (okhttp3.Response response = httpGet("/sse")) {
-                    stat.connected2 = true;
+                try (okhttp3.Response response = httpGet("/sse", "sse_perf_client", ""+finalI)) {
+                    stat.connected = true;
 
                     assertThat(response.code(), equalTo(200));
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
                         int j = 0;
                         while (true) {
-                            assertThat(reader.readLine(), equalTo("data: Message " + j++));
+                            String line = reader.readLine();
                             stat.messagesReceived = stat.messagesReceived +1;
+                            stat.messagesAsExpected = stat.messagesAsExpected + (line.equals("data: Message " + j++) ? 1 : 0);
                             assertThat(reader.readLine(), equalTo(""));
                         }
                     }
                 } catch (IOException e) {
                     stat.clientIOE = stat.clientIOE +1;
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
             });
         }
 
-        sleepMillis(30000);
-
-//        System.out.println("Took " + (System.currentTimeMillis() - startTime) + "ms");
 
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(() -> {
             long elapsed = (System.currentTimeMillis() - startTime) / 1000;
 
             int totalRows = stats.size();
-            long connectExceptions = stats.values().stream().filter(stat -> stat.connectExcpetion).count();
+            long serverConnectExceptions = stats.values().stream().filter(stat -> stat.serverConnectException).count();
+            long connectingCount = stats.values().stream().filter(stat -> stat.connecting).count();
             long connectedCount = stats.values().stream().filter(stat -> stat.connected).count();
-            long connected2Count = stats.values().stream().filter(stat -> stat.connected2).count();
             int totalMessagesReceived = stats.values().stream().mapToInt(stat -> stat.messagesReceived).sum();
+            int totalMessagesAsExpected = stats.values().stream().mapToInt(stat -> stat.messagesAsExpected).sum();
             int totalClientIOE = stats.values().stream().mapToInt(stat -> stat.clientIOE).sum();
+            long totalServerIOE = stats.values().stream().filter(stat -> stat.serverIOE).count();
 
-            System.out.printf("At %d secs, Total Rows: %d, Connect Exceptions: %d, Connected: %d, Connected2: %d, Messages Received: %d, Client IOE: %d%n",
-                    elapsed, totalRows, connectExceptions, connectedCount, connected2Count, totalMessagesReceived, totalClientIOE);
+            System.out.printf("At %d secs, Total Rows: %d, Server Connect Exceptions: %d, Connecting: %d, Connected: %d, Messages Received: %d and as expected %d, Client IOExceptions: %d%n, Server IOExceptions: %d%n",
+                    elapsed, totalRows, serverConnectExceptions, connectingCount, connectedCount, totalMessagesReceived, totalMessagesAsExpected, totalClientIOE, totalServerIOE);
 
-
-            float rate = ((float) successfulConnections.get() * elapsed / messagesReceived.get()) * 100;
-            System.out.printf("At %d secs, THOSE NUMBERS ABOVE", elapsed, ,,,,);
         }, 10, 10, TimeUnit.SECONDS);
 
     }

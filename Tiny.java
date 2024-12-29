@@ -339,6 +339,7 @@ public class Tiny {
         public final InetAddress wsBindAddr;
         public final int socketTimeoutMs;
         public final boolean webKeepAlive;
+        public final int webIdleInterval = 10;
 
         private Config(InetSocketAddress inetSocketAddress, int wsPort, int wsBacklog, InetAddress wsBindAddr, int socketTimeoutMs, boolean webKeepAlive, int webBacklog) {
             this.inetSocketAddress = inetSocketAddress;
@@ -585,12 +586,25 @@ public class Tiny {
             HttpServer s = HttpServer.create();
             s.setExecutor(Executors.newVirtualThreadPerTaskExecutor()); // Default executor
 
-            // How to participate in Idle Timeouts - override this method
-            //ServerSocket socket = server.getAddress().getSocket();
-            //socket.setSoTimeout(timeoutInMillis); // Set the idle timeout in milliseconds
+            // Big unknown ...
+            // how to set timeouts on server/connections
 
-            // Socket timeouts is harder, google for: "HttpServer in the com.sun.net.httpserver package lacks direct
-            //    support for setting a custom ServerSocket with SO_TIMEOUT but how do I make it work with subclasses?"
+        //            try {
+        //                // The HttpServer implementation is typically wrapped in a delegate field
+        //                Field serverField = s.getClass().getDeclaredField("server");
+        //                serverField.setAccessible(true);
+        //                Object serverImpl = serverField.get(s);
+        //
+        //                // sun.net.httpserver.ServerImpl has a setIdleInterval(int seconds) or similar
+        //                Method setIdleIntervalMethod = serverImpl.getClass().getDeclaredMethod("setIdleInterval", int.class);
+        //                setIdleIntervalMethod.setAccessible(true);
+        //
+        //                // For example, set 10 seconds idle timeout
+        //                setIdleIntervalMethod.invoke(serverImpl, config.webIdleInterval);
+        //
+        //            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | NoSuchFieldException e) {
+        //                throw new RuntimeException("Can't do reflection to set timeouts", e);
+        //            }
 
             return s;
         }

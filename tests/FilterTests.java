@@ -39,7 +39,7 @@ public class FilterTests {
                     path("/api", () -> {
                         filter(".*", (req, res, ctx) -> {
                             String allegedlyLoggedInCookie = req.getCookie("logged-in");
-                            // This test class only performs rot47 pn the coolie passed in.
+                            // This test class only performs rot47 on the cookie passed in.
                             // That's not in the secure in the slightest. See https://rot47.net/
                             Authentication auth = IsEncryptedByUs.decrypt(allegedlyLoggedInCookie);
                             if (auth.authentic == false) {
