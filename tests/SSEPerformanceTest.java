@@ -133,13 +133,15 @@ public class SSEPerformanceTest {
         scheduler.scheduleAtFixedRate(() -> {
             long elapsed = (System.currentTimeMillis() - startTime) / 1000;
 
-            stream of stats here -
-                    1. how many rows
-                    2. how many connectExcpetion == true
-                    3. how many connected == true
-                    4. how many connected2 == true
-                    5. total of messagesReceived
-                    5. total of clientIOE
+            int totalRows = stats.size();
+            long connectExceptions = stats.values().stream().filter(stat -> stat.connectExcpetion).count();
+            long connectedCount = stats.values().stream().filter(stat -> stat.connected).count();
+            long connected2Count = stats.values().stream().filter(stat -> stat.connected2).count();
+            int totalMessagesReceived = stats.values().stream().mapToInt(stat -> stat.messagesReceived).sum();
+            int totalClientIOE = stats.values().stream().mapToInt(stat -> stat.clientIOE).sum();
+
+            System.out.printf("At %d secs, Total Rows: %d, Connect Exceptions: %d, Connected: %d, Connected2: %d, Messages Received: %d, Client IOE: %d%n",
+                    elapsed, totalRows, connectExceptions, connectedCount, connected2Count, totalMessagesReceived, totalClientIOE);
 
 
             float rate = ((float) successfulConnections.get() * elapsed / messagesReceived.get()) * 100;
