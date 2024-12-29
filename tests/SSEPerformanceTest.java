@@ -35,7 +35,7 @@ public class SSEPerformanceTest {
 
         long startTime = System.currentTimeMillis();
 
-        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080)) {
+        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebBacklog(3000)) {
             @Override
             protected HttpServer makeHttpServer() throws IOException {
                 return super.makeHttpServer();
@@ -60,6 +60,7 @@ public class SSEPerformanceTest {
                 res.setHeader("Cache-Control", "no-cache");
                 res.setHeader("Connection", "keep-alive");
                 String client = req.getHeaders().get("sse_perf_client").getFirst();
+                System.out.println("sse_perf_client " + client + " " + ctx.getAttribute("connextion"));
                 try {
                     res.sendResponseHeaders(200, 0);
                     OutputStream outputStream = res.getResponseBody();
@@ -92,7 +93,7 @@ public class SSEPerformanceTest {
         }};
         server.start();
 
-        int clients = 31;
+        int clients = 101;
         for (int i = 0; i < clients; i++) {
             int finalI = i;
             Thread.ofVirtual().start(() -> {
@@ -103,6 +104,7 @@ public class SSEPerformanceTest {
                 }
                 stat.connecting = true;
 
+                // change to HttpURLConnection from OkHTTP right here.
                 try (okhttp3.Response response = httpGet("/sse", "sse_perf_client", ""+finalI)) {
                     stat.connected = true;
 
@@ -128,7 +130,6 @@ public class SSEPerformanceTest {
         scheduler.scheduleAtFixedRate(() -> {
             long elapsed = (System.currentTimeMillis() - startTime) / 1000;
 
-            int totalRows = stats.size();
             long serverConnectExceptions = stats.values().stream().filter(stat -> stat.serverConnectException).count();
             long connectingCount = stats.values().stream().filter(stat -> stat.connecting).count();
             long connectedCount = stats.values().stream().filter(stat -> stat.connected).count();
@@ -137,8 +138,8 @@ public class SSEPerformanceTest {
             int totalClientIOE = stats.values().stream().mapToInt(stat -> stat.clientIOE).sum();
             long totalServerIOE = stats.values().stream().filter(stat -> stat.serverIOE).count();
 
-            System.out.printf("At %d secs, Total Rows: %d, Server Connect Exceptions: %d, Connecting: %d, Connected: %d, Messages Received: %d and as expected %d, Client IOExceptions: %d%n, Server IOExceptions: %d%n",
-                    elapsed, totalRows, serverConnectExceptions, connectingCount, connectedCount, totalMessagesReceived, totalMessagesAsExpected, totalClientIOE, totalServerIOE);
+            System.out.printf("At %d secs, Stats entries: %d, Server Connect Exceptions: %d, Connecting: %d, Connected: %d, Messages Received: %d and as expected %d, Client IOExceptions: %d%n, Server IOExceptions: %d%n",
+                    elapsed, stats.size(), serverConnectExceptions, connectingCount, connectedCount, totalMessagesReceived, totalMessagesAsExpected, totalClientIOE, totalServerIOE);
 
         }, 10, 10, TimeUnit.SECONDS);
 
