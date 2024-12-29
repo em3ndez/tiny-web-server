@@ -145,7 +145,24 @@ public class SSEPerformanceTest {
             long connectedCount = stats.values().stream().filter(stat -> stat.connected).count();
             int totalMessagesReceived = stats.values().stream().mapToInt(stat -> stat.messagesReceived).sum();
             int totalMessagesAsExpected = stats.values().stream().mapToInt(stat -> stat.messagesAsExpected).sum();
-            int totalClientIOE = stats.values().stream().mapToInt(stat -> stat.clientIOEs).sum();
+            Map<String, Integer> exceptionSummary = new ConcurrentHashMap<>();
+            stats.values().forEach(stat -> {
+                String[] exceptions = stat.clientIOEs.split(",");
+                for (String exception : exceptions) {
+                    exceptionSummary.merge(exception.trim(), 1, Integer::sum);
+                }
+            });
+
+            StringBuilder exceptionSummaryString = new StringBuilder();
+            exceptionSummary.forEach((exception, count) -> {
+                if (!exception.isEmpty()) {
+                    exceptionSummaryString.append(exception).append(": ").append(count).append(", ");
+                }
+            });
+
+            String exceptionSummaryOutput = exceptionSummaryString.length() > 0
+                    ? exceptionSummaryString.substring(0, exceptionSummaryString.length() - 2)
+                    : "No exceptions";
             long totalServerIOE = stats.values().stream().filter(stat -> stat.serverIOE).count();
 
             System.out.printf("At %d secs, Stats entries: %d, Server Connect Exceptions: %d, Connecting: %d, Connected: %d, Messages Received: %d and as expected %d, Client IOExceptions: %d%n, Server IOExceptions: %d%n",
