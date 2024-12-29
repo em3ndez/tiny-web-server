@@ -105,21 +105,27 @@ public class SSEPerformanceTest {
                 stat.connecting = true;
 
                 // change to HttpURLConnection from OkHTTP right here.
-                try (okhttp3.Response response = httpGet("/sse", "sse_perf_client", ""+finalI)) {
+                try {
+                    URL url = new URL("http://localhost:8080/sse");
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setRequestProperty("sse_perf_client", "" + finalI);
+                    connection.setRequestProperty("Accept", "text/event-stream");
+
                     stat.connected = true;
 
-                    assertThat(response.code(), equalTo(200));
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body().byteStream()))) {
+                    assertThat(connection.getResponseCode(), equalTo(200));
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                         int j = 0;
                         while (true) {
                             String line = reader.readLine();
-                            stat.messagesReceived = stat.messagesReceived +1;
+                            stat.messagesReceived = stat.messagesReceived + 1;
                             stat.messagesAsExpected = stat.messagesAsExpected + (line.equals("data: Message " + j++) ? 1 : 0);
                             assertThat(reader.readLine(), equalTo(""));
                         }
                     }
                 } catch (IOException e) {
-                    stat.clientIOE = stat.clientIOE +1;
+                    stat.clientIOE = stat.clientIOE + 1;
                     //e.printStackTrace();
                 }
             });
