@@ -9,12 +9,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ConnectException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.*;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static tests.Suite.httpGet;
 
 public class SSEPerformanceTest {
 
@@ -26,7 +27,7 @@ public class SSEPerformanceTest {
         public boolean connecting;
         public int messagesReceived;
         public int messagesAsExpected;
-        public int clientIOE;
+        public String clientIOEs = "";
     }
 
     public static void main(String[] args) {
@@ -60,7 +61,7 @@ public class SSEPerformanceTest {
                 res.setHeader("Cache-Control", "no-cache");
                 res.setHeader("Connection", "keep-alive");
                 String client = req.getHeaders().get("sse_perf_client").getFirst();
-                System.out.println("sse_perf_client " + client + " " + ctx.getAttribute("connextion"));
+//                System.out.println("sse_perf_client " + client);
                 try {
                     res.sendResponseHeaders(200, 0);
                     OutputStream outputStream = res.getResponseBody();
@@ -93,7 +94,7 @@ public class SSEPerformanceTest {
         }};
         server.start();
 
-        int clients = 101;
+        int clients = 100000;
         for (int i = 0; i < clients; i++) {
             int finalI = i;
             Thread.ofVirtual().start(() -> {
@@ -112,9 +113,10 @@ public class SSEPerformanceTest {
                     connection.setRequestProperty("sse_perf_client", "" + finalI);
                     connection.setRequestProperty("Accept", "text/event-stream");
 
+                    assertThat(connection.getResponseCode(), equalTo(200));
+
                     stat.connected = true;
 
-                    assertThat(connection.getResponseCode(), equalTo(200));
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                         int j = 0;
                         while (true) {
@@ -125,7 +127,9 @@ public class SSEPerformanceTest {
                         }
                     }
                 } catch (IOException e) {
-                    stat.clientIOE = stat.clientIOE + 1;
+                    if (!stat.clientIOEs.contains(e.getMessage())) {
+                        stat.clientIOEs += e.getMessage();
+                    }
                     //e.printStackTrace();
                 }
             });
@@ -141,7 +145,7 @@ public class SSEPerformanceTest {
             long connectedCount = stats.values().stream().filter(stat -> stat.connected).count();
             int totalMessagesReceived = stats.values().stream().mapToInt(stat -> stat.messagesReceived).sum();
             int totalMessagesAsExpected = stats.values().stream().mapToInt(stat -> stat.messagesAsExpected).sum();
-            int totalClientIOE = stats.values().stream().mapToInt(stat -> stat.clientIOE).sum();
+            int totalClientIOE = stats.values().stream().mapToInt(stat -> stat.clientIOEs).sum();
             long totalServerIOE = stats.values().stream().filter(stat -> stat.serverIOE).count();
 
             System.out.printf("At %d secs, Stats entries: %d, Server Connect Exceptions: %d, Connecting: %d, Connected: %d, Messages Received: %d and as expected %d, Client IOExceptions: %d%n, Server IOExceptions: %d%n",
