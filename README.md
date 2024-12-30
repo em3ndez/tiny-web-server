@@ -693,3 +693,28 @@ Same notes as above - the current implementation is `ws://` not `wss://`
 # Building and contributing to Tiny
 
 see [BUILDING.md](BUILDING.md)
+
+# Known Limitations
+
+Mostly "Batteries not included" ...
+
+* No template-engine bindings or examples or linkages to front-end techs (Angular/React/Vue),
+* No integrations with event techs (Kafka, etc) or databases
+* No Kotlin enablers or examples
+* No GraalVM / native support
+* No reactive examples
+* No easy/automatic OpenAPI or Swagger
+* No built-in HTTPS / WSS support, let alone LetsEncrypt cert fu
+* No ram caching for things that don't change with lots of GET traffic
+* No extensively performance or load tested. Expected to perform efficiently for small to medium-sized applications, but nor 10K class application serving.
+* Doesn't have an async nature to request handling
+* No opinion on user sessions
+* Nothing built-in for event sourcing
+* Theres a rudimentary way to configure keep-alibe and socket timeouts, but nothing sophisticated
+* Utilizes some regex wrapping of Java's built-in webserver tech - either could have vulns versus Netty, etc.
+* No Java Platform Module System (JPMS) participation
+* No Maven-central publication - you could curl the single source file into your codebase if you wanted - see below
+
+# Wiki
+
+See [tiny/wiki](https://github.com/paul-hammant/tiny/wiki)
