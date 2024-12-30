@@ -72,7 +72,7 @@ These commands will instrument the code for coverage, run the tests, and generat
 As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-style success/failure like so:
 
 ``` 
- When additional composition can happen on a previously instantiated Tiny.WebServer
+  When additional composition can happen on a previously instantiated Tiny.WebServer
     ✓ Then both endpoints should be accessible via GET
   Given a Tiny web server with ConcreteExtensionToServerComposition
     When that concrete class is mounted within another path
@@ -117,8 +117,6 @@ As mentioned, Cuppa-Framework is the tech used for testing, and it outputs spec-
   When a filter is already added
     ✓ Then an identical filter path can't be added again
   When using Selenium to subscribe in a browser
-Dec 21, 2024 3:28:48 PM org.openqa.selenium.devtools.CdpVersionFinder findNearestMatch
-WARNING: Unable to find an exact match for CDP version 131, returning the closest version; found: 130; Please update to a Selenium version that supports CDP version 131
     ✓ Then it should echo three messages plus -1 -2 -3 back to the client
   Given a Tiny web server with a path registered
     ✓ Then it should not be able to register the same path again
@@ -141,7 +139,7 @@ WARNING: Unable to find an exact match for CDP version 131, returning the closes
       ✓ Then illegal state errors should happen for new endPoints()
       ✓ Then illegal state errors should happen for new endPoints()
   Given a Tiny web server with an SSE endpoint
-    ✓ Then it should receive server-sent events
+    ✓ Then a client should receive server-sent events
   When serving static files
     ✓ Then it should return 200 and serve a text file
     ✓ Then it should return 404 for non-existent files
@@ -186,6 +184,7 @@ WARNING: Unable to find an exact match for CDP version 131, returning the closes
     When accessing the Greeting GET endpoint
       ✓ Then it should invoke the ExampleApp foobar method
 
+  69 passing
 ```
 
 ChatGPT estimates the path coverage for the `Tiny` source to be around 90-95%.
@@ -213,7 +212,7 @@ Notes:
 
 Stats about Tiny:
 
-Source file `Tiny.java` has approximately 835 lines of consequential code, via:
+Source file `Tiny.java` has approximately 793 lines of consequential code, via:
 
 ``` 
 # `cloc` counts lines of code
@@ -223,7 +222,7 @@ cloc tmpfile.java
 rm tmpfile.java
 ```
 
-The README is bigger. The tests are twice as big.
+The tests are twice as big.
 
 See [https://github.com/paul-hammant/tiny/wiki]
 

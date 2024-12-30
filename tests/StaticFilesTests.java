@@ -41,10 +41,10 @@ public class StaticFilesTests {
                 webServer.start();
             });
             it("Then it should return 200 and serve a text file", () -> {
-                try (okhttp3.Response response = httpGet("/static/README.md")) {
+                try (okhttp3.Response response = httpGet("/static/BUILDING.md")) {
                     assertThat(response.code(), equalTo(200));
                     assertThat(response.body().contentType().toString(), equalTo("text/markdown"));
-                    assertThat(response.body().string(), containsString("Directory where compiled classes are stored"));
+                    assertThat(response.body().string(), containsString("## Compiling Tiny"));
                 }
             });
             it("Then it should return 404 for non-existent files", () -> {
