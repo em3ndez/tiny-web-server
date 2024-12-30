@@ -1,5 +1,15 @@
 # Build and Test of Tiny itself
 
+## Table of Contents
+- [Compiling Tiny](#compiling-tiny)
+- [Tests](#tests)
+- [Coverage Reports](#coverage-reports)
+- [Tiny's own test results](#tinys-own-test-results)
+- [Project & Source Repository](#project--source-repository)
+- [Known Limitations](#known-limitations)
+- [Wiki](#wiki)
+- [Contributions & Published versions](#contributions--published-versions)
+
 ## Compiling Tiny
 
 To compile `Tiny.java`, simply run:
