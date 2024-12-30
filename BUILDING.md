@@ -8,6 +8,13 @@ To compile `Tiny.java`, simply run:
 make compile
 ```
 
+Or, if you don't have `make` installed, execute the following commands:
+
+```bash
+mkdir -p target/classes
+javac -d target/classes Tiny.java
+```
+
 This will compile the source file into the `target/classes/` directory.
 
 ## Tests
@@ -16,6 +23,16 @@ To compile and run the tests, including downloading necessary dependencies, use:
 
 ```bash
 make tests
+```
+
+Or, if you don't have `make` installed, execute the following commands:
+
+```bash
+curl -s https://raw.githubusercontent.com/paul-hammant/mvn-dep-getter/refs/heads/main/mvn-dep-getter.py | python3 - org.forgerock.cuppa:cuppa:1.7.0,org.hamcrest:hamcrest:3.0,com.squareup.okhttp3:okhttp:5.0.0-alpha.14,org.mockito:mockito-core:5.14.2,org.seleniumhq.selenium:selenium-java:4.26.0 test_libs
+mkdir -p target/test-classes
+find tests -name "*.java" | sort > tests/sources.txt
+javac -d target/test-classes -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/classes" @tests/sources.txt
+java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
 ```
 
 This command will handle downloading test dependencies, compiling the test classes, and executing the test suite.
@@ -27,6 +44,17 @@ To generate coverage reports using JaCoCo, execute:
 ```bash
 make coverage
 make report
+```
+
+Or, if you don't have `make` installed, execute the following commands:
+
+```bash
+curl -L -o jacocoagent.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.12-runtime.jar
+curl -L -o jacococli.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.cli/0.8.12/org.jacoco.cli-0.8.12-nodeps.jar
+java -javaagent:jacocoagent.jar=destfile=jacoco.exec -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
+mkdir -p target/srcForJaCoCo/com/paulhammant/tiny/
+cp Tiny.java target/srcForJaCoCo/com/paulhammant/tiny/
+java -jar jacococli.jar report jacoco.exec --classfiles target/classes --sourcefiles target/srcForJaCoCo --html jacoco-report
 ```
 
 These commands will instrument the code for coverage, run the tests, and generate an HTML report in the `jacoco-report` directory.
