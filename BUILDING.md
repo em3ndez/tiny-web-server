@@ -203,7 +203,8 @@ The project is organized as follows:
 
 - **`Tiny.java`**: The main source file containing the implementation of the Tiny Webserver and related classes. This "production code" has no dependencies outside the JDK.
 - **`tests/`**: Contains tests for the Tiny web server using the Cuppa framework. Package is different to the Tiny production class in order to not accidentally take advantage of public/package/private visibility mistakes which can't neatly be tested for otherwise.
-- **`README.md`**: This file, providing an overview and documentation of the project.
+- **`BUILDING.md`**: This file, providing an overview and documentation of the development of Tiny.
+- **`README.md`**: User-centric overview and documentation of the project.
 - **`test_libs/`**: Directory containing dependencies required for running tests - built by curl scripts in this README
 - **`target/classes/`**: Directory where compiled classes are stored.
 - **`target/test-classes/`**: Directory where compiled test classes are stored.
@@ -256,4 +257,6 @@ Tiny.java adds 2-3 seconds to your compile step depending on your CPU. I have a 
 Challenge: reflection access to HttpServer fundamentals may be needed to coax desired functionality 
 out of it, when that's not possible ordinarily. I've made a number of attempt at this, but not succeeded.
 
-2. Harden against denial of service.
+2. Harden against denial of service attacks
+
+3. Work in HTTPS and WSS support.

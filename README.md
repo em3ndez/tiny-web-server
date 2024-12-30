@@ -37,27 +37,25 @@ to the SocketServer.
 
 **I wanted to make something that**
 
-1. A reliance on Java-8's lambdas - as close as regular Java can get to Groovy's builders for now
-2. -- Related: Have a nested `path` construct for elegance and maintainability
-3. Support a multi-module compositions. This for web-module separation to aid deployment and testing flexibility
+1. A reliance on Java-8's lambdas for base paths in particular - as close as regular Java can get to Groovy's builders for now
+2. Support a multi-modular composition of a single served solution. This for web-module separation to aid deployment and testing flexibility
 
-**And in a second tier of must have features**
+**And in a second tier of "must have" features**
 
 1. An attempt to coerce websockets into the same "nested path" composition
-1. Follows Inversion of Control (IoC) idioms for dependency lookup
+1. No shared static state
 1. Aids testability wherever it can
 
 **And a third tier of admittedly gratuitous or pet-peeve wishes**
 
-1. No shared static state
-1. Exist in a single source file, for no good reason.
+1. Exist in a single source file .. for no good reason.
 1. A back-to-basics JDK & make build technology (Maven/Gradle not used for day to day bits)
 1. Does not itself pollute stdout or force a logging framework on users.
 4. Have no dependencies at all, outside the JDK
 
-Single source file and no-maven used to be top level goals, but there's no strong rationale - they are firmly in 
+Single source file and no-maven used to be top level goals, but I am willing to admit that there is no strong rationale for those. They are firmly in 
 the "let us see if that is possible" territory.  At one stage there was no build file at all, (just copy-pastable javac, 
-java commands), then there was a shell script, then there was a makefile, which is where I should have started.
+java commands), then there was a shell script, then there was a Makefile, which is where I should have started.
 
 # Table of Contents
 
@@ -89,11 +87,6 @@ java commands), then there was a shell script, then there was a makefile, which 
 - [Secure Channels](#secure-channels)
   - [Securing HTTP Channels](#securing-http-channels)
   - [Securing WebSocket Channels](#securing-websocket-channels)
-- [Build and Test of TinyWeb itself](#build-and-test-of-tinyweb-itself)
-  - [Compiling TinyWeb](#compiling-tinyweb)
-  - [Tests](#tests)
-  - [Getting coverage reports for TinyWeb](#getting-coverage-reports-for-tinyweb)
-  - [TinyWeb's own test results](#tinywebs-own-test-results)
 - [Project & Source Repository](#project--source-repository)
 - [Known Limitations](#known-limitations)
 - [WIKI](#Wiki)
@@ -104,6 +97,8 @@ java commands), then there was a shell script, then there was a makefile, which 
 "Users" are developers, if that is not obvious. 
 
 ## Basic Use
+
+Intended use rests on the lambda expression introduced with Java 8.
 
 ### End-points
 
@@ -150,7 +145,8 @@ proceeds to the endpoint, which responds with "Welcome to the secure endpoint!".
 
 ### Two End-points within a path
 
-Here's an example of defining two endpoints within a single path using Tiny:
+Here's an example of defining two endpoints within a single path using Tiny. Paths this way, were the 
+reason for creating Tiny.
 
 ```java
 Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
@@ -176,6 +172,7 @@ or not at all of there's no logged-in user.
 ```java
 Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(-1)) {{
     path("/shopping", () -> {
+
         filter(Tiny.HttpMethods.GET, ".*", (req, res, context) -> {
             String allegedlyLoggedInCookie = req.getCookie("logged-in");
             // This test class only performs rot47 on the cookie passed in.
@@ -198,7 +195,7 @@ Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080
 }}.start();
 ```
 
-In this example, a filter is applied to all GET requests within the `/shopping` path to check for a 
+In this example, a filter is applied to **all** GET requests within the `/shopping` path to check for a 
 "logged-in" cookie. The cookie is decrypted using a simple ROT47 algorithm to verify if the user 
 is authenticated. If authenticated, the user's email is set as an attribute in the request, which 
 is then accessed by the endpoint to respond with a message indicating the user is logged in.
@@ -210,6 +207,9 @@ The other test case simulates a failed authentication by providing an invalid co
 to a valid email address. The difference in the cookie values determines whether the authentication passes or fails, 
 demonstrating how the filter and endpoint interact to handle authenticated and unauthenticated requests - communicating
 via an attribute if all is good.
+
+You can see that the filter path is the generic everything regex of ".*". All the paths, filters and endPoints can be 
+regexes.  Don't pre and post-pend with ^ and $ yourself though.
 
 ### A webSocket and endPoint within a path
 
