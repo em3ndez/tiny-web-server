@@ -452,16 +452,18 @@ public class Tiny {
 
                     @Override
                     protected void webSocketTimeout(String path, InetAddress inetAddress, SocketTimeoutException e) {
-                        super.webSocketTimeout(path, inetAddress, e);
+                        WebServer.this.webSocketTimeout(path, inetAddress, e);
                     }
 
                     @Override
                     protected void webSocketIoException(String path, InetAddress inetAddress, IOException e) {
-                        super.webSocketIoException(path, inetAddress, e);
+                        WebServer.this.webSocketIoException(path, inetAddress, e);
                     }
 
-
-
+                    @Override
+                    protected ServerSocket createWebSocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr) throws IOException {
+                        return WebServer.this.createWebSocketServer(wsPort, wsBacklog, wsBindAddr);
+                    }
                 };
             } else {
                 socketServer = null;
@@ -470,6 +472,10 @@ public class Tiny {
             httpServer.createContext("/", exchange -> {
                 handleHttpRequest(dependencyManager, exchange);
             });
+        }
+
+        private ServerSocket createWebSocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr) throws IOException {
+            return new ServerSocket(wsPort, wsBacklog, wsBindAddr);
         }
 
         private void handleHttpRequest(DependencyManager dependencyManager, HttpExchange exchange) {
@@ -1029,7 +1035,9 @@ public class Tiny {
 
         public void start() {
             try {
-                server = new ServerSocket(config.wsPort, config.wsBacklog, config.wsBindAddr);
+
+
+                server = createWebSocketServer(config.wsPort, config.wsBacklog, config.wsBindAddr);
 
                 while (!server.isClosed()) {
                     try {
@@ -1050,6 +1058,10 @@ public class Tiny {
             } catch (IOException e) {
                 throw new ServerException("Can't start WebSocket Server", e);
             }
+        }
+
+        protected ServerSocket createWebSocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr) throws IOException {
+            return new ServerSocket(config.wsPort, config.wsBacklog, config.wsBindAddr);
         }
 
         protected void clientConnected(Socket client) {
