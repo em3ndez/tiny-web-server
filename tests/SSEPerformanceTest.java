@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.BindException;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -28,6 +29,7 @@ public class SSEPerformanceTest {
         public int messagesReceived;
         public int messagesAsExpected;
         public String clientIOEs = "";
+        public boolean bindException;
     }
 
     public static void main(String[] args) {
@@ -36,7 +38,7 @@ public class SSEPerformanceTest {
 
         long startTime = System.currentTimeMillis();
 
-        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebBacklog(3000)) {
+        Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebBacklog(30000)) {
             @Override
             protected HttpServer makeHttpServer() throws IOException {
                 return super.makeHttpServer();
@@ -127,10 +129,11 @@ public class SSEPerformanceTest {
                         }
                     }
                 } catch (IOException e) {
-                    if (!stat.clientIOEs.contains(e.getMessage())) {
-                        stat.clientIOEs += e.getMessage();
+                    if (e instanceof BindException) {
+                        stat.bindException = true;
+                    } else if (!stat.clientIOEs.contains(e.getMessage())) {
+                        stat.clientIOEs += e.getClass().getName() + "-" + e.getMessage() + ",";
                     }
-                    //e.printStackTrace();
                 }
             });
         }
@@ -143,6 +146,7 @@ public class SSEPerformanceTest {
             long serverConnectExceptions = stats.values().stream().filter(stat -> stat.serverConnectException).count();
             long connectingCount = stats.values().stream().filter(stat -> stat.connecting).count();
             long connectedCount = stats.values().stream().filter(stat -> stat.connected).count();
+            long bindExceptions = stats.values().stream().filter(stat -> stat.bindException).count();
             int totalMessagesReceived = stats.values().stream().mapToInt(stat -> stat.messagesReceived).sum();
             int totalMessagesAsExpected = stats.values().stream().mapToInt(stat -> stat.messagesAsExpected).sum();
             Map<String, Integer> exceptionSummary = new ConcurrentHashMap<>();
@@ -165,8 +169,10 @@ public class SSEPerformanceTest {
                     : "No exceptions";
             long totalServerIOE = stats.values().stream().filter(stat -> stat.serverIOE).count();
 
-            System.out.printf("At %d secs, Stats entries: %d, Server Connect Exceptions: %d, Connecting: %d, Connected: %d, Messages Received: %d and as expected %d, Client IOExceptions: %d%n, Server IOExceptions: %d%n",
-                    elapsed, stats.size(), serverConnectExceptions, connectingCount, connectedCount, totalMessagesReceived, totalMessagesAsExpected, totalClientIOE, totalServerIOE);
+            System.out.printf("At %d secs, Stats entries: %d, Server Connect Exceptions: %d, Connecting: %d, Connected: %d, Messages Received: %d and as expected %d, Client BindExceptions: %d, Server IOExceptions: %d%n",
+                    elapsed, stats.size(), serverConnectExceptions, connectingCount, connectedCount, totalMessagesReceived, totalMessagesAsExpected, bindExceptions, totalServerIOE);
+
+            System.out.println("Range of client exceptions, other than BindException: " + exceptionSummaryOutput);
 
         }, 10, 10, TimeUnit.SECONDS);
 

@@ -41,6 +41,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -393,6 +394,19 @@ public class Tiny {
 
     }
 
+    public static class Attributes {
+        private final HttpExchange exchange;
+        public Attributes(HttpExchange exchange) {
+            this.exchange = exchange;
+        }
+        public Object getAttribute(String key) {
+            return exchange.getAttribute(key);
+        }
+        public void setAttribute(String key, Object val) {
+            exchange.setAttribute(key, val);
+        }
+    }
+
     public static class WebServer extends AbstractWebServerContext {
 
         private final HttpServer httpServer;
@@ -489,7 +503,7 @@ public class Tiny {
 
                         final Request request = new Request(exchange);
                         final Response response = new Response(exchange);
-                        final Map<String, Object> attributes = new HashMap<>();
+                        final Attributes attributes = new Attributes(exchange);
                         final ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
 
                         // Apply filters
@@ -529,7 +543,7 @@ public class Tiny {
             }
         }
 
-        private void handleEndPointMatch(HttpExchange exchange, Map.Entry<Pattern, EndPoint> route, Request request, Response response, Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher, Map<String, Object> stats) {
+        private void handleEndPointMatch(HttpExchange exchange, Map.Entry<Pattern, EndPoint> route, Request request, Response response, Map<String, String> params, Attributes attributes, ComponentCache requestCache, Matcher matcher, Map<String, Object> stats) {
             long endPointStartTime = System.currentTimeMillis();
             try {
                 try {
@@ -556,7 +570,7 @@ public class Tiny {
             }
         }
 
-        private FilterAction handleFilterMatch(HttpExchange exchange, FilterEntry filterEntry, Matcher filterMatcher, Request request, Response response, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher, List<FilterStat> filterSequence) {
+        private FilterAction handleFilterMatch(HttpExchange exchange, FilterEntry filterEntry, Matcher filterMatcher, Request request, Response response, Attributes attributes, ComponentCache requestCache, Matcher matcher, List<FilterStat> filterSequence) {
             Map<String, String> filterParams = new HashMap<>();
             for (int i = 1; i <= filterMatcher.groupCount(); i++) {
                 filterParams.put(String.valueOf(i), filterMatcher.group(i));
@@ -609,7 +623,7 @@ public class Tiny {
             return s;
         }
 
-        private RequestContext createRequestContext(Map<String, String> params, Map<String, Object> attributes, ComponentCache requestCache, Matcher matcher) {
+        private RequestContext createRequestContext(Map<String, String> params, Attributes attributes, ComponentCache requestCache, Matcher matcher) {
             return new ServerRequestContext(params, dependencyManager, requestCache, matcher, attributes);
         }
 
@@ -675,9 +689,9 @@ public class Tiny {
             private final DependencyManager dependencyManager;
             private final ComponentCache requestCache;
             private final Matcher matcher;
-            private final Map<String, Object> attributes;
+            private final Attributes attributes;
 
-            public ServerRequestContext(Map<String, String> params, DependencyManager dependencyManager, ComponentCache requestCache, Matcher matcher, Map<String, Object> attributes) {
+            public ServerRequestContext(Map<String, String> params, DependencyManager dependencyManager, ComponentCache requestCache, Matcher matcher, Attributes attributes) {
                 this.params = params;
                 this.dependencyManager = dependencyManager;
                 this.requestCache = requestCache;
@@ -697,11 +711,11 @@ public class Tiny {
             }
 
             public void setAttribute(String key, Object value) {
-                attributes.put(key, value);
+                attributes.setAttribute(key, value);
             }
 
             public Object getAttribute(String key) {
-                return attributes.get(key);
+                return attributes.getAttribute(key);
             }
 
             public Matcher getMatcher() {
@@ -1183,7 +1197,7 @@ public class Tiny {
                                 BAD_ORIGIN.handleMessage(null, sender, null);
                             } else {
                                 ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
-                                RequestContext ctx = new WebServer.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new HashMap<>());
+                                RequestContext ctx = new WebServer.ServerRequestContext(new HashMap<>(), dependencyManager, requestCache, null, new Attributes(null));
                                 getHandler(path).handleMessage(payload, sender, ctx); // could be 404 handler
 
                             }
