@@ -7,6 +7,7 @@
 - [Tiny's own test results](#tinys-own-test-results)
 - [Project & Source Repository](#project--source-repository)
 - [Contributions & Published versions](#contributions--published-versions)
+- [TODO List](#todo-list)
 
 ## Compiling Tiny
 
@@ -244,8 +245,15 @@ sed "s/.*SHA256_OF_SOURCE_LINES.*/    public static final String SHA256_OF_SOURC
 
 **Curl statements for you to copy, per release:**
 
-TODO
-
 Ask me to do a release if you wish to depend on something unreleased in `main` - paul@hammant.org
 
 Tiny.java adds 2-3 seconds to your compile step depending on your CPU. I have a VERSION const in the Tiny source for you to check if you want.
+
+# TODO list
+
+1. Merge websocket functionality into WebServer
+
+Challenge: reflection access to HttpServer fundamentals may be needed to coax desired functionality 
+out of it, when that's not possible ordinarily. I've made a number of attempt at this, but not succeeded.
+
+2. Harden against denial of service.
