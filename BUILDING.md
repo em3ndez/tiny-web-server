@@ -23,7 +23,7 @@ mkdir -p target/classes
 javac -d target/classes Tiny.java
 ```
 
-This will compile the source file into the `target/classes/` directory.
+This will compile the source file into the `target/classes/` directory.  You can use Tiny at this stage.
 
 ## Tests
 
@@ -32,6 +32,8 @@ To compile and run the tests, including downloading necessary dependencies, use:
 ```bash
 make tests
 ```
+
+The step that gets the test dependency jars, needs python3 and maven installed, but otherwise make doesn't need either for subsequent build goals.
 
 Or, if you don't have `make` installed, execute the following commands:
 
