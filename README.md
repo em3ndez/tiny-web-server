@@ -3,6 +3,36 @@
 A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `Tiny.java`. 
 Just a fun pair-programmed project, really. Imperfectly pair programmed with AIs. It is for use for to make small web/medium applications - perhaps not on the public web.
 
+In a nutshell:
+
+```java
+new Tiny.WebServer(Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+    path("/shopping", () -> {
+
+        filter(GET, ".*", (request, response, context) -> {
+            // some logic then ..
+            return FilterResult.STOP;
+            // or maybe ...
+            return FilterResult.CONTINUE; 
+        });
+    
+        endPoint(GET, "/cart", (request, response, context) -> {
+            // some logic for the url `/shopping/cart` .. maybe a list
+            response.write("Cart contents ...\n");
+            // write out cart contents
+        });
+    
+        webSocket("/cartEvents", (message, sender, context) -> {
+            sender.sendTextFrame("Sure, you'll be kept informed of inventory/price changes".getBytes("UTF-8"));
+            // more logic to make that happen. See tests/WebSocketBroadcastDemo.java
+        });
+        
+    });
+}}.start();
+```
+
+You wouldn't inline those filter/endPoint/webSocket blocks though, you'd call methods.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -22,22 +52,29 @@ The server supports:
 - **Path-based Routing**: Define endpoints with path parameters and handle requests dynamically. Paths can be nested to create a hierarchical structure, allowing for organized and intuitive filter/endpoint management.
 - **Static File Serving**: Serve static files from a specified directory with automatic content type detection.
 - **Filters**: Apply filters to requests for pre-processing or access control.
+- **End Points**: functional logic to respond to GET/POST/etc requests.
 - Fairly open
 
-There are paths too, to which filters and endpoints can be attached, but don't themselves handle requests.
+Filters and end-points can be at root level, or inside paths. Paths can be inside paths, too, but don't themselves and should only have other paths, filters, and endPoints within the block of code.
+
+See `path`, `filter` and `endPoint` in the nutshell code above.
 
 ## Web Sockets Server
 
 A coupled `Tiny.WebSocketServer` class provides WebSocket support, enabling communication back from the server to 
-attached clients.  It can be used alone, but also integrated into the same path structure of the main server.
-Admittedly that's a trick as the path and the length of the path are tge leftmost part of the message up
-to the SocketServer. 
+attached clients. It can be used alone, but also integrated into the same path structure of the main server alongside `endPoint` and `filter`.
 
-## Rationale
+```java
+webSocket("/foo", (message, sender, context) -> {
+    // logic
+});
+```
+
+## Rationale for Tiny
 
 **I wanted to make something that**
 
-1. A reliance on Java-8's lambdas for base paths in particular - as close as regular Java can get to Groovy's builders for now
+1. A reliance on Java-8's lambdas for base paths in particular - as close as regular Java can get to Groovy's builders for now. See the nutshell above.
 2. Support a multi-modular composition of a single served solution. This for web-module separation to aid deployment and testing flexibility
 
 **And in a second tier of "must have" features**
@@ -88,6 +125,7 @@ java commands), then there was a shell script, then there was a Makefile, which 
   - [Securing HTTP Channels](#securing-http-channels)
   - [Securing WebSocket Channels](#securing-websocket-channels)
 - [Project & Source Repository](#project--source-repository)
+- [Building and contributing to Tiny](#building-and-contributing-to-tiny)
 - [Known Limitations](#known-limitations)
 - [WIKI](#Wiki)
 - [Contributions & Published versions](#contributions--published-versions)
@@ -298,26 +336,11 @@ Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080
 
 In this example, any request to `/static` will be mapped to the files located in `/path/to/static/files`. For instance, a request to `/static/image.png` will serve the `image.png` file from the specified directory.
 
-TODO: make an optional RAM cache.
-
-### Best Practices
-
-1. **Directory Structure**: Organize your static files in a clear directory structure. For example, separate images, stylesheets, and scripts into different folders.
-
-2. **Caching**: Consider setting cache headers for static files to improve performance. This can be done by modifying the response headers in the `serveStaticFilesAsync` method.
-
-3. **Security**: Ensure that your static file serving does not expose sensitive files. Use appropriate file permissions and validate file paths to prevent directory traversal attacks.
-
-4. **Content Types**: Ensure that the correct content type is set for each file type. This can be handled automatically by the server, but it's good to verify.
-
-5. **Performance**: For high-traffic applications, consider using a Content Delivery Network (CDN) to offload the serving of static files.
-
-By following these guidelines, you can efficiently serve static files while maintaining security and performance.
-
 ### Still to do:  
 
 1. A directory index capability, pretty or basic.
 2. A way of overriding mime types per user-agent.
+3. make RAM cache that would be optional
 
 ## Composition
 
@@ -365,7 +388,7 @@ public class MyWebAppTest {
 }
 ```
 
-See the tests that use Cuppa linked to from the main [suite](tests/Suite.java).
+See the tests that use Cuppa linked to from the main [suite](tests/Suite.java). Or peruse the entries in [tests/](tests/)
 
 There's no re
 
@@ -682,13 +705,17 @@ It is up to you which way you develop with Tiny.
 ### Securing HTTP Channels
 
 Currently, Tiny supports HTTP, which is suitable for development and testing environments. 
-However, for production environments, it's crucial to secure HTTP channels using HTTPS. This can be achieved by 
-fronting Tiny with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination.  There are also
-reverse-reverse proxies (tunnels) that with code I have not done yet, could work.
+However, for production environments, it's crucial to secure HTTP channels using HTTPS. 
+
+One choice is to front Tiny with a reverse proxy like Nginx or Apache, which can handle SSL/TLS termination.  
+There are also reverse-reverse proxies (tunnels) that would achieve what you want but would require coding work.
+
+Another choice is to override the creation of the actual server pieces tp create a java `SSLContext` like in https://github.com/paul-hammant/tiny/wiki/HTTPS-and-WSS
 
 ### Securing WebSocket Channels
 
-Same notes as above - the current implementation is `ws://` not `wss://` 
+Same notes as above - the current implementation is `ws://` not `wss://`. The same code example https://github.com/paul-hammant/tiny/wiki/HTTPS-and-WSS sets up WSS 
+capability though.
 
 # Building and contributing to Tiny
 
@@ -710,10 +737,11 @@ Mostly "Batteries not included" ...
 * Doesn't have an async nature to request handling
 * No opinion on user sessions
 * Nothing built-in for event sourcing
-* Theres a rudimentary way to configure keep-alibe and socket timeouts, but nothing sophisticated
+* There's a rudimentary way to configure keep-alive and socket timeouts, but nothing sophisticated
 * Utilizes some regex wrapping of Java's built-in webserver tech - either could have vulns versus Netty, etc.
 * No Java Platform Module System (JPMS) participation
 * No Maven-central publication - you could curl the single source file into your codebase if you wanted - see below
+* The new-centric composition of a server solution, allows use of all parameters into the constructor/method doing the new-ing - be careful with secrets and privileged functions
 
 # Wiki
 
