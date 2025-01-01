@@ -41,7 +41,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -462,7 +461,7 @@ public class Tiny {
 
                     @Override
                     protected ServerSocket createWebSocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr) throws IOException {
-                        return WebServer.this.createWebSocketServer(wsPort, wsBacklog, wsBindAddr);
+                        return WebServer.this.makeWebSocketServer(wsPort, wsBacklog, wsBindAddr);
                     }
                 };
             } else {
@@ -474,7 +473,7 @@ public class Tiny {
             });
         }
 
-        private ServerSocket createWebSocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr) throws IOException {
+        protected ServerSocket makeWebSocketServer(int wsPort, int wsBacklog, InetAddress wsBindAddr) throws IOException {
             return new ServerSocket(wsPort, wsBacklog, wsBindAddr);
         }
 
