@@ -48,8 +48,7 @@ import java.util.regex.Pattern;
 
 public class Tiny {
 
-    public static final String VERSION = "1.0-SNAPSHOT";
-    public static final String SHA256_OF_SOURCE_LINES = "4db95effe627428070ba924fba5b6338d1cbcf7dcd78075dde59754719208a20"; // this line not included in SHA256 calc
+    public static final String VERSION = "1.0-SNAPSHOT"; // v1.0 not released yet
 
     /* ==========================
      * Enums
@@ -75,6 +74,19 @@ public class Tiny {
         WebServerContext filter(String path, Filter filter);
         WebServerContext serveStaticFilesAsync(String basePath, String directory);
         void sendErrorResponse(HttpExchange exchange, int code, String message);
+    }
+
+    public static class Attributes {
+        private final HttpExchange exchange;
+        public Attributes(HttpExchange exchange) {
+            this.exchange = exchange;
+        }
+        public Object getAttribute(String key) {
+            return exchange.getAttribute(key);
+        }
+        public void setAttribute(String key, Object val) {
+            exchange.setAttribute(key, val);
+        }
     }
 
     public interface RequestContext {
@@ -393,19 +405,6 @@ public class Tiny {
 
     }
 
-    public static class Attributes {
-        private final HttpExchange exchange;
-        public Attributes(HttpExchange exchange) {
-            this.exchange = exchange;
-        }
-        public Object getAttribute(String key) {
-            return exchange.getAttribute(key);
-        }
-        public void setAttribute(String key, Object val) {
-            exchange.setAttribute(key, val);
-        }
-    }
-
     public static class WebServer extends AbstractWebServerContext {
 
         private final HttpServer httpServer;
@@ -424,9 +423,7 @@ public class Tiny {
             this.dependencyManager = dependencyManager;
             try {
                 httpServer = makeHttpServer();
-            } catch (IOException | ArrayIndexOutOfBoundsException e) {
-                System.err.println("Error handling client: " + e.getMessage());
-                e.printStackTrace(System.err);
+            } catch (IOException e) {
                 throw new ServerException("Could not create HttpServer", e);
             }
 
@@ -637,8 +634,6 @@ public class Tiny {
         }
 
         protected void serverException(ServerException e) {
-            System.err.println(e.getMessage() + "\nStack Trace:");
-            e.printStackTrace(System.err);
         }
 
         protected void webSocketTimeout(String pathLength, InetAddress inetAddress, SocketTimeoutException payload) {
@@ -654,8 +649,6 @@ public class Tiny {
          */
         protected void exceptionDuringHandling(Throwable e, HttpExchange exchange) {
             sendErrorResponse(exchange, 500, "Server error");
-            //System.err.println(e.getMessage() + "\nStack Trace:");
-            //e.printStackTrace(System.err);
         }
 
         public WebServer start() {

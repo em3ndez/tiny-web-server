@@ -6,7 +6,8 @@
 - [Coverage Reports](#coverage-reports)
 - [Tiny's own test results](#tinys-own-test-results)
 - [Project & Source Repository](#project--source-repository)
-- [Contributions & Published versions](#contributions--published-versions)
+- [Contributions](#contributions)
+- [My Dev Setup](#my-dev-setup)
 - [TODO List](#todo-list)
 
 ## Compiling Tiny
@@ -216,7 +217,7 @@ Notes:
 
 Stats about Tiny:
 
-Source file `Tiny.java` has approximately 793 lines of consequential code, via:
+Source file `Tiny.java` has approximately 794 lines of consequential code, via:
 
 ``` 
 # `cloc` counts lines of code
@@ -228,35 +229,37 @@ rm tmpfile.java
 
 The tests are twice as big.
 
-See [https://github.com/paul-hammant/tiny/wiki]
-
-# Contributions & Published versions
+# Contributions
 
 Pull requests accepted. If you don't want to grant me copyright, I'll add "Portions copyright, YOUR NAME (year)"
 
-**Before committing to main for an impending release, I will do the following, if I remember**
+# My Dev Setup
 
-``` 
-cat Tiny.java | sed '/SHA256_OF_SOURCE_LINES/d' > tmpfile.java
-SHA=$(sha256sum tmpfile.java | cut -d ' ' -f1)
-rm tmpfile.java
-echo $SHA
-sed "s/.*SHA256_OF_SOURCE_LINES.*/    public static final String SHA256_OF_SOURCE_LINES = \"$SHA\"; \/\/ this line not included in SHA256 calc/" -i Tiny.java
+I use Intellij-IDEA to edit this. With [aider.chat/](https://aider.chat/) running from a terminal (either IDEAs own terminal or Ubuntu's)
+
+IDEA doesn't mine that Tiny.java is not in a com/paulhammant/tiny directory tree - it does the right thing at build or run moments (including run tests and breakpoints).  The command-line build fu via make and Makefile also doesn't mind that this does not have a Maven or Gradle directory structure. IDEA will use its own build-artictacts directories (classes and test-classes). Make will use target/classes and target/test-classes as Maven would have done.
+
+Though Tiny does not have dependencies outside the JDK, the tests do - lots. Sadly there's no public directed graph of deps in maven-central, so we one-time use Maven (and Python to go get those deps and place them in a directory that has to be manually added to Intellij-IDEA). I made a tool for that some months ago - https://github.com/paul-hammant/mvn-dep-getter. that curl-pipe script takes list of key deps, invokes maven to download those (and transitive deps) to a named directory:
+
+```bash 
+curl -s https://raw.githubusercontent.com/paul-hammant/mvn-dep-getter/refs/heads/main/mvn-dep-getter.py | python3 - org.forgerock.cuppa:cuppa:1.7.0,org.hamcrest:hamcrest:3.0,com.squareup.okhttp3:okhttp:5.0.0-alpha.14,org.mockito:mockito-core:5.14.2,org.seleniumhq.selenium:selenium-java:4.26.0 test_libs
 ```
 
-**Curl statements for you to copy, per release:**
+Just 5 top level deps, in our case.
 
-Ask me to do a release if you wish to depend on something unreleased in `main` - paul@hammant.org
+Or just invoke `make get-test-deps`. 
 
-Tiny.java adds 2-3 seconds to your compile step depending on your CPU. I have a VERSION const in the Tiny source for you to check if you want.
+You would  go into `File->Project_Structure...` menu and click `+` for "New Project Library"
+
+I wish there were a big-ass public graph of deps of Java jars.
 
 # TODO list
 
-1. Merge websocket functionality into WebServer
+1. Properly merge websocket functionality into WebServer
 
 Challenge: reflection access to HttpServer fundamentals may be needed to coax desired functionality 
 out of it, when that's not possible ordinarily. I've made a number of attempt at this, but not succeeded.
 
-2. Harden against denial of service attacks
+2. Harden against denial-of-service attacks
 
-3. Work in HTTPS and WSS support.
+3. Work in HTTPS and WSS support rather than just allude to it in a wiki doc
