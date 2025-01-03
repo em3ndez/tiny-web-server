@@ -4,7 +4,7 @@
  *
  * MIT License
  *
- * Copyright (c) Paul Hammant, 2024
+ * Copyright (c) Paul Hammant, 2024 - 2025
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -509,10 +509,8 @@ public class Tiny {
                         final ComponentCache requestCache = new DefaultComponentCache(dependencyManager.cache);
 
                         // Apply filters
-                        List<FilterEntry> methodFilters = filters.get(method);
-                        if (methodFilters == null) {
-                            methodFilters = new ArrayList<FilterEntry>();
-                        }
+                        List<FilterEntry> methodFilters = new ArrayList<>();
+                        methodFilters.addAll(filters.get(method));
                         methodFilters.addAll(filters.get(HttpMethods.ALL));
 
                         for (FilterEntry filterEntry : methodFilters) {

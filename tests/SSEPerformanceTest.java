@@ -15,6 +15,8 @@ import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.*;
 
+import static com.paulhammant.tiny.Tiny.FilterAction.CONTINUE;
+import static com.paulhammant.tiny.Tiny.HttpMethods.ALL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -58,45 +60,48 @@ public class SSEPerformanceTest {
             }
 
             {
-            endPoint(Tiny.HttpMethods.GET, "/sse", (req, res, ctx) -> {
-                res.setHeader("Content-Type", "text/event-stream");
-                res.setHeader("Cache-Control", "no-cache");
-                res.setHeader("Connection", "keep-alive");
-                String client = req.getHeaders().get("sse_perf_client").getFirst();
-//                System.out.println("sse_perf_client " + client);
-                try {
-                    res.sendResponseHeaders(200, 0);
-                    OutputStream outputStream = res.getResponseBody();
-                    int i = 0;
-                    while (true) {
-                        outputStream.write(("data: Message " + i++ + "\n\n").getBytes());
-                        outputStream.flush();
-                        try {
-                            Thread.sleep(new java.util.Random().nextInt(2001)); // average 1 second
-                        } catch (InterruptedException e) {
+                filter(ALL, "/sse", (req, rsp, ctx) -> {
+                    return CONTINUE;
+                });
+                endPoint(Tiny.HttpMethods.GET, "/sse", (req, res, ctx) -> {
+                    res.setHeader("Content-Type", "text/event-stream");
+                    res.setHeader("Cache-Control", "no-cache");
+                    res.setHeader("Connection", "keep-alive");
+                    String client = req.getHeaders().get("sse_perf_client").getFirst();
+    //                System.out.println("sse_perf_client " + client);
+                    try {
+                        res.sendResponseHeaders(200, 0);
+                        OutputStream outputStream = res.getResponseBody();
+                        int i = 0;
+                        while (true) {
+                            outputStream.write(("data: Message " + i++ + "\n\n").getBytes());
+                            outputStream.flush();
+                            try {
+                                Thread.sleep(new java.util.Random().nextInt(2001)); // average 1 second
+                            } catch (InterruptedException e) {
+                            }
                         }
+                    } catch (ConnectException e) {
+                        SseStat stat = stats.get(Integer.parseInt(client));
+                        if (stat == null) {
+                            stat = new SseStat();
+                            stats.put(Integer.parseInt(client), stat);
+                        }
+                        stat.serverConnectException = true;
+                    } catch (IOException e) {
+                        SseStat stat = stats.get(Integer.parseInt(client));
+                        if (stat == null) {
+                            stat = new SseStat();
+                            stats.put(Integer.parseInt(client), stat);
+                        }
+                        stat.serverIOE = true;
                     }
-                } catch (ConnectException e) {
-                    SseStat stat = stats.get(Integer.parseInt(client));
-                    if (stat == null) {
-                        stat = new SseStat();
-                        stats.put(Integer.parseInt(client), stat);
-                    }
-                    stat.serverConnectException = true;
-                } catch (IOException e) {
-                    SseStat stat = stats.get(Integer.parseInt(client));
-                    if (stat == null) {
-                        stat = new SseStat();
-                        stats.put(Integer.parseInt(client), stat);
-                    }
-                    stat.serverIOE = true;
-                }
 
             });
         }};
         server.start();
 
-        int clients = 100000;
+        int clients = 10000;
         for (int i = 0; i < clients; i++) {
             int finalI = i;
             Thread.ofVirtual().start(() -> {
