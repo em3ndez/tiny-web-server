@@ -60,9 +60,6 @@ public class SSEPerformanceTest {
             }
 
             {
-                filter(ALL, "/sse", (req, rsp, ctx) -> {
-                    return CONTINUE;
-                });
                 endPoint(Tiny.HttpMethods.GET, "/sse", (req, res, ctx) -> {
                     res.setHeader("Content-Type", "text/event-stream");
                     res.setHeader("Cache-Control", "no-cache");

@@ -17,6 +17,7 @@
 package tests;
 
 import com.paulhammant.tiny.Tiny;
+import okhttp3.Response;
 import org.forgerock.cuppa.Test;
 
 import static com.paulhammant.tiny.Tiny.FilterAction.CONTINUE;
@@ -170,6 +171,41 @@ public class FilterTests {
                         assertThat(e.getMessage(), equalTo("Filter already registered for /foo.*"));
                     }
                 }};
+            });
+            after(() -> {
+                webServer.stop();
+                webServer = null;
+            });
+        });
+        describe("When multiple filters could match", () -> {
+            before(() -> {
+                webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
+                    filter("/f.*", (req, res, ctx) -> {
+                        ctx.setAttribute("order", ctx.getAttribute("order") + " 1");
+                        res.setHeader("x-order", "" + ctx.getAttribute("order"));
+                        return CONTINUE;
+                    });
+                    filter("/fo.*", (req, res, ctx) -> {
+                        ctx.setAttribute("order", ctx.getAttribute("order") + " 2");
+                        res.setHeader("x-order", "" + ctx.getAttribute("order"));
+                        return CONTINUE;
+                    });
+                    filter("/foo.*", (req, res, ctx) -> {
+                        ctx.setAttribute("order", ctx.getAttribute("order") + " 3");
+                        res.setHeader("x-order", "" + ctx.getAttribute("order"));
+                        return CONTINUE;
+                    });
+                    endPoint(GET, "/foo/bar", (req, res, ctx) -> {
+                        res.write("Hello");
+                     });
+                }};
+                webServer.start();
+            });
+            it("Then an an order of execution will happen", () -> {
+                Response response = httpGet("/foo/bar");
+                bodyAndResponseCodeShouldBe(response, "Hello", 200);
+                String xOrder = response.header("x-order");
+                assertThat(xOrder, equalTo("null 1 2 3"));
             });
             after(() -> {
                 webServer.stop();

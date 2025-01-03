@@ -512,6 +512,7 @@ public class Tiny {
                         List<FilterEntry> methodFilters = new ArrayList<>();
                         methodFilters.addAll(filters.get(method));
                         methodFilters.addAll(filters.get(HttpMethods.ALL));
+                        methodFilters.sort(Comparator.comparingLong(FilterEntry::getWhenDefined));
 
                         for (FilterEntry filterEntry : methodFilters) {
                             Matcher filterMatcher = filterEntry.pattern.matcher(path);
@@ -771,10 +772,15 @@ public class Tiny {
     public static class FilterEntry {
         public final Pattern pattern;
         public final Filter filter;
+        public final long whenDefined = System.nanoTime();
 
         public FilterEntry(Pattern pattern, Filter filter) {
             this.pattern = pattern;
             this.filter = filter;
+        }
+
+        public long getWhenDefined() {
+            return whenDefined;
         }
     }
 
