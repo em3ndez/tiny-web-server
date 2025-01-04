@@ -22,6 +22,7 @@ import org.forgerock.cuppa.Test;
 
 import static com.paulhammant.tiny.Tiny.FilterAction.CONTINUE;
 import static com.paulhammant.tiny.Tiny.FilterAction.STOP;
+import static com.paulhammant.tiny.Tiny.HttpMethods.ALL;
 import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
 import static org.forgerock.cuppa.Cuppa.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -180,18 +181,24 @@ public class FilterTests {
         describe("When multiple filters could match", () -> {
             before(() -> {
                 webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
-                    filter("/f.*", (req, res, ctx) -> {
-                        ctx.setAttribute("order", ctx.getAttribute("order") + " 1");
+                    filter(ALL,"/.*", (req, res, ctx) -> {
+                        Object order = ctx.getAttribute("order");
+                        ctx.setAttribute("order", (order == null ? "" : order) + " f1");
                         res.setHeader("x-order", "" + ctx.getAttribute("order"));
                         return CONTINUE;
                     });
-                    filter("/fo.*", (req, res, ctx) -> {
-                        ctx.setAttribute("order", ctx.getAttribute("order") + " 2");
+                    filter(GET,"/f.*", (req, res, ctx) -> {
+                        ctx.setAttribute("order", ctx.getAttribute("order") + " f2");
                         res.setHeader("x-order", "" + ctx.getAttribute("order"));
                         return CONTINUE;
                     });
-                    filter("/foo.*", (req, res, ctx) -> {
-                        ctx.setAttribute("order", ctx.getAttribute("order") + " 3");
+                    filter(ALL,"/fo.*", (req, res, ctx) -> {
+                        ctx.setAttribute("order", ctx.getAttribute("order") + " f3");
+                        res.setHeader("x-order", "" + ctx.getAttribute("order"));
+                        return CONTINUE;
+                    });
+                    filter(GET,"/foo.*", (req, res, ctx) -> {
+                        ctx.setAttribute("order", ctx.getAttribute("order") + " f4");
                         res.setHeader("x-order", "" + ctx.getAttribute("order"));
                         return CONTINUE;
                     });
@@ -205,7 +212,7 @@ public class FilterTests {
                 Response response = httpGet("/foo/bar");
                 bodyAndResponseCodeShouldBe(response, "Hello", 200);
                 String xOrder = response.header("x-order");
-                assertThat(xOrder, equalTo("null 1 2 3"));
+                assertThat(xOrder.trim(), equalTo("f1 f2 f3 f4"));
             });
             after(() -> {
                 webServer.stop();
