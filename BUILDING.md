@@ -227,7 +227,7 @@ cloc tmpfile.java
 rm tmpfile.java
 ```
 
-The tests are twice as big.
+The tests directory contains approximately twice as many lines of consequential code 
 
 # Contributions
 
