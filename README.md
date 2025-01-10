@@ -350,15 +350,58 @@ We've covered paths, filters, endPoints, webSockets, and static file serving the
 Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
     path("/advertisingCommissions", () -> {
       path("/selling", () -> {
-          //TODO
+        // filters, endPoints, webSockets etc (and further paths)
       });
       path("/buying", () -> {
-        //TODO
+        // filters, endPoints, webSockets etc (and further paths)
       });
     });
 }}.start();
 ```
 
+The above server setup can be composed using the `Tiny.ServerComposition` class. This allows for modular and reusable 
+server configurations by defining paths, filters, and endpoints in a structured manner. The `Tiny.ServerComposition` 
+class facilitates the organization of server logic into distinct components, making it easier to manage and extend the 
+server's functionality.
+
+```java
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081));
+new Tiny.ServerComposition(server) {{
+    path("/advertisingCommissions", () -> {
+        path("/selling", () -> {
+            // filters, endPoints, webSockets etc (and further paths)
+        });
+        path("/buying", () -> {
+            // filters, endPoints, webSockets etc (and further paths)
+        });
+    });
+}};
+server.start();
+```
+
+You can create multiple similar compositions on a single `Tiny.WebServer` instance. This allows you to define different 
+sets of paths, filters, and endpoints that can coexist within the same server. By using the `Tiny.ServerComposition` class, 
+you can modularize your server logic and apply different compositions to the same server instance. This approach is 
+useful for organizing your server's functionality into distinct components, making it easier to manage and extend.
+
+```java 
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081));
+new Tiny.ServerComposition(server) {{
+    path("/advertising", () -> {
+        path("/selling", () -> {
+            // filters, endPoints, webSockets etc (and further paths)
+        });
+    });
+}};
+new Tiny.ServerComposition(server) {{
+  path("/advertising", () -> {
+    path("/buying", () -> {
+      // filters, endPoints, webSockets etc (and further paths)
+    });
+  });
+}};
+server.start();
+```
 
 ## Testing your web app
 
