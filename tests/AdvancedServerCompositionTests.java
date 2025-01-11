@@ -50,6 +50,46 @@ public class AdvancedServerCompositionTests {
                 webServer = null;
             });
         });
+        describe("When additional additional composition can happen", () -> {
+            before(() -> {
+                webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
+                    endPoint(GET, "/foo", (req, res, ctx) -> {
+                        res.write("Hello1");
+                    });
+                }};
+                new Tiny.ServerComposition(webServer) {{
+                    path("/advertising", () -> {
+                        path("/selling", () -> {
+                            endPoint(GET, ".*", (req, res, ctx) -> {
+                                res.write("Hello");
+                            });
+                        });
+                    });
+                }};
+            });
+            it("The it can't get around prior path reservation", () -> {
+                try {
+                    new Tiny.ServerComposition(webServer) {{
+                        path("/advertising", () -> {
+                            path("/buying", () -> {
+                                endPoint(GET, ".*", (req, res, ctx) -> {
+                                    res.write("Hello");
+                                });
+                            });
+                        });
+                    }};
+                    webServer.start();
+                    throw new AssertionError("should never get here");
+                } catch (IllegalStateException e) {
+                    assertThat(e.getMessage(), equalTo("Path already registered: /advertising"));
+                }
+
+            });
+            after(() -> {
+                webServer.stop();
+                webServer = null;
+            });
+        });
         describe("Given a Tiny web server with ConcreteExtensionToServerComposition", () -> {
             before(() -> {
                 webServer = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080)) {{
