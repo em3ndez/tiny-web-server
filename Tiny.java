@@ -264,6 +264,17 @@ public class Tiny {
             if (serverState.hasStarted()) {
                 throw new IllegalStateException("Cannot add endpoints after the server has started.");
             }
+
+            Pattern p = Pattern.compile("^" + path + "$");
+            Map<Pattern, EndPoint> endPointsForMethod = endPoints.get(method);
+            for (Pattern pattern : endPointsForMethod.keySet()) {
+                if (p.pattern().equals(pattern.pattern())) {
+                    throw new IllegalStateException("Endpoint already registered for " + path);
+                }
+            }
+            endPointsForMethod.put(p, endPoint);
+
+
             endPoints.computeIfAbsent(method, k -> new HashMap<>())
                     .put(Pattern.compile("^" + path + "$"), endPoint);
             return this;
@@ -952,7 +963,7 @@ public class Tiny {
                 hidden = null;
                 return toReturn;
             } else {
-                throw new AssertionError("See TinyWeb's DependencyTests");
+                throw new AssertionError(SEE_TINY_WEB_S_DEPENDENCY_TESTS);
             }
         }
     }

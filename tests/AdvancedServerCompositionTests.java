@@ -35,11 +35,6 @@ public class AdvancedServerCompositionTests {
                         });
                     });
                 }};
-                new Tiny.ServerComposition(webServer) {{
-                    endPoint(GET, "/bar2/baz2", (req, res, ctx) -> {
-                        res.write("Hello3");
-                    });
-                }};
                 webServer.start();
             });
             it("Then both endpoints should be accessible via GET", () -> {
