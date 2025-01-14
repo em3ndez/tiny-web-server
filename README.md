@@ -387,19 +387,24 @@ useful for organizing your server's functionality into distinct components, maki
 ```java 
 Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081));
 new Tiny.ServerComposition(server) {{
-    path("/advertising", () -> {
-        path("/selling", () -> {
-            // filters, endPoints, webSockets etc (and further paths)
-        });
+    path("/advertising/selling", () -> {
+        // filters, endPoints, webSockets etc (and further paths)
     });
 }};
 new Tiny.ServerComposition(server) {{
-  path("/advertising", () -> {
-    path("/buying", () -> {
+  path("/advertising/buying", () -> {
       // filters, endPoints, webSockets etc (and further paths)
-    });
   });
 }};
+server.start();
+```
+
+Or..
+
+```java 
+Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081));
+new AdvertisingSellingServerComposition(server);
+new AdvertisingBuyingServerComposition(server);
 server.start();
 ```
 
