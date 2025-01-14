@@ -403,9 +403,21 @@ Or..
 
 ```java 
 Tiny.WebServer server = new Tiny.WebServer(Tiny.Config.create().withWebPort(8080).withWebSocketPort(8081));
-new AdvertisingSellingServerComposition(server);
-new AdvertisingBuyingServerComposition(server);
+new AdvertisingSellingServerComposition(server, "AdSelling");
+new AdvertisingBuyingServerComposition(server, "AdBuying");
 server.start();
+
+// elsewhere ...
+class AdvertisingBuyingServerComposition extends Tiny.ServerComposition {
+  public AdvertisingBuyingServerComposition(Tiny.WebServer webServer, String rootPath) {
+    super(webServer, rootPath); {{
+      path(rootPath, () -> {
+        // If you are using rootPath in the constructor, you MUST have a path(rootPath, () - {...});
+        // other paths, endPoints, filters, webSockets
+      });
+    }};
+  }
+}
 ```
 
 ## Testing your web app
