@@ -734,13 +734,16 @@ public class Tiny {
 
     public static class ServerComposition implements WebServerContext {
         private final WebServerContext server;
+        protected final String rootPath;
 
         public ServerComposition(WebServer server) {
             this.server = server;
+            this.rootPath = null;
         }
 
         public ServerComposition(WebServer server, String rootPath) {
-            this.server = new WebServerContext()
+            this.server = server;
+            this.rootPath = rootPath;
         }
 
         @Override

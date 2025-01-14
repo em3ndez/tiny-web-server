@@ -2,6 +2,7 @@ package tests;
 
 import com.paulhammant.tiny.Tiny;
 import org.forgerock.cuppa.Test;
+import org.jetbrains.annotations.NotNull;
 
 import static com.paulhammant.tiny.Tiny.FilterAction.CONTINUE;
 import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
@@ -67,7 +68,7 @@ public class AdvancedServerCompositionTests {
                     });
                 }};
             });
-            it("The it can't get around prior path reservation", () -> {
+            it("The it can't get around prior path reservation the inline way", () -> {
                 try {
                     new Tiny.ServerComposition(webServer) {{
                         path("/advertising", () -> {
@@ -90,27 +91,31 @@ public class AdvancedServerCompositionTests {
                 webServer = null;
             });
         });
-        describe("When additional additional composition can happen", () -> {
-            before(() -> {
+        describe("When additional additional composition can happen with a composition that specifies a path", () -> {
+            beforeEach(() -> {
                 webServer = new Tiny.WebServer(Tiny.Config.create().withHostAndWebPort("localhost", 8080).withWebSocketPort(8081)) {{
                     endPoint(GET, "/foo", (req, res, ctx) -> {
                         res.write("Hello1");
                     });
                 }};
                 new Tiny.ServerComposition(webServer, "/advertising") {{
-                    path("/selling", () -> {
-                        endPoint(GET, ".*", (req, res, ctx) -> {
-                            res.write("Hello");
+                    path(rootPath, () -> {
+                        path("/selling", () -> {
+                            endPoint(GET, ".*", (req, res, ctx) -> {
+                                res.write("Hello");
+                            });
                         });
                     });
                 }};
             });
-            it("The it can't get around prior path reservation", () -> {
+            it("Then it can't get around prior path reservation", () -> {
                 try {
-                    new Tiny.ServerComposition(webServer, "/advertising") {{
-                        path("/buying", () -> {
-                            endPoint(GET, ".*", (req, res, ctx) -> {
-                                res.write("Hello");
+                    new Tiny.ServerComposition(webServer) {{
+                        path("/advertising", () -> {
+                            path("/buying", () -> {
+                                endPoint(GET, ".*", (req, res, ctx) -> {
+                                    res.write("Hello");
+                                });
                             });
                         });
 
@@ -122,7 +127,45 @@ public class AdvancedServerCompositionTests {
                 }
 
             });
-            after(() -> {
+            it("Then it can't get around prior path reservation via composition class that specifies a rootPath", () -> {
+                try {
+                    new Tiny.ServerComposition(webServer, "/advertising") {{
+                        path(rootPath, () -> {
+                            // If you are using rootPath in the constructor, you MUST have a path(rootPath, () - {...});
+                            path("/buying", () -> {
+                                endPoint(GET, ".*", (req, res, ctx) -> {
+                                    res.write("Hello");
+                                });
+                            });
+                        });
+                    }};
+                    webServer.start();
+                    throw new AssertionError("should never get here");
+                } catch (IllegalStateException e) {
+                    assertThat(e.getMessage(), equalTo("Path already registered: /advertising"));
+                }
+
+            });
+            it("Then it can't get around prior path reservation via concrete composition class", () -> {
+                try {
+                    new AdBuyingServerComposition(webServer,"/advertising");
+                    webServer.start();
+                    throw new AssertionError("should never get here");
+                } catch (IllegalStateException e) {
+                    assertThat(e.getMessage(), equalTo("Path already registered: /advertising"));
+                }
+
+            });
+            it("Then it can have a concrete composition class with a different rootPath", () -> {
+                new AdBuyingServerComposition(webServer,"/ads");
+                webServer.start();
+                try (okhttp3.Response response = httpGet("/ads/buying")) {
+                    assertThat(response.code(), equalTo(200));
+                    assertThat(response.body().string(),
+                            equalTo("Hello from AdBuyingServerComposition"));
+                }
+            });
+            afterEach(() -> {
                 webServer.stop();
                 webServer = null;
             });
@@ -222,5 +265,20 @@ public class AdvancedServerCompositionTests {
                 webServer = null;
             });
         });
+    }
+
+    private static class AdBuyingServerComposition extends Tiny.ServerComposition {
+        public AdBuyingServerComposition(Tiny.WebServer webServer, String rootPath) {
+            super(webServer, rootPath); {{
+                path(rootPath, () -> {
+                    // If you are using rootPath in the constructor, you MUST have a path(rootPath, () - {...});
+                    path("/buying", () -> {
+                        endPoint(GET, ".*", (req, res, ctx) -> {
+                            res.write("Hello from AdBuyingServerComposition");
+                        });
+                    });
+                });
+            }};
+        }
     }
 }
