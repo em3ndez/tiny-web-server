@@ -161,7 +161,6 @@ public class SecurityManagerCompositionTests {
                     String body = response.body().string();
                     boolean runFromTestSuite = Arrays.stream(Thread.currentThread().getStackTrace())
                             .anyMatch(element -> element.toString().contains("tests.Suite.main"));
-                    System.out.println("run from test suite: " + runFromTestSuite);
                     if (runFromTestSuite) {
                         assertThat(body, equalTo("Hello Two - https://httpbin.org/get returned json"));
                     } else {
