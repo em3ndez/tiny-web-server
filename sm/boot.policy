@@ -1,0 +1,17 @@
+// boot.policy
+
+// Tiny.* is in here.
+grant codeBase "file:./target/classes/-" {
+    permission java.security.AllPermission;
+};
+
+// tests for Tiny are in here (not ServerCompositionOne nor ServerCompositionTwo though)
+grant codeBase "file:./target/test-classes/-" {
+    permission java.security.AllPermission;
+};
+
+// Cuppa, OkHttp, Selenium and more are in here.
+grant codeBase "file:./test_libs/-" {
+    permission java.security.AllPermission;
+};
+

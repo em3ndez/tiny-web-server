@@ -31,14 +31,13 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -1439,6 +1438,67 @@ public class Tiny {
      * Miscellaneous
      * ==========================
      */
+
+    public static class ClassLoader {
+
+        private final java.lang.ClassLoader parent;
+        private URLClassLoader loader;
+        private final Permissions permissions = new Permissions();
+        private URL[] urls;
+
+        public ClassLoader(java.lang.ClassLoader parent, String... jars) {
+            this.parent = parent;
+            urls = toURLs(jars);
+        }
+
+        private URL[] toURLs(String[] jarFiles) {
+            return Arrays.stream(jarFiles)
+                    .map(Tiny.ClassLoader::toURL)
+                    .toArray(URL[]::new);
+        }
+
+        private static URL toURL(String path) {
+            try {
+                return new File(path).toURI().toURL();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public Tiny.ClassLoader withPermissions(Permission... permissions) {
+            for (Permission permission : permissions) {
+                this.permissions.add(permission);
+            }
+            makeChildLoaderIfNotDone();
+            return this;
+        }
+
+        private void makeChildLoaderIfNotDone() {
+            if (loader == null) {
+                loader = new URLClassLoader(urls, parent) {
+                    public PermissionCollection getPermissions(CodeSource codeSource) {
+                        System.out.println(">GET perms ...");
+
+                        permissions.elementsAsStream().forEach(perm -> {
+                            System.out.println("Permission: " + perm);
+                        });
+                        return ClassLoader.this.permissions;
+                    }
+                };
+            }
+        }
+
+        public void withComposition(WebServer server, String rootPath, String compositionClassName) {
+            makeChildLoaderIfNotDone();
+            try {
+                ((Class) loader.loadClass(compositionClassName))
+                        .getDeclaredConstructor(WebServer.class, String.class).newInstance(server, rootPath);
+            } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
+                     InvocationTargetException e) {
+                throw new RuntimeException(e); //TODO
+            }
+        }
+    }
 
     public static class DependencyException extends RuntimeException {
         public final Class clazz;
