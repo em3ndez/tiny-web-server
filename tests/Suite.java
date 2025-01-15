@@ -55,7 +55,7 @@ public class Suite {
                 SeleniumTests.class,
                 PathRegistrationTests.class,
                 RequestStatsTests.class,
-                AdvancedServerCompositionTests.class,
+                SecurityManagerCompositionTests.class,
                 ServerSideEventsTests.class,
                 StaticFilesTests.class,
                 WebServerTests.class,

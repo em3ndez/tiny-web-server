@@ -1,0 +1,46 @@
+package smtests1;
+
+import com.paulhammant.tiny.Tiny;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
+
+public class ServerCompositionOne extends Tiny.ServerComposition {
+    public ServerCompositionOne(com.paulhammant.tiny.Tiny.WebServer webServer, String rootPath) {
+        super(webServer, rootPath); {{
+            path(rootPath, () -> {
+                System.out.println("ROOTPATH ONE 1: " + rootPath);
+                path("/ONE", () -> {
+                    System.out.println("ROOTPATH ONE 2: " + rootPath);
+                    endPoint(GET, ".*", (req, res, ctx) -> {
+
+                        HttpClient client = HttpClient.newHttpClient();
+                        HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://httpbin.org/get"))
+                                .header("Accept", "application/json").GET().build();
+                        try {
+                            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                            if (response.statusCode() == 200) {
+                                if (response.body().startsWith("{")) {
+                                    res.write("Hello One - https://httpbin.org/get returned json");
+                                } else {
+                                    res.write("Hello One - https://httpbin.org/get did not return json");
+                                }
+                            } else {
+                                res.write("Hello One - https://httpbin.org/get not not respond with 200");
+                            }
+                        } catch (IOException | InterruptedException | SecurityException e) {
+                            res.write("Hello One - exception: " + e.getMessage());
+                        }
+                    });
+                });
+            });
+        }};
+    }
+}
+

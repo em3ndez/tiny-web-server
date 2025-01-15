@@ -157,7 +157,7 @@ public class AdvancedServerCompositionTests {
 
             });
             it("Then it can have a concrete composition class with a different rootPath", () -> {
-                new AdBuyingServerComposition(webServer,"/ads");
+                new AdBuyingServerComposition(webServer,"/ads"); // within there's a /buying path
                 webServer.start();
                 try (okhttp3.Response response = httpGet("/ads/buying")) {
                     assertThat(response.code(), equalTo(200));

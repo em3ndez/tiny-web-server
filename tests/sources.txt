@@ -10,6 +10,7 @@ tests/ExampleDotComDemo.java
 tests/FilterTests.java
 tests/PathRegistrationTests.java
 tests/RequestStatsTests.java
+tests/SecurityManagerCompositionTests.java
 tests/SeleniumTests.java
 tests/ServerSideEventsTests.java
 tests/SSEPerformanceTest.java
