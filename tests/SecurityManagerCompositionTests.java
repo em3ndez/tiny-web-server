@@ -8,6 +8,7 @@ import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.reporters.DefaultReporter;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.SocketPermission;
 import java.util.List;
