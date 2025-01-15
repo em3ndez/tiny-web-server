@@ -166,8 +166,8 @@ public class SecurityManagerCompositionTests {
                         assertThat(body, equalTo("Hello Two - https://httpbin.org/get returned json"));
                     } else {
                         throw new AssertionError("should experience effects of security manager: " + body);
+                        //TODO: asserThat(..) yet to do
                     }
-
                 }
             });
             after(() -> {
