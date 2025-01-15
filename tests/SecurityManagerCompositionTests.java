@@ -10,6 +10,7 @@ import org.forgerock.cuppa.reporters.DefaultReporter;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.SocketPermission;
+import java.util.List;
 import java.net.URLPermission;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,108 +32,8 @@ public class SecurityManagerCompositionTests {
         only().describe("When additional composition can happen on a previously instantiated Tiny.WebServer", () -> {
             before(() -> {
 
-                try {
-
-                    Path tempDir = Files.createTempDirectory("my-compile-temp-");
-
-                    Path originalFooFile = Paths.get("tests", "ServerCompositionOne.foo");
-                    Path tempJavaFile = tempDir.resolve("ServerCompositionOne.java");
-                    Files.copy(originalFooFile, tempJavaFile, StandardCopyOption.REPLACE_EXISTING);
-
-
-
-                    // 1) Compile .foo to .class
-                    String[] javacCmd = new String[] {
-                            "javac",
-                            "-cp", Tiny.class.getProtectionDomain().getCodeSource().getLocation().toString(),
-                            "-d", "target/ServerCompositionOne_classes",
-                            tempJavaFile.toAbsolutePath().toString()
-                    };
-                    Process javacProcess = Runtime.getRuntime().exec(javacCmd);
-
-                    // Read and print errors from the compiler
-                    try (BufferedReader errorReader =
-                                 new BufferedReader(new InputStreamReader(javacProcess.getErrorStream()))) {
-                        String line;
-                        while ((line = errorReader.readLine()) != null) {
-                            System.err.println(line); // Print javac errors to standard error
-                        }
-                    }
-
-                    int javacExitCode = javacProcess.waitFor();
-                    if (javacExitCode != 0) {
-                        throw new RuntimeException("javac failed with exit code " + javacExitCode);
-                    }
-
-                    // 2) Create the jar containing only tests/ServerCompositionTwo.class
-                    String[] jarCmd = new String[] {
-                            "jar",
-                            "cf",                       // create file
-                            "target/hello1.jar",    // jar output
-                            "-C", "target/ServerCompositionOne_classes",     // change to target/classes
-                            "smtests1/ServerCompositionOne.class"  // only package up this .class
-                    };
-                    Process jarProcess = Runtime.getRuntime().exec(jarCmd);
-                    int jarExitCode = jarProcess.waitFor();
-                    if (jarExitCode != 0) {
-                        throw new RuntimeException("jar creation failed with exit code " + jarExitCode);
-                    }
-
-                    System.out.println("Successfully compiled and packaged ServerCompositionOne into target/hello1.jar");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                try {
-
-                    Path tempDir = Files.createTempDirectory("my-compile-temp-2");
-
-                    Path originalFooFile = Paths.get("tests", "ServerCompositionTwo.foo");
-                    Path tempJavaFile = tempDir.resolve("ServerCompositionTwo.java");
-                    Files.copy(originalFooFile, tempJavaFile, StandardCopyOption.REPLACE_EXISTING);
-
-
-                    // 1) Compile .foo to .class
-                    String[] javacCmd = new String[] {
-                            "javac",
-                            "-cp", Tiny.class.getProtectionDomain().getCodeSource().getLocation().toString(),
-                            "-d", "target/ServerCompositionTwo_classes",
-                            tempJavaFile.toAbsolutePath().toString()
-                    };
-                    Process javacProcess = Runtime.getRuntime().exec(javacCmd);
-
-                    // Read and print errors from the compiler
-                    try (BufferedReader errorReader =
-                                 new BufferedReader(new InputStreamReader(javacProcess.getErrorStream()))) {
-                        String line;
-                        while ((line = errorReader.readLine()) != null) {
-                            System.err.println(line); // Print javac errors to standard error
-                        }
-                    }
-
-                    int javacExitCode = javacProcess.waitFor();
-                    if (javacExitCode != 0) {
-                        throw new RuntimeException("javac failed with exit code " + javacExitCode);
-                    }
-
-                    // 2) Create the jar containing only tests/ServerCompositionTwo.class
-                    String[] jarCmd = new String[] {
-                            "jar",
-                            "cf",                       // create file
-                            "target/hello2.jar",    // jar output
-                            "-C", "target/ServerCompositionTwo_classes",     // change to target/classes
-                            "smtests2/ServerCompositionTwo.class"  // only package up this .class
-                    };
-                    Process jarProcess = Runtime.getRuntime().exec(jarCmd);
-                    int jarExitCode = jarProcess.waitFor();
-                    if (jarExitCode != 0) {
-                        throw new RuntimeException("jar creation failed with exit code " + jarExitCode);
-                    }
-
-                    System.out.println("Successfully compiled and packaged ServerCompositionTwo into targetib/hello2.jar");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                compileAndPackage("ServerCompositionOne", "smtests1/ServerCompositionOne.class", "target/hello1.jar");
+                compileAndPackage("ServerCompositionTwo", "smtests2/ServerCompositionTwo.class", "target/hello2.jar");
 
 
                 System.err.println(">>>" + Tiny.class.getProtectionDomain().getCodeSource().getLocation());
@@ -174,6 +75,60 @@ public class SecurityManagerCompositionTests {
                 webServer = null;
             });
         });
+    }
+
+    private void compileAndPackage(String fileName, String classPath, String jarOutput) {
+        try {
+            Path tempDir = Files.createTempDirectory("my-compile-temp-" + fileName);
+
+            Path originalFooFile = Paths.get("tests", fileName + ".foo");
+            Path tempJavaFile = tempDir.resolve(fileName + ".java");
+            Files.copy(originalFooFile, tempJavaFile, StandardCopyOption.REPLACE_EXISTING);
+
+            compileJavaFile(tempJavaFile, "target/" + fileName + "_classes");
+            createJarFile("target/" + fileName + "_classes", classPath, jarOutput);
+
+            System.out.println("Successfully compiled and packaged " + fileName + " into " + jarOutput);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void compileJavaFile(Path javaFile, String outputDir) throws IOException, InterruptedException {
+        String[] javacCmd = new String[]{
+                "javac",
+                "-cp", Tiny.class.getProtectionDomain().getCodeSource().getLocation().toString(),
+                "-d", outputDir,
+                javaFile.toAbsolutePath().toString()
+        };
+        executeCommand(javacCmd, "javac");
+    }
+
+    private void createJarFile(String classesDir, String classPath, String jarOutput) throws IOException, InterruptedException {
+        String[] jarCmd = new String[]{
+                "jar",
+                "cf",
+                jarOutput,
+                "-C", classesDir,
+                classPath
+        };
+        executeCommand(jarCmd, "jar");
+    }
+
+    private void executeCommand(String[] command, String commandName) throws IOException, InterruptedException {
+        Process process = Runtime.getRuntime().exec(command);
+
+        try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+            String line;
+            while ((line = errorReader.readLine()) != null) {
+                System.err.println(line);
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException(commandName + " failed with exit code " + exitCode);
+        }
     }
 
     public static void main(String[] args) {
