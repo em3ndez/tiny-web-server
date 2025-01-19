@@ -13,9 +13,7 @@ import static com.paulhammant.tiny.Tiny.HttpMethods.GET;
 public class ServerCompositionTwo extends Tiny.ServerComposition {
     public ServerCompositionTwo(Tiny.WebServer webServer, String rootPath) {
         super(webServer, rootPath); {{
-            System.out.println("ROOTPATH TWO 1: " + rootPath);
             path(rootPath, () -> {
-                System.out.println("ROOTPATH TWO 2: " + rootPath);
                 path("/TWO", () -> {
                     endPoint(GET, ".*", (req, res, ctx) -> {
                         HttpClient client = HttpClient.newHttpClient();

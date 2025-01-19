@@ -1441,13 +1441,11 @@ public class Tiny {
 
     public static class ClassLoader {
 
-        private final java.lang.ClassLoader parent;
         private URLClassLoader loader;
-        private final Permissions permissions = new Permissions();
+        private final PermissionCollection permissions = new Permissions();
         private URL[] urls;
 
-        public ClassLoader(java.lang.ClassLoader parent, String... jars) {
-            this.parent = parent;
+        public ClassLoader(String... jars) {
             urls = toURLs(jars);
         }
 
@@ -1466,8 +1464,12 @@ public class Tiny {
         }
 
         public Tiny.ClassLoader withPermissions(Permission... permissions) {
+            if (loader != null) {
+                throw new IllegalStateException("CustomPermissionsURLClassLoader has already been initialized: Call withPermissions(..) zero or once, then withComposition(..)");
+            }
             for (Permission permission : permissions) {
                 this.permissions.add(permission);
+                System.out.println("permission added: " + permission);
             }
             makeChildLoaderIfNotDone();
             return this;
@@ -1475,29 +1477,42 @@ public class Tiny {
 
         private void makeChildLoaderIfNotDone() {
             if (loader == null) {
-                loader = new URLClassLoader(urls, parent) {
-                    public PermissionCollection getPermissions(CodeSource codeSource) {
-                        System.out.println(">GET perms ...");
-
-                        permissions.elementsAsStream().forEach(perm -> {
-                            System.out.println("Permission: " + perm);
-                        });
-                        return ClassLoader.this.permissions;
-                    }
-                };
+                loader = new CustomPermissionsURLClassLoader(urls, permissions);
             }
         }
 
         public void withComposition(WebServer server, String rootPath, String compositionClassName) {
             makeChildLoaderIfNotDone();
             try {
-                ((Class) loader.loadClass(compositionClassName))
-                        .getDeclaredConstructor(WebServer.class, String.class).newInstance(server, rootPath);
+                Class aClass = loader.loadClass(compositionClassName);
+                aClass.getDeclaredConstructor(WebServer.class, String.class).newInstance(server, rootPath);
+                System.out.println("composition class added: " + aClass);
+                System.out.println("composition class from: " + aClass.getProtectionDomain().getCodeSource().getLocation());
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
                      InvocationTargetException e) {
                 throw new RuntimeException(e); //TODO
             }
         }
+    }
+
+    public static class CustomPermissionsURLClassLoader extends URLClassLoader {
+
+        private final PermissionCollection permissions;
+
+        public CustomPermissionsURLClassLoader(URL[] urls, PermissionCollection permissions) {
+            super(urls);
+            this.permissions = permissions;
+        }
+        @Override
+        public PermissionCollection getPermissions(CodeSource codeSource) {
+            System.out.println(">GET perms ... " + codeSource.getLocation() + " " + System.identityHashCode(permissions));
+
+            permissions.elementsAsStream().forEach(perm -> {
+                System.out.println("Permission: " + perm);
+            });
+            return this.permissions;
+        }
+
     }
 
     public static class DependencyException extends RuntimeException {

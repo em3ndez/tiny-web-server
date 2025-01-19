@@ -28,48 +28,60 @@ import static tests.Suite.httpGet;
 @Test
 public class SecurityManagerCompositionTests {
     Tiny.WebServer webServer;
+    boolean runFromTestSuite;
 
     {
+
+        runFromTestSuite = Arrays.stream(Thread.currentThread().getStackTrace())
+                .anyMatch(element -> element.toString().contains("tests.Suite.main"));
+
         only().describe("When additional composition can happen on a previously instantiated Tiny.WebServer", () -> {
             before(() -> {
 
+                // compile ServerCompositionOne into hello1.jar
                 compileAndPackage("ServerCompositionOne", "smtests1/ServerCompositionOne.class", "target/hello1.jar");
+                // compile ServerCompositionTwo into hello2.jar
                 compileAndPackage("ServerCompositionTwo", "smtests2/ServerCompositionTwo.class", "target/hello2.jar");
-
 
                 System.err.println(">>>" + Tiny.class.getProtectionDomain().getCodeSource().getLocation());
 
                 webServer = new Tiny.WebServer(Tiny.Config.create()
                         .withHostAndWebPort("localhost", 8080));
 
-                new Tiny.ClassLoader(SecurityManagerCompositionTests.class.getClassLoader(), "target/hello1.jar")
-                        .withPermissions(new SocketPermission("httpbin.org:443", "connect"),
-                                new URLPermission("https://httpbin.org/get", "GET:Accept"),
-                                new SocketPermission("httpbin.org:443", "resolve"))
+                new Tiny.ClassLoader("target/hello1.jar")
                         .withComposition(webServer, "/one", "smtests1.ServerCompositionOne");
 
-                new Tiny.ClassLoader(SecurityManagerCompositionTests.class.getClassLoader(), "target/hello2.jar")
+                new Tiny.ClassLoader("target/hello2.jar")
+                        .withPermissions(new URLPermission("https://httpbin.org/get", "GET:Accept"))
                         .withComposition(webServer, "/two", "smtests2.ServerCompositionTwo");
 
                 webServer.start();
 
             });
-            it("Then both endpoints should be accessible via GET", () -> {
-                bodyAndResponseCodeShouldBe(httpGet("/one/ONE"),
-                        "Hello One - https://httpbin.org/get returned json", 200);
-                Response response = httpGet("/two/TWO");
-                try (response) {
-                    assertThat(response.code(), equalTo(200));
-                    String body = response.body().string();
-                    boolean runFromTestSuite = Arrays.stream(Thread.currentThread().getStackTrace())
-                            .anyMatch(element -> element.toString().contains("tests.Suite.main"));
+            it("Then /one/ONE endpoint (doing its own http-get) should" + (runFromTestSuite ? " ": " not ") + "be accessible via GET as expected without " + (runFromTestSuite ? "a security manager": "an explicit grant form its security manager"), () -> {
+
+                Response response1 = httpGet("/one/ONE");
+                try (response1) {
+                    assertThat(response1.code(), equalTo(200));
+                    String body = response1.body().string();
                     if (runFromTestSuite) {
-                        assertThat(body, equalTo("Hello Two - https://httpbin.org/get returned json"));
+                        assertThat(body, equalTo("Hello One - https://httpbin.org/get returned json")); // No Security Manager setup
                     } else {
-                        throw new AssertionError("should experience effects of security manager: " + body);
-                        //TODO: asserThat(..) yet to do
+                        // with Security Manager in place, this should have a SecurityException which should be reflected on the GET response
+                        assertThat(body, equalTo("Hello One - exception: access denied (\"java.net.URLPermission\" \"https://httpbin.org/get\" \"GET:Accept\")"));
                     }
                 }
+
+            });
+            it("Then /two/TWO endpoint (doing its own http-get) should be accessible via GET as expected " + (runFromTestSuite ? "without a security manager ": "if a security manager explicitly grants permission"), () -> {
+
+                Response response2 = httpGet("/two/TWO");
+                try (response2) {
+                    assertThat(response2.code(), equalTo(200));
+                    String body = response2.body().string();
+                    assertThat(body, equalTo("Hello Two - https://httpbin.org/get returned json")); // No Security Manager setup
+                }
+
             });
             after(() -> {
                 webServer.stop();
@@ -96,27 +108,15 @@ public class SecurityManagerCompositionTests {
     }
 
     private void compileJavaFile(Path javaFile, String outputDir) throws IOException, InterruptedException {
-        String[] javacCmd = new String[]{
-                "javac",
-                "-cp", Tiny.class.getProtectionDomain().getCodeSource().getLocation().toString(),
-                "-d", outputDir,
-                javaFile.toAbsolutePath().toString()
-        };
-        executeCommand(javacCmd, "javac");
+        executeCommand("javac", "-cp", Tiny.class.getProtectionDomain().getCodeSource().getLocation().toString(),
+                  "-d", outputDir, javaFile.toAbsolutePath().toString());
     }
 
     private void createJarFile(String classesDir, String classPath, String jarOutput) throws IOException, InterruptedException {
-        String[] jarCmd = new String[]{
-                "jar",
-                "cf",
-                jarOutput,
-                "-C", classesDir,
-                classPath
-        };
-        executeCommand(jarCmd, "jar");
+        executeCommand("jar", "cf", jarOutput, "-C", classesDir, classPath);
     }
 
-    private void executeCommand(String[] command, String commandName) throws IOException, InterruptedException {
+    private void executeCommand(String... command) throws IOException, InterruptedException {
         Process process = Runtime.getRuntime().exec(command);
 
         try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
@@ -128,7 +128,7 @@ public class SecurityManagerCompositionTests {
 
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            throw new RuntimeException(commandName + " failed with exit code " + exitCode);
+            throw new RuntimeException(command[0] + " failed with exit code " + exitCode);
         }
     }
 

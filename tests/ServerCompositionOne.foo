@@ -14,9 +14,7 @@ public class ServerCompositionOne extends Tiny.ServerComposition {
     public ServerCompositionOne(com.paulhammant.tiny.Tiny.WebServer webServer, String rootPath) {
         super(webServer, rootPath); {{
             path(rootPath, () -> {
-                System.out.println("ROOTPATH ONE 1: " + rootPath);
                 path("/ONE", () -> {
-                    System.out.println("ROOTPATH ONE 2: " + rootPath);
                     endPoint(GET, ".*", (req, res, ctx) -> {
 
                         HttpClient client = HttpClient.newHttpClient();
