@@ -1471,7 +1471,6 @@ public class Tiny {
                 this.permissions.add(permission);
                 System.out.println("permission added: " + permission);
             }
-            makeChildLoaderIfNotDone();
             return this;
         }
 
@@ -1484,10 +1483,12 @@ public class Tiny {
         public void withComposition(WebServer server, String rootPath, String compositionClassName) {
             makeChildLoaderIfNotDone();
             try {
-                Class aClass = loader.loadClass(compositionClassName);
-                aClass.getDeclaredConstructor(WebServer.class, String.class).newInstance(server, rootPath);
-                System.out.println("composition class added: " + aClass);
-                System.out.println("composition class from: " + aClass.getProtectionDomain().getCodeSource().getLocation());
+                Class<? extends ServerComposition> compositionClass = (Class<? extends ServerComposition>) loader.loadClass(compositionClassName);
+                compositionClass.getDeclaredConstructor(WebServer.class, String.class).newInstance(server, rootPath);
+                System.out.println("composition class added: " + compositionClass);
+                System.out.println("composition class from: " + compositionClass.getProtectionDomain().getCodeSource().getLocation());
+                System.out.println("composition class parent cl " +compositionClass.getClassLoader().getParent());
+
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
                      InvocationTargetException e) {
                 throw new RuntimeException(e); //TODO
@@ -1503,13 +1504,10 @@ public class Tiny {
             super(urls);
             this.permissions = permissions;
         }
+
         @Override
         public PermissionCollection getPermissions(CodeSource codeSource) {
-            System.out.println(">GET perms ... " + codeSource.getLocation() + " " + System.identityHashCode(permissions));
-
-            permissions.elementsAsStream().forEach(perm -> {
-                System.out.println("Permission: " + perm);
-            });
+            System.out.println(">GET perms ... " + codeSource.getLocation() + " " + permissions);
             return this.permissions;
         }
 

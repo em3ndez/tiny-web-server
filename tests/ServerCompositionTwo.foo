@@ -15,7 +15,7 @@ public class ServerCompositionTwo extends Tiny.ServerComposition {
         super(webServer, rootPath); {{
             path(rootPath, () -> {
                 path("/TWO", () -> {
-                    endPoint(GET, ".*", (req, res, ctx) -> {
+                    endPoint(GET, "/2", (req, res, ctx) -> {
                         HttpClient client = HttpClient.newHttpClient();
                         HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://httpbin.org/get"))
                                 .header("Accept", "application/json").GET().build();
@@ -24,15 +24,15 @@ public class ServerCompositionTwo extends Tiny.ServerComposition {
 
                             if (response.statusCode() == 200) {
                                 if (response.body().startsWith("{")) {
-                                    res.write("Hello Two - https://httpbin.org/get returned json");
+                                    res.write("Hello /two/TWO/2 - https://httpbin.org/get returned json");
                                 } else {
-                                    res.write("Hello Two - https://httpbin.org/get did not return json");
+                                    res.write("Hello /two/TWO/2 - https://httpbin.org/get did not return json");
                                 }
                             } else {
-                                res.write("Hello Two - https://httpbin.org/get not not respond with 200");
+                                res.write("Hello /two/TWO/2 - https://httpbin.org/get not not respond with 200");
                             }
                         } catch (IOException | InterruptedException | SecurityException e) {
-                            res.write("Hello Two - exception: " + e.getMessage());
+                            res.write("Hello /two/TWO/2 - exception: " + e.getMessage());
                         }
                     });
                 });

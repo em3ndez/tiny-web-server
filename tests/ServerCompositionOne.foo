@@ -15,7 +15,7 @@ public class ServerCompositionOne extends Tiny.ServerComposition {
         super(webServer, rootPath); {{
             path(rootPath, () -> {
                 path("/ONE", () -> {
-                    endPoint(GET, ".*", (req, res, ctx) -> {
+                    endPoint(GET, "/1", (req, res, ctx) -> {
 
                         HttpClient client = HttpClient.newHttpClient();
                         HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://httpbin.org/get"))
@@ -25,15 +25,15 @@ public class ServerCompositionOne extends Tiny.ServerComposition {
 
                             if (response.statusCode() == 200) {
                                 if (response.body().startsWith("{")) {
-                                    res.write("Hello One - https://httpbin.org/get returned json");
+                                    res.write("Hello /one/ONE/1 - https://httpbin.org/get returned json ");
                                 } else {
-                                    res.write("Hello One - https://httpbin.org/get did not return json");
+                                    res.write("Hello /one/ONE/1 - https://httpbin.org/get did not return json");
                                 }
                             } else {
-                                res.write("Hello One - https://httpbin.org/get not not respond with 200");
+                                res.write("Hello /one/ONE/1 - https://httpbin.org/get not not respond with 200");
                             }
                         } catch (IOException | InterruptedException | SecurityException e) {
-                            res.write("Hello One - exception: " + e.getMessage());
+                            res.write("Hello /one/ONE/1 - exception: " + e.getMessage());
                         }
                     });
                 });

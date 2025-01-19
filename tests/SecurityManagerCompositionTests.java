@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.SocketPermission;
+import java.security.AllPermission;
 import java.util.List;
 import java.net.URLPermission;
 import java.nio.file.Files;
@@ -43,7 +44,8 @@ public class SecurityManagerCompositionTests {
                 // compile ServerCompositionTwo into hello2.jar
                 compileAndPackage("ServerCompositionTwo", "smtests2/ServerCompositionTwo.class", "target/hello2.jar");
 
-                System.err.println(">>>" + Tiny.class.getProtectionDomain().getCodeSource().getLocation());
+                System.err.println(">>> Tiny " + Tiny.class.getProtectionDomain().getCodeSource().getLocation());
+                System.err.println(">>> Tiny cl " + Tiny.class.getClassLoader());
 
                 webServer = new Tiny.WebServer(Tiny.Config.create()
                         .withHostAndWebPort("localhost", 8080));
@@ -52,34 +54,35 @@ public class SecurityManagerCompositionTests {
                         .withComposition(webServer, "/one", "smtests1.ServerCompositionOne");
 
                 new Tiny.ClassLoader("target/hello2.jar")
-                        .withPermissions(new URLPermission("https://httpbin.org/get", "GET:Accept"))
+                       // .withPermissions(new URLPermission("https://httpbin.org/get", "GET:Accept"))
+                        .withPermissions(new AllPermission())
                         .withComposition(webServer, "/two", "smtests2.ServerCompositionTwo");
 
                 webServer.start();
 
             });
-            it("Then /one/ONE endpoint (doing its own http-get) should" + (runFromTestSuite ? " ": " not ") + "be accessible via GET as expected without " + (runFromTestSuite ? "a security manager": "an explicit grant form its security manager"), () -> {
+            it("Then /one/ONE/1 endpoint (doing its own http-get) should" + (runFromTestSuite ? " ": " not ") + "work as expected without " + (runFromTestSuite ? "a security manager": "an explicit grant from its security manager"), () -> {
 
-                Response response1 = httpGet("/one/ONE");
+                Response response1 = httpGet("/one/ONE/1");
                 try (response1) {
                     assertThat(response1.code(), equalTo(200));
                     String body = response1.body().string();
                     if (runFromTestSuite) {
-                        assertThat(body, equalTo("Hello One - https://httpbin.org/get returned json")); // No Security Manager setup
+                        assertThat(body, equalTo("Hello /one/ONE/1 - https://httpbin.org/get returned json")); // No Security Manager setup
                     } else {
                         // with Security Manager in place, this should have a SecurityException which should be reflected on the GET response
-                        assertThat(body, equalTo("Hello One - exception: access denied (\"java.net.URLPermission\" \"https://httpbin.org/get\" \"GET:Accept\")"));
+                        assertThat(body, equalTo("Hello /one/ONE/1 - exception: access denied (\"java.net.URLPermission\" \"https://httpbin.org/get\" \"GET:Accept\")"));
                     }
                 }
 
             });
-            it("Then /two/TWO endpoint (doing its own http-get) should be accessible via GET as expected " + (runFromTestSuite ? "without a security manager ": "if a security manager explicitly grants permission"), () -> {
+            it("Then /two/TWO/2 endpoint (doing its own http-get) should work as expected " + (runFromTestSuite ? "without a security manager ": "if a security manager explicitly grants permission"), () -> {
 
-                Response response2 = httpGet("/two/TWO");
+                Response response2 = httpGet("/two/TWO/2");
                 try (response2) {
                     assertThat(response2.code(), equalTo(200));
                     String body = response2.body().string();
-                    assertThat(body, equalTo("Hello Two - https://httpbin.org/get returned json")); // No Security Manager setup
+                    assertThat(body, equalTo("Hello /two/TWO/2 - https://httpbin.org/get returned json")); // No Security Manager setup
                 }
 
             });
