@@ -1442,7 +1442,7 @@ public class Tiny {
     public static class ClassLoader {
 
         private URLClassLoader loader;
-        private final PermissionCollection permissions = new Permissions();
+//        private final PermissionCollection permissions = new Permissions();
         private URL[] urls;
 
         public ClassLoader(String... jars) {
@@ -1463,20 +1463,21 @@ public class Tiny {
             }
         }
 
-        public Tiny.ClassLoader withPermissions(Permission... permissions) {
-            if (loader != null) {
-                throw new IllegalStateException("CustomPermissionsURLClassLoader has already been initialized: Call withPermissions(..) zero or once, then withComposition(..)");
-            }
-            for (Permission permission : permissions) {
-                this.permissions.add(permission);
-                System.out.println("permission added: " + permission);
-            }
-            return this;
-        }
+//        public Tiny.ClassLoader withPermissions(Permission... permissions) {
+//            if (loader != null) {
+//                throw new IllegalStateException("CustomPermissionsURLClassLoader has already been initialized: Call withPermissions(..) zero or once, then withComposition(..)");
+//            }
+//            for (Permission permission : permissions) {
+//                this.permissions.add(permission);
+//                System.out.println("permission added: " + permission);
+//            }
+//            return this;
+//        }
 
         private void makeChildLoaderIfNotDone() {
             if (loader == null) {
-                loader = new CustomPermissionsURLClassLoader(urls, permissions);
+//                loader = new CustomPermissionsURLClassLoader(urls, permissions);
+                loader = new URLClassLoader(urls);
             }
         }
 
@@ -1485,9 +1486,6 @@ public class Tiny {
             try {
                 Class<? extends ServerComposition> compositionClass = (Class<? extends ServerComposition>) loader.loadClass(compositionClassName);
                 compositionClass.getDeclaredConstructor(WebServer.class, String.class).newInstance(server, rootPath);
-                System.out.println("composition class added: " + compositionClass);
-                System.out.println("composition class from: " + compositionClass.getProtectionDomain().getCodeSource().getLocation());
-                System.out.println("composition class parent cl " +compositionClass.getClassLoader().getParent());
 
             } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
                      InvocationTargetException e) {
@@ -1496,22 +1494,21 @@ public class Tiny {
         }
     }
 
-    public static class CustomPermissionsURLClassLoader extends URLClassLoader {
-
-        private final PermissionCollection permissions;
-
-        public CustomPermissionsURLClassLoader(URL[] urls, PermissionCollection permissions) {
-            super(urls);
-            this.permissions = permissions;
-        }
-
-        @Override
-        public PermissionCollection getPermissions(CodeSource codeSource) {
-            System.out.println(">GET perms ... " + codeSource.getLocation() + " " + permissions);
-            return this.permissions;
-        }
-
-    }
+//    public static class CustomPermissionsURLClassLoader extends URLClassLoader {
+//
+//        private final PermissionCollection permissions;
+//
+//        public CustomPermissionsURLClassLoader(URL[] urls, PermissionCollection permissions) {
+//            super(urls);
+//            this.permissions = permissions;
+//        }
+//
+//        @Override
+//        public PermissionCollection getPermissions(CodeSource codeSource) {
+//            return this.permissions;
+//        }
+//
+//    }
 
     public static class DependencyException extends RuntimeException {
         public final Class clazz;

@@ -36,16 +36,13 @@ public class SecurityManagerCompositionTests {
         runFromTestSuite = Arrays.stream(Thread.currentThread().getStackTrace())
                 .anyMatch(element -> element.toString().contains("tests.Suite.main"));
 
-        only().describe("When additional composition can happen on a previously instantiated Tiny.WebServer", () -> {
+        describe("When additional composition can happen on a previously instantiated Tiny.WebServer", () -> {
             before(() -> {
 
                 // compile ServerCompositionOne into hello1.jar
                 compileAndPackage("ServerCompositionOne", "smtests1/ServerCompositionOne.class", "target/hello1.jar");
                 // compile ServerCompositionTwo into hello2.jar
                 compileAndPackage("ServerCompositionTwo", "smtests2/ServerCompositionTwo.class", "target/hello2.jar");
-
-                System.err.println(">>> Tiny " + Tiny.class.getProtectionDomain().getCodeSource().getLocation());
-                System.err.println(">>> Tiny cl " + Tiny.class.getClassLoader());
 
                 webServer = new Tiny.WebServer(Tiny.Config.create()
                         .withHostAndWebPort("localhost", 8080));
@@ -55,7 +52,6 @@ public class SecurityManagerCompositionTests {
 
                 new Tiny.ClassLoader("target/hello2.jar")
                        // .withPermissions(new URLPermission("https://httpbin.org/get", "GET:Accept"))
-                        .withPermissions(new AllPermission())
                         .withComposition(webServer, "/two", "smtests2.ServerCompositionTwo");
 
                 webServer.start();
@@ -68,7 +64,7 @@ public class SecurityManagerCompositionTests {
                     assertThat(response1.code(), equalTo(200));
                     String body = response1.body().string();
                     if (runFromTestSuite) {
-                        assertThat(body, equalTo("Hello /one/ONE/1 - https://httpbin.org/get returned json")); // No Security Manager setup
+                        assertThat(body, equalTo("Hello /one/ONE/1 - https://httpbin.org/get returned json ")); // No Security Manager setup
                     } else {
                         // with Security Manager in place, this should have a SecurityException which should be reflected on the GET response
                         assertThat(body, equalTo("Hello /one/ONE/1 - exception: access denied (\"java.net.URLPermission\" \"https://httpbin.org/get\" \"GET:Accept\")"));
@@ -135,6 +131,34 @@ public class SecurityManagerCompositionTests {
         }
     }
 
+    /*
+      You would run this in conjunction with a SecurityManager setup, boot.sh.
+
+      #!/bin/bash
+      test_libs=$(find ./test_libs -name '*.jar' | tr '\n' ':')
+      cp="${test_libs}target/classes:target/test-classes"
+      java -Djava.security.manager -Djava.security.policy=file:boot.policy -cp ${cp} tests.SecurityManagerCompositionTests
+
+      and boot.policy:
+
+      // Tiny.* is in here.
+      grant codeBase "file:target/classes/-" {
+         permission java.security.AllPermission;
+      };
+      // tests for Tiny are in here (not ServerCompositionOne nor ServerCompositionTwo though)
+      grant codeBase "file:target/test-classes/-" {
+         permission java.security.AllPermission;
+      };
+      // Cuppa, OkHttp, Selenium and more are in here.
+      grant codeBase "file:./test_libs/-" {
+         permission java.security.AllPermission;
+      };
+
+      Except: 1. SecurityManager/policy is going away in JDK 25, and 2. It never worked with virtual threads anyway.
+      To see this work, change newVirtualThreadPerTaskExecutor() for newThreadPerTaskExecutor(..) and uncomment
+      the permissions code
+
+     */
     public static void main(String[] args) {
         Runner runner = new Runner();
         runner.run(runner.defineTests(Arrays.asList(
