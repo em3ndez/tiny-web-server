@@ -33,16 +33,23 @@ public class SecurityManagerCompositionTests {
 
     {
 
-        runFromTestSuite = Arrays.stream(Thread.currentThread().getStackTrace())
-                .anyMatch(element -> element.toString().contains("tests.Suite.main"));
+        //System.out.println(Arrays.toString(Thread.currentThread().getStackTrace()).replace( ',', '\n' ));
+
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        runFromTestSuite = Arrays.stream(stackTrace).anyMatch(e -> e.toString().contains("tests.Suite.main"))
+                       || Arrays.stream(stackTrace).anyMatch(e -> e.toString().contains("org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess"));
 
         describe("When additional composition can happen on a previously instantiated Tiny.WebServer", () -> {
             before(() -> {
 
                 // compile ServerCompositionOne into hello1.jar
-                compileAndPackage("ServerCompositionOne", "smtests1/ServerCompositionOne.class", "target/hello1.jar");
-                // compile ServerCompositionTwo into hello2.jar
-                compileAndPackage("ServerCompositionTwo", "smtests2/ServerCompositionTwo.class", "target/hello2.jar");
+                try {
+                    compileAndPackage("ServerCompositionOne", "smtests1/ServerCompositionOne.class", "target/hello1.jar");
+                    // compile ServerCompositionTwo into hello2.jar
+                    compileAndPackage("ServerCompositionTwo", "smtests2/ServerCompositionTwo.class", "target/hello2.jar");
+                } catch (IOException e) {
+                    throw new AssertionError("Can't build modules for use in child classloader. Can't find java.exe?", e);
+                }
 
                 webServer = new Tiny.WebServer(Tiny.Config.create()
                         .withHostAndWebPort("localhost", 8080));
@@ -83,36 +90,34 @@ public class SecurityManagerCompositionTests {
 
             });
             after(() -> {
-                webServer.stop();
+                if (webServer != null) {
+                    webServer.stop();
+                }
                 webServer = null;
             });
         });
     }
 
-    private void compileAndPackage(String fileName, String classPath, String jarOutput) {
-        try {
-            Path tempDir = Files.createTempDirectory("my-compile-temp-" + fileName);
+    private void compileAndPackage(String fileName, String classPath, String jarOutput) throws IOException, InterruptedException {
+        Path tempDir = Files.createTempDirectory("my-compile-temp-" + fileName);
 
-            Path originalFooFile = Paths.get("tests", fileName + ".foo");
-            Path tempJavaFile = tempDir.resolve(fileName + ".java");
-            Files.copy(originalFooFile, tempJavaFile, StandardCopyOption.REPLACE_EXISTING);
+        Path originalFooFile = Paths.get("src/test/java/tests", fileName + ".foo");
+        Path tempJavaFile = tempDir.resolve(fileName + ".java");
+        Files.copy(originalFooFile, tempJavaFile, StandardCopyOption.REPLACE_EXISTING);
 
-            compileJavaFile(tempJavaFile, "target/" + fileName + "_classes");
-            createJarFile("target/" + fileName + "_classes", classPath, jarOutput);
+        compileJavaFile(tempJavaFile, "target/" + fileName + "_classes");
+        createJarFile("target/" + fileName + "_classes", classPath, jarOutput);
 
-            System.out.println("Successfully compiled and packaged " + fileName + " into " + jarOutput);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        System.out.println("Successfully compiled and packaged " + fileName + " into " + jarOutput);
     }
 
     private void compileJavaFile(Path javaFile, String outputDir) throws IOException, InterruptedException {
-        executeCommand("javac", "-cp", Tiny.class.getProtectionDomain().getCodeSource().getLocation().toString(),
+        executeCommand(System.getProperty("java.home") + "/bin/javac", "-cp", Tiny.class.getProtectionDomain().getCodeSource().getLocation().toString(),
                   "-d", outputDir, javaFile.toAbsolutePath().toString());
     }
 
     private void createJarFile(String classesDir, String classPath, String jarOutput) throws IOException, InterruptedException {
-        executeCommand("jar", "cf", jarOutput, "-C", classesDir, classPath);
+        executeCommand(System.getProperty("java.home") + "/bin/jar", "cf", jarOutput, "-C", classesDir, classPath);
     }
 
     private void executeCommand(String... command) throws IOException, InterruptedException {

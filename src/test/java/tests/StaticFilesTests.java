@@ -53,15 +53,13 @@ public class StaticFilesTests {
 
             });
             it("Then it should return 200 and serve a file from a subdirectory", () -> {
-                // Assuming there's a file at src/test/resources/static/subdir/test.txt
-                try (okhttp3.Response response = httpGet("/static/Tiny.java")) {
+                try (okhttp3.Response response = httpGet("/static/src/main/java/com/paulhammant/tiny/Tiny.java")) {
                     assertThat(response.code(), equalTo(200));
                     assertThat(response.body().contentType().toString(), equalTo("text/x-java"));
                     assertThat(response.body().string(), containsString("class"));
                 }
             });
             it("Then it should return 200 and serve a non-text file", () -> {
-                // Assuming there's a file at src/test/resources/static/subdir/test.txt
                 try (okhttp3.Response response = httpGet("/static/target/classes/com/paulhammant/tiny/Tiny$WebServer.class")) {
                     assertThat(response.code(), equalTo(200));
                     assertThat(response.body().contentType().toString(), equalTo("application/java-vm"));
