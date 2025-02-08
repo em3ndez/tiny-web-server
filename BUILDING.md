@@ -30,6 +30,8 @@ mvn test
 
 This command will compile the test classes, execute the test suite, and display the results.
 
+**Note:** Ensure that `chromedriver.exe` is available in your system's PATH or specify its location in your Selenium setup to run the Selenium tests successfully.
+
 ## Generating Coverage Reports
 
 To generate coverage reports using JaCoCo with Maven, execute:
