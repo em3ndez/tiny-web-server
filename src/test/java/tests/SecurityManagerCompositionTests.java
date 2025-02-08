@@ -144,20 +144,7 @@ public class SecurityManagerCompositionTests {
       cp="${test_libs}target/classes:target/test-classes"
       java -Djava.security.manager -Djava.security.policy=file:boot.policy -cp ${cp} tests.SecurityManagerCompositionTests
 
-      and boot.policy:
-
-      // Tiny.* is in here.
-      grant codeBase "file:target/classes/-" {
-         permission java.security.AllPermission;
-      };
-      // tests for Tiny are in here (not ServerCompositionOne nor ServerCompositionTwo though)
-      grant codeBase "file:target/test-classes/-" {
-         permission java.security.AllPermission;
-      };
-      // Cuppa, OkHttp, Selenium and more are in here.
-      grant codeBase "file:./test_libs/-" {
-         permission java.security.AllPermission;
-      };
+      and boot.policy in src/test/resources
 
       Except: 1. SecurityManager/policy is going away in JDK 25, and 2. It never worked with virtual threads anyway.
       To see this work, change newVirtualThreadPerTaskExecutor() for newThreadPerTaskExecutor(..) and uncomment
