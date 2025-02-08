@@ -12,7 +12,7 @@
 
 ## Building with Maven
 
-To compile the project using Maven, simply run:
+To compile the project using Maven, run:
 
 ```bash
 mvn clean compile
