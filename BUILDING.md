@@ -1,75 +1,44 @@
 # Build and Test of Tiny itself
 
 ## Table of Contents
-- [Compiling Tiny](#compiling-tiny)
-- [Tests](#tests)
-- [Coverage Reports](#coverage-reports)
+- [Building with Maven](#building-with-maven)
+- [Running Tests](#running-tests)
+- [Generating Coverage Reports](#generating-coverage-reports)
 - [Tiny's own test results](#tinys-own-test-results)
 - [Project & Source Repository](#project--source-repository)
 - [Contributions](#contributions)
 - [My Dev Setup](#my-dev-setup)
 - [TODO List](#todo-list)
 
-## Compiling Tiny
+## Building with Maven
 
-To compile `Tiny.java`, simply run:
-
-```bash
-make compile
-```
-
-Or, if you don't have `make` installed, execute the following commands:
+To compile the project using Maven, simply run:
 
 ```bash
-mkdir -p target/classes
-javac -d target/classes Tiny.java
+mvn clean compile
 ```
 
-This will compile the source file into the `target/classes/` directory.  You can use Tiny at this stage.
+This will compile the source files and place the compiled classes in the `target/classes/` directory.
 
-## Tests
+## Running Tests
 
-To compile and run the tests, including downloading necessary dependencies, use:
+To run the tests using Maven, execute:
 
 ```bash
-make tests
+mvn test
 ```
 
-The step that gets the test dependency jars, needs python3 and maven installed, but otherwise make doesn't need either for subsequent build goals.
+This command will compile the test classes, execute the test suite, and display the results.
 
-Or, if you don't have `make` installed, execute the following commands:
+## Generating Coverage Reports
+
+To generate coverage reports using JaCoCo with Maven, execute:
 
 ```bash
-curl -s https://raw.githubusercontent.com/paul-hammant/mvn-dep-getter/refs/heads/main/mvn-dep-getter.py | python3 - org.forgerock.cuppa:cuppa:1.7.0,org.hamcrest:hamcrest:3.0,com.squareup.okhttp3:okhttp:5.0.0-alpha.14,org.mockito:mockito-core:5.14.2,org.seleniumhq.selenium:selenium-java:4.26.0 test_libs
-mkdir -p target/test-classes
-find tests -name "*.java" | sort > tests/sources.txt
-javac -d target/test-classes -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/classes" @tests/sources.txt
-java -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
+mvn jacoco:prepare-agent test jacoco:report
 ```
 
-This command will handle downloading test dependencies, compiling the test classes, and executing the test suite.
-
-## Coverage Reports
-
-To generate coverage reports using JaCoCo, execute:
-
-```bash
-make coverage
-make report
-```
-
-Or, if you don't have `make` installed, execute the following commands:
-
-```bash
-curl -L -o jacocoagent.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.agent/0.8.12/org.jacoco.agent-0.8.12-runtime.jar
-curl -L -o jacococli.jar https://repo1.maven.org/maven2/org/jacoco/org.jacoco.cli/0.8.12/org.jacoco.cli-0.8.12-nodeps.jar
-java -javaagent:jacocoagent.jar=destfile=jacoco.exec -cp "$(find test_libs -name '*.jar' | tr '\n' ':')target/test-classes:target/classes" tests.Suite
-mkdir -p target/srcForJaCoCo/com/paulhammant/tiny/
-cp Tiny.java target/srcForJaCoCo/com/paulhammant/tiny/
-java -jar jacococli.jar report jacoco.exec --classfiles target/classes --sourcefiles target/srcForJaCoCo --html jacoco-report
-```
-
-These commands will instrument the code for coverage, run the tests, and generate an HTML report in the `jacoco-report` directory.
+This will generate an HTML report in the `target/site/jacoco` directory.
 
 ## Tiny's own test results
 
