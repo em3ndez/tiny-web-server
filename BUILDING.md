@@ -32,22 +32,11 @@ This command will compile the test classes, execute the test suite, and display 
 
 **Note:** Ensure that `chromedriver` is available in your system's PATH or specify its location in your Selenium setup to run the Selenium tests successfully.
 
-### Installing ChromeDriver
+**Installing ChromeDriver**
 
-#### Windows
 1. Download the latest version of ChromeDriver from the [ChromeDriver download page](https://sites.google.com/chromium.org/driver/downloads).
 2. Extract the downloaded zip file to a directory of your choice.
-3. Add the directory containing `chromedriver.exe` to your system's PATH environment variable.
-
-#### Linux
-1. Download the latest version of ChromeDriver from the [ChromeDriver download page](https://sites.google.com/chromium.org/driver/downloads).
-2. Extract the downloaded zip file to `/usr/local/bin` or another directory in your PATH.
-3. Ensure the `chromedriver` file has execute permissions: `chmod +x /usr/local/bin/chromedriver`.
-
-#### macOS
-1. Download the latest version of ChromeDriver from the [ChromeDriver download page](https://sites.google.com/chromium.org/driver/downloads).
-2. Extract the downloaded zip file to `/usr/local/bin` or another directory in your PATH.
-3. Ensure the `chromedriver` file has execute permissions: `chmod +x /usr/local/bin/chromedriver`.
+3. Add the directory containing `chromedriver.exe` or `chromedriver` to your system's PATH environment variable.
 
 ## Generating Coverage Reports
 
