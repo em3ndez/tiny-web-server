@@ -1,6 +1,6 @@
 # Tiny WebServer and WebSocketServer
 
-A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `Tiny.java` making 9Kb of classes. 
+A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `Tiny.java` making a 53Kb jar. 
 Just a fun pair-programmed project, really. Imperfectly pair programmed with AIs. It is for use for to make small web/medium applications - perhaps not on the public web.
 
 In a nutshell:
