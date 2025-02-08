@@ -173,13 +173,10 @@ An AI could copy tests into markdown documentation quickly, and repeatably, I gu
 
 The project is organized as follows:
 
-- **`Tiny.java`**: The main source file containing the implementation of the Tiny Webserver and related classes. This "production code" has no dependencies outside the JDK.
-- **`tests/`**: Contains tests for the Tiny web server using the Cuppa framework. Package is different to the Tiny production class in order to not accidentally take advantage of public/package/private visibility mistakes which can't neatly be tested for otherwise.
+- **`src/main/java/com/paulhammant/tiny/Tiny.java`**: The main source file containing the implementation of the Tiny Webserver and related classes. This "production code" has no dependencies outside the JDK.
+- **`src/test/java/tests/`**: Contains tests for the Tiny web server using the Cuppa framework. Package is different to the Tiny production class in order to not accidentally take advantage of public/package/private visibility mistakes which can't neatly be tested for otherwise.
 - **`BUILDING.md`**: This file, providing an overview and documentation of the development of Tiny.
 - **`README.md`**: User-centric overview and documentation of the project.
-- **`test_libs/`**: Directory containing dependencies required for running tests - built by curl scripts in this README
-- **`target/classes/`**: Directory where compiled classes are stored.
-- **`target/test-classes/`**: Directory where compiled test classes are stored.
 
 Notes:
 
@@ -193,7 +190,7 @@ Source file `Tiny.java` has approximately 794 lines of consequential code, via:
 ``` 
 # `cloc` counts lines of code
 # don't count } on their own on a line, or }); or }};  See https://github.com/AlDanial/cloc/issues/865
-cat Tiny.java | sed '/\w*}\w*/d' | sed '/\w*}];\w*/d' | sed '/\w*});\w*/d'| sed '/\w*\/\//d' > tmpfile.java
+cat src/main/java/com/paulhammant/tiny/Tiny.java | sed '/\w*}\w*/d' | sed '/\w*}];\w*/d' | sed '/\w*});\w*/d'| sed '/\w*\/\//d' > tmpfile.java
 cloc tmpfile.java
 rm tmpfile.java
 ```
@@ -208,29 +205,13 @@ Pull requests accepted. If you don't want to grant me copyright, I'll add "Porti
 
 I use Intellij-IDEA to edit this. With [aider.chat/](https://aider.chat/) running from a terminal (either IDEAs own terminal or Ubuntu's)
 
-IDEA doesn't mine that Tiny.java is not in a com/paulhammant/tiny directory tree - it does the right thing at build or run moments (including run tests and breakpoints).  The command-line build fu via make and Makefile also doesn't mind that this does not have a Maven or Gradle directory structure. IDEA will use its own build-artictacts directories (classes and test-classes). Make will use target/classes and target/test-classes as Maven would have done.
-
-Though Tiny does not have dependencies outside the JDK, the tests do - lots. Sadly there's no public directed graph of deps in maven-central, so we one-time use Maven (and Python to go get those deps and place them in a directory that has to be manually added to Intellij-IDEA). I made a tool for that some months ago - https://github.com/paul-hammant/mvn-dep-getter. that curl-pipe script takes list of key deps, invokes maven to download those (and transitive deps) to a named directory:
-
-```bash 
-curl -s https://raw.githubusercontent.com/paul-hammant/mvn-dep-getter/refs/heads/main/mvn-dep-getter.py | python3 - org.forgerock.cuppa:cuppa:1.7.0,org.hamcrest:hamcrest:3.0,com.squareup.okhttp3:okhttp:5.0.0-alpha.14,org.mockito:mockito-core:5.14.2,org.seleniumhq.selenium:selenium-java:4.26.0 test_libs
-```
-
-Just 5 top level deps, in our case.
-
-Or just invoke `make get-test-deps`. 
-
-You would  go into `File->Project_Structure...` menu and click `+` for "New Project Library"
-
-I wish there were a big-ass public graph of deps of Java jars.
+Though Tiny does not have dependencies outside the JDK, the tests do - lots.
 
 # TODO list
 
-1. Properly merge websocket functionality into WebServer
+1. Harden against denial-of-service attacks
+
+2. Work in HTTPS and WSS support rather than just allude to it in a wiki doc
 
 Challenge: reflection access to HttpServer fundamentals may be needed to coax desired functionality 
 out of it, when that's not possible ordinarily. I've made a number of attempt at this, but not succeeded.
-
-2. Harden against denial-of-service attacks
-
-3. Work in HTTPS and WSS support rather than just allude to it in a wiki doc
