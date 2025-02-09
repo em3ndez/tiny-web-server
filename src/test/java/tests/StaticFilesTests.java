@@ -44,7 +44,7 @@ public class StaticFilesTests {
                 try (okhttp3.Response response = httpGet("/static/BUILDING.md")) {
                     assertThat(response.code(), equalTo(200));
                     assertThat(response.body().contentType().toString(), equalTo("text/markdown"));
-                    assertThat(response.body().string(), containsString("## Compiling Tiny"));
+                    assertThat(response.body().string(), containsString("Building with Maven"));
                 }
             });
             it("Then it should return 404 for non-existent files", () -> {
