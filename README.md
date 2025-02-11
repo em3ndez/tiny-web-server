@@ -1,7 +1,7 @@
 # Tiny WebServer and WebSocketServer
 
 A tiny web and socket server that depends only on JDK 21+ classes and are in a single source file: `Tiny.java` making a 53Kb jar. 
-Just a fun pair-programmed project, really. Imperfectly pair programmed with AIs. It is for use for to make small web/medium applications - perhaps not on the public web.
+Just a fun pair-programmed project, really. Imperfectly pair-programmed with AIs. It is for use for to make small web/medium applications - perhaps not on the public web.
 
 In a nutshell:
 
@@ -33,14 +33,17 @@ new Tiny.WebServer(Config.create().withWebPort(8080).withWebSocketPort(8081)) {{
 
 You wouldn't inline those filter/endPoint/webSocket blocks though, you'd call methods.
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-The Tiny.java single source file provides a lightweight and flexible server implementation that supports both HTTP and 
+Longer: The Tiny.java single source file provides a lightweight and flexible server implementation that supports both HTTP and
 WebSocket protocols. This single-source-file technology is designed to be easy to use and integrate into your projects.  
 It uses a Java 8 lambda syntax (@FunctionalInterface) as many newer web frameworks do. It also uses the virtual thread
 system in Java 21 and the JDK's built-in HTTP APIs rather than depending on Netty or Jetty.
+
+
+## License
+
+Tiny.java is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
+
+The tests are GPL
 
 ## Web Server 
 
@@ -86,13 +89,13 @@ webSocket("/foo", (message, sender, context) -> {
 **And a third tier of admittedly gratuitous or pet-peeve wishes**
 
 1. Exist in a single source file .. for no good reason.
-1. A back-to-basics JDK & make build technology (Maven/Gradle not used for day to day bits)
 1. Does not itself pollute stdout or force a logging framework on users.
 4. Have no dependencies at all, outside the JDK
 
 Single source file and no-maven used to be top level goals, but I am willing to admit that there is no strong rationale for those. They are firmly in 
 the "let us see if that is possible" territory.  At one stage there was no build file at all, (just copy-pastable javac, 
-java commands), then there was a shell script, then there was a Makefile, which is where I should have started.
+java commands), then there was a shell script, then there was a Makefile, which is where I should have started, but that's all moot now as there's a 
+regular maven pom.xml
 
 # Table of Contents
 
