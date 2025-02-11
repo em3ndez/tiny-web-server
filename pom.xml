@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.paulhammant</groupId>
     <artifactId>tiny-webserver</artifactId>
-    <version>1.0</version>
+    <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -57,23 +57,23 @@
     </distributionManagement>
 
     <scm>
-        <url>https://github.com/yourusername/tiny-webserver</url>
-        <connection>scm:git:git://github.com/yourusername/tiny-webserver.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:yourusername/tiny-webserver.git</developerConnection>
+        <url>https://github.com/paul-hammant/tiny</url>
+        <connection>scm:git:git://github.com/aul-hammant/tiny.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:aul-hammant/tiny.git</developerConnection>
     </scm>
 
     <developers>
         <developer>
-            <id>yourid</id>
-            <name>Your Name</name>
-            <email>your.email@example.com</email>
+            <id>paulh</id>
+            <name>Paul Hammant</name>
+            <email>paul@hammant.org</email>
         </developer>
     </developers>
 
     <licenses>
         <license>
-            <name>The Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <name>MIT LICENSE</name>
+            <url>https://opensource.org/license/mit</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -83,7 +83,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.13.0</version>
                 <configuration>
                     <source>21</source>
                     <target>21</target>
@@ -111,7 +111,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
+                <version>3.5.2</version>
                 <configuration>
                     <includes>
                         <include>**/*Tests.java</include>
