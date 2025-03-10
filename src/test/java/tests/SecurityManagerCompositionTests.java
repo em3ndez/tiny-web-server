@@ -48,7 +48,7 @@ public class SecurityManagerCompositionTests {
                     // compile ServerCompositionTwo into hello2.jar
                     compileAndPackage("ServerCompositionTwo", "smtests2/ServerCompositionTwo.class", "target/hello2.jar");
                 } catch (IOException e) {
-                    throw new AssertionError("Can't build modules for use in child classloader. Can't find java.exe?", e);
+                    throw new AssertionError("Can't build modules for use in child classloader. Can't find java.exe?. Or maybe can't find javac.exe as only the JRE is installed?", e);
                 }
 
                 webServer = new Tiny.WebServer(Tiny.Config.create()
