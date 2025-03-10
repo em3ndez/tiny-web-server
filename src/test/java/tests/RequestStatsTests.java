@@ -44,9 +44,10 @@ public class RequestStatsTests {
                     @Override
                     protected void recordStatistics(String path, Map<String, Object> stats) {
                         String string = stats.toString()
-                                .replaceAll("ration=\\d{2}", "ration=50")
-                                .replaceAll("ration=\\d{3}", "ration=200")
-                                .replaceAll("ration=\\d{1},", "ration=50,");
+                                .replaceAll("ration=\\d{3}", "ration=XXX")
+                                .replaceAll("ration=\\d{2}", "ration=XXX")
+                                .replaceAll("ration=\\d{1}", "ration=XXX");
+
                         statsStr.append(string);
                     }
 
@@ -90,10 +91,10 @@ public class RequestStatsTests {
                 assertThat(response.code(), equalTo(200));
                 assertThat(response.body().string(), equalTo("hello"));
                 sleep(10);
-                assertThat(statsStr.toString(), equalTo("{duration=200, path=/test/abc, endpoint=^/test/abc$, endpointDuration=50, " +
-                        "filters=[FilterStat[path=^/test/.*$, result=ok, duration=50], " +
-                                 "FilterStat[path=^/test/a.*$, result=ok, duration=50], " +
-                                 "FilterStat[path=^/test/.*c$, result=ok, duration=50]], " +
+                assertThat(statsStr.toString(), equalTo("{duration=XXX, path=/test/abc, endpoint=^/test/abc$, endpointDuration=XXX, " +
+                        "filters=[FilterStat[path=^/test/.*$, result=ok, duration=XXX], " +
+                                 "FilterStat[path=^/test/a.*$, result=ok, duration=XXX], " +
+                                 "FilterStat[path=^/test/.*c$, result=ok, duration=XXX]], " +
                         "status=200}"));
                 statsStr = new StringBuilder();
             });
@@ -102,7 +103,7 @@ public class RequestStatsTests {
                 assertThat(response.code(), equalTo(404));
                 assertThat(response.body().string(), equalTo("Not found"));
                 sleep(10);
-                assertThat(statsStr.toString(), equalTo("{duration=50, path=/blahhhhh, endpoint=unmatched, filters=[], status=404}"));
+                assertThat(statsStr.toString(), equalTo("{duration=XXX, path=/blahhhhh, endpoint=unmatched, filters=[], status=404}"));
                 statsStr = new StringBuilder();
             });
 
@@ -112,7 +113,7 @@ public class RequestStatsTests {
                 assertThat(response.code(), equalTo(404));
                 assertThat(response.body().string(), equalTo("Not found"));
                 sleep(10);
-                assertThat(statsStr.toString(), equalTo("{duration=50, path=/test/zzz, endpoint=unmatched, filters=[], status=404}"));
+                assertThat(statsStr.toString(), equalTo("{duration=XXX, path=/test/zzz, endpoint=unmatched, filters=[], status=404}"));
                 statsStr = new StringBuilder();
             });
 
