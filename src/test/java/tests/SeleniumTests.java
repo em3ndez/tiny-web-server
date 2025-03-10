@@ -6,6 +6,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -79,8 +80,18 @@ public class SeleniumTests {
 //                    Thread.sleep(600 * 1000);
 //                } catch (InterruptedException e) {
 //                }
+                ChromeOptions options = new ChromeOptions();
 
-                WebDriver driver = new ChromeDriver();
+                if (System.getProperty("headlessSelenium", "false").toLowerCase().contains("true")) {
+                    options.addArguments("--headless=new"); // Use --headless=new for modern versions
+                    options.addArguments("--no-sandbox");   // Required for running as root in a container
+                    options.addArguments("--disable-dev-shm-usage"); // Prevents /dev/shm crashes
+                    options.addArguments("--disable-gpu");  // Disable GPU acceleration (not needed for headless)
+                    options.addArguments("--remote-allow-origins=*"); // Avoids connection issues
+
+                }
+                // Initialize WebDriver
+                WebDriver driver = new ChromeDriver(options);
                 try {
                     driver.get("http://localhost:8080/");
                     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
